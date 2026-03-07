@@ -138,12 +138,7 @@ theorem add_limb0_spec (off_a off_b : BitVec 12)
        ((base + 16) ↦ᵢ .SW .x12 .x7 off_b) **
        (.x12 ↦ᵣ sp) ** (.x7 ↦ᵣ sum) ** (.x6 ↦ᵣ b_limb) ** (.x5 ↦ᵣ carry) **
        (mem_a ↦ₘ a_limb) ** (mem_b ↦ₘ sum)) := by
-  have s1 := lw_spec_gen .x7 .x12 sp v7 a_limb off_a base (by nofun) hvalid_a
-  have s2 := lw_spec_gen .x6 .x12 sp v6 b_limb off_b (base + 4) (by nofun) hvalid_b
-  have s3 := add_spec_gen_rd_eq_rs1 .x7 .x6 a_limb b_limb (base + 8) (by nofun) (by nofun)
-  have s4 := sltu_spec_gen .x5 .x7 .x6 v5 (a_limb + b_limb) b_limb (base + 12) (by nofun)
-  have s5 := sw_spec_gen .x12 .x7 sp (a_limb + b_limb) b_limb off_b (base + 16) hvalid_b
-  runBlock s1 s2 s3 s4 s5
+  runBlock
 
 -- ============================================================================
 -- Per-limb Specs: ADD with carry (limbs 1-7)
@@ -168,11 +163,7 @@ theorem add_limb_carry_spec_phase1 (off_a off_b : BitVec 12)
        ((base + 8) ↦ᵢ .ADD .x7 .x7 .x6) ** ((base + 12) ↦ᵢ .SLTU .x11 .x7 .x6) **
        (.x12 ↦ᵣ sp) ** (.x7 ↦ᵣ psum) ** (.x6 ↦ᵣ b_limb) ** (.x5 ↦ᵣ carry_in) ** (.x11 ↦ᵣ carry1) **
        (mem_a ↦ₘ a_limb) ** (mem_b ↦ₘ b_limb)) := by
-  have s1 := lw_spec_gen .x7 .x12 sp v7 a_limb off_a base (by nofun) hvalid_a
-  have s2 := lw_spec_gen .x6 .x12 sp v6 b_limb off_b (base + 4) (by nofun) hvalid_b
-  have s3 := add_spec_gen_rd_eq_rs1 .x7 .x6 a_limb b_limb (base + 8) (by nofun) (by nofun)
-  have s4 := sltu_spec_gen .x11 .x7 .x6 v11 (a_limb + b_limb) b_limb (base + 12) (by nofun)
-  runBlock s1 s2 s3 s4
+  runBlock
 
 /-- ADD carry limb phase 2 (4 instructions): ADD, SLTU, OR, SW.
     Takes psum, carry1, carry_in, computes result = psum + carry_in,
@@ -193,12 +184,7 @@ theorem add_limb_carry_spec_phase2 (off_b : BitVec 12)
        ((base + 8) ↦ᵢ .OR .x5 .x11 .x6) ** ((base + 12) ↦ᵢ .SW .x12 .x7 off_b) **
        (.x12 ↦ᵣ sp) ** (.x7 ↦ᵣ result) ** (.x6 ↦ᵣ carry2) ** (.x5 ↦ᵣ carry_out) ** (.x11 ↦ᵣ carry1) **
        (mem_a ↦ₘ a_limb) ** (mem_b ↦ₘ result)) := by
-  have s1 := add_spec_gen_rd_eq_rs1 .x7 .x5 psum carry_in base (by nofun) (by nofun)
-  have s2 := sltu_spec_gen .x6 .x7 .x5 b_limb (psum + carry_in) carry_in (base + 4) (by nofun)
-  have s3 := or_spec_gen .x5 .x11 .x6 carry_in carry1
-    (if BitVec.ult (psum + carry_in) carry_in then (1 : Word) else 0) (base + 8) (by nofun)
-  have s4 := sw_spec_gen .x12 .x7 sp (psum + carry_in) b_limb off_b (base + 12) hvalid_b
-  runBlock s1 s2 s3 s4
+  runBlock
 
 /-- ADD carry limb spec (8 instructions): LW, LW, ADD, SLTU, ADD, SLTU, OR, SW.
     Takes carry_in, produces carry_out = carry1 ||| carry2 where:
@@ -280,12 +266,7 @@ theorem sub_limb0_spec (off_a off_b : BitVec 12)
        ((base + 16) ↦ᵢ .SW .x12 .x7 off_b) **
        (.x12 ↦ᵣ sp) ** (.x7 ↦ᵣ diff) ** (.x6 ↦ᵣ b_limb) ** (.x5 ↦ᵣ borrow) **
        (mem_a ↦ₘ a_limb) ** (mem_b ↦ₘ diff)) := by
-  have s1 := lw_spec_gen .x7 .x12 sp v7 a_limb off_a base (by nofun) hvalid_a
-  have s2 := lw_spec_gen .x6 .x12 sp v6 b_limb off_b (base + 4) (by nofun) hvalid_b
-  have s3 := sltu_spec_gen .x5 .x7 .x6 v5 a_limb b_limb (base + 8) (by nofun)
-  have s4 := sub_spec_gen_rd_eq_rs1 .x7 .x6 a_limb b_limb (base + 12) (by nofun) (by nofun)
-  have s5 := sw_spec_gen .x12 .x7 sp (a_limb - b_limb) b_limb off_b (base + 16) hvalid_b
-  runBlock s1 s2 s3 s4 s5
+  runBlock
 
 /-- SUB carry limb phase 1 (4 instructions): LW, LW, SLTU, SUB.
     Loads a_limb and b_limb, computes borrow1 = (a < b ? 1 : 0), temp = a - b. -/
@@ -306,11 +287,7 @@ theorem sub_limb_carry_spec_phase1 (off_a off_b : BitVec 12)
        ((base + 8) ↦ᵢ .SLTU .x11 .x7 .x6) ** ((base + 12) ↦ᵢ .SUB .x7 .x7 .x6) **
        (.x12 ↦ᵣ sp) ** (.x7 ↦ᵣ temp) ** (.x6 ↦ᵣ b_limb) ** (.x5 ↦ᵣ borrow_in) ** (.x11 ↦ᵣ borrow1) **
        (mem_a ↦ₘ a_limb) ** (mem_b ↦ₘ b_limb)) := by
-  have s1 := lw_spec_gen .x7 .x12 sp v7 a_limb off_a base (by nofun) hvalid_a
-  have s2 := lw_spec_gen .x6 .x12 sp v6 b_limb off_b (base + 4) (by nofun) hvalid_b
-  have s3 := sltu_spec_gen .x11 .x7 .x6 v11 a_limb b_limb (base + 8) (by nofun)
-  have s4 := sub_spec_gen_rd_eq_rs1 .x7 .x6 a_limb b_limb (base + 12) (by nofun) (by nofun)
-  runBlock s1 s2 s3 s4
+  runBlock
 
 /-- SUB carry limb phase 2 (4 instructions): SLTU, SUB, OR, SW.
     Takes temp, borrow1, borrow_in, computes borrow2 = (temp < borrow_in ? 1 : 0),
@@ -331,12 +308,7 @@ theorem sub_limb_carry_spec_phase2 (off_b : BitVec 12)
        ((base + 8) ↦ᵢ .OR .x5 .x11 .x6) ** ((base + 12) ↦ᵢ .SW .x12 .x7 off_b) **
        (.x12 ↦ᵣ sp) ** (.x7 ↦ᵣ result) ** (.x6 ↦ᵣ borrow2) ** (.x5 ↦ᵣ borrow_out) ** (.x11 ↦ᵣ borrow1) **
        (mem_a ↦ₘ a_limb) ** (mem_b ↦ₘ result)) := by
-  have s1 := sltu_spec_gen .x6 .x7 .x5 b_limb temp borrow_in base (by nofun)
-  have s2 := sub_spec_gen_rd_eq_rs1 .x7 .x5 temp borrow_in (base + 4) (by nofun) (by nofun)
-  have s3 := or_spec_gen .x5 .x11 .x6 borrow_in borrow1
-    (if BitVec.ult temp borrow_in then (1 : Word) else 0) (base + 8) (by nofun)
-  have s4 := sw_spec_gen .x12 .x7 sp (temp - borrow_in) b_limb off_b (base + 12) hvalid_b
-  runBlock s1 s2 s3 s4
+  runBlock
 
 /-- SUB carry limb spec (8 instructions): LW, LW, SLTU, SUB, SLTU, SUB, OR, SW.
     Takes borrow_in, produces borrow_out = borrow1 ||| borrow2 where:

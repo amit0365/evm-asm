@@ -12,6 +12,7 @@
 
 import Lean
 import EvmAsm.Tactics.SeqFrame
+import EvmAsm.Tactics.SpecDb
 
 open Lean Meta Elab Tactic
 
@@ -120,16 +121,209 @@ private def normalizeToGoal (composed : Expr) (goalType : Expr) : MetaM Expr := 
     try return ← normalizeAddr composed goalExit catch _ => return composed
   return composed
 
+-- ============================================================================
+-- Section: Auto-resolution of specs from precondition
+-- ============================================================================
+
+/-- Check if an expression's head is a constructor. -/
+private def isCtorApp (env : Environment) (e : Expr) : Bool :=
+  match e.getAppFn with
+  | .const name _ => env.isConstructor name
+  | _ => false
+
+/-- Check if a type is a decidable proposition about concrete values
+    (e.g., `Reg.x7 ≠ Reg.x0`). -/
+private def isConcreteDecidable (ty : Expr) : MetaM Bool := do
+  if ty.isAppOfArity ``Ne 3 then
+    let env ← getEnv
+    let args := ty.getAppArgs
+    return isCtorApp env args[1]! && isCtorApp env args[2]!
+  return false
+
+/-- Try to solve a proof obligation MVar.
+    Uses mkDecideProof for concrete decidable props (register inequalities),
+    local context search for hypotheses, and bv_omega as fallback. -/
+private def solveObligation (mvarId : MVarId) : MetaM Bool := do
+  let ty ← instantiateMVars (← mvarId.getType)
+  -- Try Decidable proof for concrete propositions (rd ≠ .x0, rd ≠ rs, etc.)
+  if ← isConcreteDecidable ty then
+    try
+      let proof ← mkDecideProof ty
+      mvarId.assign proof
+      return true
+    catch _ =>
+      (Pure.pure PUnit.unit : MetaM PUnit)
+  -- Try searching local context (handles isValidMemAccess from hypotheses)
+  let lctx ← getLCtx
+  for decl in lctx do
+    if !decl.isImplementationDetail then
+      if ← isDefEq decl.type ty then
+        mvarId.assign decl.toExpr
+        return true
+  -- Try bv_omega as last resort
+  try
+    let stx ← `(tactic| bv_omega)
+    let _ ← Lean.Elab.runTactic mvarId stx
+    return true
+  catch _ =>
+    return false
+
+/-- Try to instantiate a single spec theorem for a given instruction and state.
+    Uses unification: creates MVars for all spec parameters, unifies the spec's
+    instruction and register/memory atoms with the state, then solves proof
+    obligations. Returns the instantiated proof term. -/
+private def tryInstantiateSpec (specName : Name) (instrExpr instrAddr : Expr)
+    (stateAtoms : List Expr) : MetaM Expr := do
+  let specConst := mkConst specName
+  let specType ← inferType specConst
+  -- Create metavariable telescope for spec parameters (non-reducing to avoid
+  -- unfolding cpsTriple, which is itself a ∀ internally)
+  let (params, _, body) ← forallMetaTelescope specType
+  -- body should be cpsTriple entry exit pre post
+  let some (specEntry, _, specPre, _) ← parseCpsTriple? body
+    | throwError "tryInstantiateSpec: {specName} is not a cpsTriple"
+  -- Step 1: Unify spec address with our instruction address
+  unless ← isDefEq specEntry instrAddr do
+    throwError "address mismatch"
+  -- Step 2: Flatten spec precondition and match atoms
+  let specAtoms ← flattenSepConj specPre
+  -- Step 2a: Unify the instrAt atom
+  for atom in specAtoms do
+    if atom.isAppOfArity `EvmAsm.instrAt 2 then
+      let specInstr := atom.getAppArgs[1]!
+      unless ← isDefEq specInstr instrExpr do
+        throwError "instruction mismatch"
+  -- Step 2b: Unify regIs atoms
+  let stateRegAtoms := stateAtoms.filter (·.isAppOfArity `EvmAsm.regIs 2)
+  for atom in specAtoms do
+    if atom.isAppOfArity `EvmAsm.regIs 2 then
+      let specReg ← instantiateMVars atom.getAppArgs[0]!
+      let specVal := atom.getAppArgs[1]!
+      let mut found := false
+      for stateAtom in stateRegAtoms do
+        let stateReg := stateAtom.getAppArgs[0]!
+        let stateVal := stateAtom.getAppArgs[1]!
+        if ← withoutModifyingState (isDefEq specReg stateReg) then
+          let _ ← isDefEq specReg stateReg
+          let _ ← isDefEq specVal stateVal
+          found := true
+          break
+      unless found do
+        throwError "register {specReg} not found in state"
+  -- Step 2c: Unify memIs atoms
+  let stateMemAtoms := stateAtoms.filter (·.isAppOfArity `EvmAsm.memIs 2)
+  for atom in specAtoms do
+    if atom.isAppOfArity `EvmAsm.memIs 2 then
+      let specAddr ← instantiateMVars atom.getAppArgs[0]!
+      let specVal := atom.getAppArgs[1]!
+      let mut found := false
+      for stateAtom in stateMemAtoms do
+        let stateAddr := stateAtom.getAppArgs[0]!
+        let stateVal := stateAtom.getAppArgs[1]!
+        if ← withoutModifyingState (isDefEq specAddr stateAddr) then
+          let _ ← isDefEq specAddr stateAddr
+          let _ ← isDefEq specVal stateVal
+          found := true
+          break
+      unless found do
+        throwError "memory at {specAddr} not found in state"
+  -- Step 3: Solve remaining proof obligations
+  for param in params do
+    if !param.isMVar then continue
+    let mvarId := param.mvarId!
+    if ← mvarId.isAssigned then continue
+    let solved ← solveObligation mvarId
+    unless solved do
+      let paramType ← instantiateMVars (← mvarId.getType)
+      throwError "cannot solve proof obligation: {paramType}"
+  -- Build fully instantiated application
+  return ← instantiateMVars (mkAppN specConst params)
+
+/-- Resolve a spec for an instruction by trying all registered specs.
+    Returns the first successfully instantiated spec proof. -/
+private def resolveSpecForInstr (instrExpr instrAddr : Expr)
+    (stateAtoms : List Expr) : MetaM Expr := do
+  let instrHead := instrExpr.getAppFn
+  let .const instrName _ := instrHead
+    | throwError "resolveSpec: instruction is not a constructor: {instrExpr}"
+  let env ← getEnv
+  let specs := findSpecsForInstr env instrName
+  if specs.isEmpty then
+    throwError "resolveSpec: no registered specs for {instrName}"
+  let mut lastError := ""
+  for entry in specs do
+    let saved ← saveState
+    try
+      let result ← tryInstantiateSpec entry.specName instrExpr instrAddr stateAtoms
+      return result
+    catch e =>
+      restoreState saved
+      lastError := toString (← e.toMessageData.format)
+      continue
+  throwError "resolveSpec: no spec could be instantiated for {instrName}.\n  Last error: {lastError}"
+
+/-- Compute the state atoms after applying a resolved spec.
+    Returns postcondition atoms ∪ (currentAtoms \ precondition atoms). -/
+private def advanceState (currentAtoms : List Expr) (specExpr : Expr) : MetaM (List Expr) := do
+  let specType ← inferType specExpr
+  let some (_, _, specPre, specPost) ← parseCpsTriple? specType
+    | throwError "advanceState: not a cpsTriple"
+  let preAtoms ← flattenSepConj specPre
+  let postAtoms ← flattenSepConj specPost
+  -- Remove consumed atoms (those in spec's precondition)
+  let mut available := currentAtoms.toArray.map fun a => (a, true)
+  for preAtom in preAtoms do
+    for i in [:available.size] do
+      if available[i]!.2 then
+        if ← withReducible (isDefEq preAtom available[i]!.1) then
+          available := available.set! i (available[i]!.1, false)
+          break
+  let frame := available.filter (·.2) |>.map (·.1) |>.toList
+  return postAtoms ++ frame
+
+/-- Extract instruction atoms `(addr, instrExpr)` from assertion atoms,
+    preserving the order they appear in the precondition. -/
+private def extractInstrAtoms (atoms : List Expr) : List (Expr × Expr) :=
+  atoms.filterMap fun atom =>
+    if atom.isAppOfArity `EvmAsm.instrAt 2 then
+      some (atom.getAppArgs[0]!, atom.getAppArgs[1]!)
+    else none
+
+/-- Auto-resolve all specs from the precondition and compose them.
+    Extracts instruction atoms, resolves each spec using the current state,
+    and advances the state between instructions. -/
+private def autoResolveAndCompose (goalPre : Expr) : MetaM Expr := do
+  let atoms ← flattenSepConj goalPre
+  let instrAtoms := extractInstrAtoms atoms
+  if instrAtoms.isEmpty then
+    throwError "autoRunBlock: no instruction atoms found in precondition"
+  -- Non-instruction atoms form the initial state
+  let stateAtoms := atoms.filter fun a => !a.isAppOfArity `EvmAsm.instrAt 2
+  let mut currentState := stateAtoms
+  let mut specs : Array Expr := #[]
+  for (addr, instr) in instrAtoms do
+    let spec ← resolveSpecForInstr instr addr currentState
+    specs := specs.push spec
+    currentState ← advanceState currentState spec
+  runBlockCore specs goalPre
+
 /-- `runBlock s1 s2 ... sN` composes N cpsTriple specs with automatic
-    address normalization and frame extraction. -/
+    address normalization and frame extraction.
+    When called with no arguments, auto-resolves specs from the precondition. -/
 elab "runBlock" specs:ident* : tactic => withMainContext do
-  let specExprs ← specs.mapM fun s => elabTerm s none
   let goal ← getMainGoal
   -- Strip leading let bindings and metadata from goal type
   let goalType := inlineLets (← instantiateMVars (← goal.getType))
   let some (_, _, goalPre, _) ← parseCpsTriple? goalType
     | throwError "runBlock: goal is not a cpsTriple"
-  let composed ← runBlockCore specExprs goalPre
+  let composed ←
+    if specs.isEmpty then
+      -- Auto mode: resolve specs from precondition
+      autoResolveAndCompose goalPre
+    else
+      -- Manual mode: use provided specs
+      let specExprs ← specs.mapM fun s => elabTerm s none
+      runBlockCore specExprs goalPre
   let finalResult ← normalizeToGoal composed goalType
   -- Always permute postcondition to match goal (goal.assign doesn't type-check)
   let some (gEntry, gExit, gPre, goalPost) ← parseCpsTriple? goalType

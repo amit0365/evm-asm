@@ -12,4 +12,5 @@ import EvmAsm.Tactics.XPerm
 import EvmAsm.Tactics.XSimp
 import EvmAsm.Tactics.XCancel
 import EvmAsm.Tactics.SeqFrame
+import EvmAsm.Tactics.SpecDb
 import EvmAsm.Tactics.RunBlock

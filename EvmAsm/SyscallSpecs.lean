@@ -13,6 +13,7 @@ import EvmAsm.Execution
 import EvmAsm.CPSSpec
 import EvmAsm.GenericSpecs
 import EvmAsm.Tactics.XSimp
+import EvmAsm.Tactics.SpecDb
 import Std.Tactic.BVDecide
 
 open EvmAsm.Tactics
@@ -436,7 +437,7 @@ theorem holdsFor_sepConj_memBufferIs_writeBytesAsWords
 -- ============================================================================
 
 /-- LW spec for any code memory: loads mem[rs1 + sext(offset)] into rd. -/
-theorem lw_spec_gen (rd rs1 : Reg) (v_addr v_old mem_val : Word)
+@[spec_gen] theorem lw_spec_gen (rd rs1 : Reg) (v_addr v_old mem_val : Word)
     (offset : BitVec 12) (addr : Addr)
     (hrd_ne_x0 : rd ≠ .x0)
     (hvalid : isValidMemAccess (v_addr + signExtend12 offset) = true) :
@@ -447,7 +448,7 @@ theorem lw_spec_gen (rd rs1 : Reg) (v_addr v_old mem_val : Word)
 
 /-- SLTIU spec for any code memory (rd == rs1 case):
     rd := (v <u sext(imm)) ? 1 : 0 -/
-theorem sltiu_spec_gen_same (rd : Reg) (v : Word) (imm : BitVec 12)
+@[spec_gen] theorem sltiu_spec_gen_same (rd : Reg) (v : Word) (imm : BitVec 12)
     (addr : Addr) (hrd_ne_x0 : rd ≠ .x0) :
     cpsTriple addr (addr + 4)
       ((addr ↦ᵢ .SLTIU rd rd imm) ** (rd ↦ᵣ v))
@@ -458,7 +459,7 @@ theorem sltiu_spec_gen_same (rd : Reg) (v : Word) (imm : BitVec 12)
 
 /-- XORI spec for any code memory (rd == rs1 case):
     rd := v ^^^ sext(imm) -/
-theorem xori_spec_gen_same (rd : Reg) (v : Word) (imm : BitVec 12)
+@[spec_gen] theorem xori_spec_gen_same (rd : Reg) (v : Word) (imm : BitVec 12)
     (addr : Addr) (hrd_ne_x0 : rd ≠ .x0) :
     cpsTriple addr (addr + 4)
       ((addr ↦ᵢ .XORI rd rd imm) ** (rd ↦ᵣ v))
@@ -469,7 +470,7 @@ theorem xori_spec_gen_same (rd : Reg) (v : Word) (imm : BitVec 12)
 
 /-- SRL spec for any code memory (rd = rs1 case):
     rd := rd >>> (rs2.toNat % 32) -/
-theorem srl_spec_gen_rd_eq_rs1 (rd rs2 : Reg) (v1 v2 : Word)
+@[spec_gen] theorem srl_spec_gen_rd_eq_rs1 (rd rs2 : Reg) (v1 v2 : Word)
     (addr : Addr) (hrd_ne_x0 : rd ≠ .x0) (hne : rd ≠ rs2) :
     cpsTriple addr (addr + 4)
       ((addr ↦ᵢ .SRL rd rd rs2) ** (rd ↦ᵣ v1) ** (rs2 ↦ᵣ v2))
@@ -480,7 +481,7 @@ theorem srl_spec_gen_rd_eq_rs1 (rd rs2 : Reg) (v1 v2 : Word)
 
 /-- SLL spec for any code memory (rd = rs1 case):
     rd := rd <<< (rs2.toNat % 32) -/
-theorem sll_spec_gen_rd_eq_rs1 (rd rs2 : Reg) (v1 v2 : Word)
+@[spec_gen] theorem sll_spec_gen_rd_eq_rs1 (rd rs2 : Reg) (v1 v2 : Word)
     (addr : Addr) (hrd_ne_x0 : rd ≠ .x0) (hne : rd ≠ rs2) :
     cpsTriple addr (addr + 4)
       ((addr ↦ᵢ .SLL rd rd rs2) ** (rd ↦ᵣ v1) ** (rs2 ↦ᵣ v2))
@@ -491,7 +492,7 @@ theorem sll_spec_gen_rd_eq_rs1 (rd rs2 : Reg) (v1 v2 : Word)
 
 /-- ADD spec for any code memory (rd = rs1 case):
     rd := rd + rs2 -/
-theorem add_spec_gen_rd_eq_rs1 (rd rs2 : Reg) (v1 v2 : Word)
+@[spec_gen] theorem add_spec_gen_rd_eq_rs1 (rd rs2 : Reg) (v1 v2 : Word)
     (addr : Addr) (hrd_ne_x0 : rd ≠ .x0) (hne : rd ≠ rs2) :
     cpsTriple addr (addr + 4)
       ((addr ↦ᵢ .ADD rd rd rs2) ** (rd ↦ᵣ v1) ** (rs2 ↦ᵣ v2))
@@ -502,7 +503,7 @@ theorem add_spec_gen_rd_eq_rs1 (rd rs2 : Reg) (v1 v2 : Word)
 
 /-- SUB spec for any code memory (rd = rs1 case):
     rd := rd - rs2 -/
-theorem sub_spec_gen_rd_eq_rs1 (rd rs2 : Reg) (v1 v2 : Word)
+@[spec_gen] theorem sub_spec_gen_rd_eq_rs1 (rd rs2 : Reg) (v1 v2 : Word)
     (addr : Addr) (hrd_ne_x0 : rd ≠ .x0) (hne : rd ≠ rs2) :
     cpsTriple addr (addr + 4)
       ((addr ↦ᵢ .SUB rd rd rs2) ** (rd ↦ᵣ v1) ** (rs2 ↦ᵣ v2))
@@ -513,7 +514,7 @@ theorem sub_spec_gen_rd_eq_rs1 (rd rs2 : Reg) (v1 v2 : Word)
 
 /-- AND spec for any code memory (rd = rs1 case):
     rd := rd &&& rs2 -/
-theorem and_spec_gen_rd_eq_rs1 (rd rs2 : Reg) (v1 v2 : Word)
+@[spec_gen] theorem and_spec_gen_rd_eq_rs1 (rd rs2 : Reg) (v1 v2 : Word)
     (addr : Addr) (hrd_ne_x0 : rd ≠ .x0) (hne : rd ≠ rs2) :
     cpsTriple addr (addr + 4)
       ((addr ↦ᵢ .AND rd rd rs2) ** (rd ↦ᵣ v1) ** (rs2 ↦ᵣ v2))
@@ -524,7 +525,7 @@ theorem and_spec_gen_rd_eq_rs1 (rd rs2 : Reg) (v1 v2 : Word)
 
 /-- OR spec for any code memory (rd = rs1 case):
     rd := rd ||| rs2 -/
-theorem or_spec_gen_rd_eq_rs1 (rd rs2 : Reg) (v1 v2 : Word)
+@[spec_gen] theorem or_spec_gen_rd_eq_rs1 (rd rs2 : Reg) (v1 v2 : Word)
     (addr : Addr) (hrd_ne_x0 : rd ≠ .x0) (hne : rd ≠ rs2) :
     cpsTriple addr (addr + 4)
       ((addr ↦ᵢ .OR rd rd rs2) ** (rd ↦ᵣ v1) ** (rs2 ↦ᵣ v2))
@@ -535,7 +536,7 @@ theorem or_spec_gen_rd_eq_rs1 (rd rs2 : Reg) (v1 v2 : Word)
 
 /-- XOR spec for any code memory (rd = rs1 case):
     rd := rd ^^^ rs2 -/
-theorem xor_spec_gen_rd_eq_rs1 (rd rs2 : Reg) (v1 v2 : Word)
+@[spec_gen] theorem xor_spec_gen_rd_eq_rs1 (rd rs2 : Reg) (v1 v2 : Word)
     (addr : Addr) (hrd_ne_x0 : rd ≠ .x0) (hne : rd ≠ rs2) :
     cpsTriple addr (addr + 4)
       ((addr ↦ᵢ .XOR rd rd rs2) ** (rd ↦ᵣ v1) ** (rs2 ↦ᵣ v2))
@@ -546,7 +547,7 @@ theorem xor_spec_gen_rd_eq_rs1 (rd rs2 : Reg) (v1 v2 : Word)
 
 /-- SLTU spec for any code memory (rd = rs1 case):
     rd := if rd <u rs2 then 1 else 0 -/
-theorem sltu_spec_gen_rd_eq_rs1 (rd rs2 : Reg) (v1 v2 : Word)
+@[spec_gen] theorem sltu_spec_gen_rd_eq_rs1 (rd rs2 : Reg) (v1 v2 : Word)
     (addr : Addr) (hrd_ne_x0 : rd ≠ .x0) (hne : rd ≠ rs2) :
     cpsTriple addr (addr + 4)
       ((addr ↦ᵢ .SLTU rd rd rs2) ** (rd ↦ᵣ v1) ** (rs2 ↦ᵣ v2))
@@ -557,7 +558,7 @@ theorem sltu_spec_gen_rd_eq_rs1 (rd rs2 : Reg) (v1 v2 : Word)
 
 /-- ADDI spec for any code memory (rd = rs1 case):
     rd := rd + signExtend12(imm) -/
-theorem addi_spec_gen_same (rd : Reg) (v : Word) (imm : BitVec 12)
+@[spec_gen] theorem addi_spec_gen_same (rd : Reg) (v : Word) (imm : BitVec 12)
     (addr : Addr) (hrd_ne_x0 : rd ≠ .x0) :
     cpsTriple addr (addr + 4)
       ((addr ↦ᵢ .ADDI rd rd imm) ** (rd ↦ᵣ v))
@@ -567,7 +568,7 @@ theorem addi_spec_gen_same (rd : Reg) (v : Word) (imm : BitVec 12)
     (by intro s hfetch; exact step_non_ecall_non_mem s _ hfetch (by nofun) (by nofun) (by rfl))
 
 /-- LI spec for any code memory (not just a single-instruction loadProgram). -/
-theorem li_spec_gen (rd : Reg) (v_old imm : Word) (addr : Addr)
+@[spec_gen] theorem li_spec_gen (rd : Reg) (v_old imm : Word) (addr : Addr)
     (hrd_ne_x0 : rd ≠ .x0) :
     cpsTriple addr (addr + 4)
       ((addr ↦ᵢ .LI rd imm) ** (rd ↦ᵣ v_old))
@@ -578,7 +579,7 @@ theorem li_spec_gen (rd : Reg) (v_old imm : Word) (addr : Addr)
 
 /-- LI spec for any code memory with regOwn (no v_old needed).
     Requires instrAt in pre/post since code is part of the machine state. -/
-theorem li_spec_gen_own (rd : Reg) (imm : Word) (addr : Addr)
+@[spec_gen] theorem li_spec_gen_own (rd : Reg) (imm : Word) (addr : Addr)
     (hrd_ne_x0 : rd ≠ .x0) :
     cpsTriple addr (addr + 4)
       ((addr ↦ᵢ .LI rd imm) ** regOwn rd)
@@ -595,7 +596,7 @@ theorem li_spec_gen_own (rd : Reg) (imm : Word) (addr : Addr)
   exact li_spec_gen rd v imm addr hrd_ne_x0 R hR s hPR' hpc
 
 /-- ECALL halt spec: when x5 = 0, ECALL halts. -/
-theorem ecall_halt_spec_gen (exitCode : Word) (addr : Addr) :
+@[spec_gen] theorem ecall_halt_spec_gen (exitCode : Word) (addr : Addr) :
     cpsHaltTriple addr
       ((addr ↦ᵢ .ECALL) ** (.x5 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ exitCode))
       ((addr ↦ᵢ .ECALL) ** (.x5 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ exitCode)) := by
@@ -612,7 +613,7 @@ theorem ecall_halt_spec_gen (exitCode : Word) (addr : Addr) :
   simp only [isHalted, step_ecall_halt s hfetch hx5, Option.isNone]
 
 /-- SW rs1 rs2 offset: mem[rs1 + sext(offset)] := rs2 (generalized for any CodeMem) -/
-theorem sw_spec_gen (rs1 rs2 : Reg) (v_addr v_data mem_old : Word)
+@[spec_gen] theorem sw_spec_gen (rs1 rs2 : Reg) (v_addr v_data mem_old : Word)
     (offset : BitVec 12) (addr : Addr)
     (hvalid : isValidMemAccess (v_addr + signExtend12 offset) = true) :
     cpsTriple addr (addr + 4)
@@ -622,7 +623,7 @@ theorem sw_spec_gen (rs1 rs2 : Reg) (v_addr v_data mem_old : Word)
 
 /-- SW spec with memOwn (no mem_old needed).
     Requires instrAt in pre/post since code is part of the machine state. -/
-theorem sw_spec_gen_own (rs1 rs2 : Reg) (v_addr v_data : Word)
+@[spec_gen] theorem sw_spec_gen_own (rs1 rs2 : Reg) (v_addr v_data : Word)
     (offset : BitVec 12) (addr : Addr)
     (hvalid : isValidMemAccess (v_addr + signExtend12 offset) = true) :
     cpsTriple addr (addr + 4)
@@ -645,7 +646,7 @@ theorem sw_spec_gen_own (rs1 rs2 : Reg) (v_addr v_data : Word)
 /-- SW rs1 x0 offset: mem[rs1 + sext(offset)] := 0.
     Specialized version of sw_spec_gen for x0 (always reads as 0).
     Does not require (x0 ↦ᵣ 0) in pre/post. -/
-theorem sw_x0_spec_gen (rs1 : Reg) (v_addr mem_old : Word)
+@[spec_gen] theorem sw_x0_spec_gen (rs1 : Reg) (v_addr mem_old : Word)
     (offset : BitVec 12) (addr : Addr)
     (hvalid : isValidMemAccess (v_addr + signExtend12 offset) = true) :
     cpsTriple addr (addr + 4)
@@ -1399,7 +1400,7 @@ theorem write_public_spec_gen (bufPtr nbytes : Word)
 
 /-- SLTU spec for 3 distinct registers:
     rd := (rs1 < rs2) ? 1 : 0, preserving rs1 and rs2 -/
-theorem sltu_spec_gen (rd rs1 rs2 : Reg) (v_old v1 v2 : Word)
+@[spec_gen] theorem sltu_spec_gen (rd rs1 rs2 : Reg) (v_old v1 v2 : Word)
     (addr : Addr) (hrd_ne_x0 : rd ≠ .x0) :
     cpsTriple addr (addr + 4)
       ((addr ↦ᵢ .SLTU rd rs1 rs2) ** (rs1 ↦ᵣ v1) ** (rs2 ↦ᵣ v2) ** (rd ↦ᵣ v_old))
@@ -1410,7 +1411,7 @@ theorem sltu_spec_gen (rd rs1 rs2 : Reg) (v_old v1 v2 : Word)
 
 /-- OR spec for 3 distinct registers:
     rd := rs1 ||| rs2, preserving rs1 and rs2 -/
-theorem or_spec_gen (rd rs1 rs2 : Reg) (v_old v1 v2 : Word)
+@[spec_gen] theorem or_spec_gen (rd rs1 rs2 : Reg) (v_old v1 v2 : Word)
     (addr : Addr) (hrd_ne_x0 : rd ≠ .x0) :
     cpsTriple addr (addr + 4)
       ((addr ↦ᵢ .OR rd rs1 rs2) ** (rs1 ↦ᵣ v1) ** (rs2 ↦ᵣ v2) ** (rd ↦ᵣ v_old))
@@ -1425,7 +1426,7 @@ theorem or_spec_gen (rd rs1 rs2 : Reg) (v_old v1 v2 : Word)
 
 /-- ANDI spec for any code memory (rd ≠ rs1 case):
     rd := rs1 &&& sext(imm), preserving rs1 -/
-theorem andi_spec_gen (rd rs1 : Reg) (v_old v1 : Word) (imm : BitVec 12)
+@[spec_gen] theorem andi_spec_gen (rd rs1 : Reg) (v_old v1 : Word) (imm : BitVec 12)
     (addr : Addr) (hrd_ne_x0 : rd ≠ .x0) (hne : rd ≠ rs1) :
     cpsTriple addr (addr + 4)
       ((addr ↦ᵢ .ANDI rd rs1 imm) ** (rs1 ↦ᵣ v1) ** (rd ↦ᵣ v_old))
@@ -1436,7 +1437,7 @@ theorem andi_spec_gen (rd rs1 : Reg) (v_old v1 : Word) (imm : BitVec 12)
 
 /-- SRLI spec for any code memory (rd == rs1 case):
     rd := rd >>> shamt -/
-theorem srli_spec_gen_same (rd : Reg) (v : Word) (shamt : BitVec 5)
+@[spec_gen] theorem srli_spec_gen_same (rd : Reg) (v : Word) (shamt : BitVec 5)
     (addr : Addr) (hrd_ne_x0 : rd ≠ .x0) :
     cpsTriple addr (addr + 4)
       ((addr ↦ᵢ .SRLI rd rd shamt) ** (rd ↦ᵣ v))
@@ -1447,7 +1448,7 @@ theorem srli_spec_gen_same (rd : Reg) (v : Word) (shamt : BitVec 5)
 
 /-- SLTIU spec for any code memory (rd ≠ rs1 case):
     rd := (rs1 <u sext(imm)) ? 1 : 0, preserving rs1 -/
-theorem sltiu_spec_gen (rd rs1 : Reg) (v_old v1 : Word) (imm : BitVec 12)
+@[spec_gen] theorem sltiu_spec_gen (rd rs1 : Reg) (v_old v1 : Word) (imm : BitVec 12)
     (addr : Addr) (hrd_ne_x0 : rd ≠ .x0) (hne : rd ≠ rs1) :
     cpsTriple addr (addr + 4)
       ((addr ↦ᵢ .SLTIU rd rs1 imm) ** (rs1 ↦ᵣ v1) ** (rd ↦ᵣ v_old))
@@ -1458,7 +1459,7 @@ theorem sltiu_spec_gen (rd rs1 : Reg) (v_old v1 : Word) (imm : BitVec 12)
 
 /-- ADDI spec for any code memory (rd ≠ rs1 case):
     rd := rs1 + sext(imm), preserving rs1 -/
-theorem addi_spec_gen (rd rs1 : Reg) (v_old v1 : Word) (imm : BitVec 12)
+@[spec_gen] theorem addi_spec_gen (rd rs1 : Reg) (v_old v1 : Word) (imm : BitVec 12)
     (addr : Addr) (hrd_ne_x0 : rd ≠ .x0) (hne : rd ≠ rs1) :
     cpsTriple addr (addr + 4)
       ((addr ↦ᵢ .ADDI rd rs1 imm) ** (rs1 ↦ᵣ v1) ** (rd ↦ᵣ v_old))
@@ -1469,7 +1470,7 @@ theorem addi_spec_gen (rd rs1 : Reg) (v_old v1 : Word) (imm : BitVec 12)
 
 /-- SUB spec for any code memory (rd = rs2 case):
     rd := rs1 - rd, preserving rs1 -/
-theorem sub_spec_gen_rd_eq_rs2 (rd rs1 : Reg) (v1 v2 : Word)
+@[spec_gen] theorem sub_spec_gen_rd_eq_rs2 (rd rs1 : Reg) (v1 v2 : Word)
     (addr : Addr) (hrd_ne_x0 : rd ≠ .x0) (hne : rd ≠ rs1) :
     cpsTriple addr (addr + 4)
       ((addr ↦ᵢ .SUB rd rs1 rd) ** (rs1 ↦ᵣ v1) ** (rd ↦ᵣ v2))
@@ -1481,7 +1482,7 @@ theorem sub_spec_gen_rd_eq_rs2 (rd rs1 : Reg) (v1 v2 : Word)
 /-- BNE spec for any code memory:
     Branch taken (v1 ≠ v2) → PC = addr + sext(offset)
     Branch not taken (v1 = v2) → PC = addr + 4 -/
-theorem bne_spec_gen (rs1 rs2 : Reg) (offset : BitVec 13) (v1 v2 : Word)
+@[spec_gen] theorem bne_spec_gen (rs1 rs2 : Reg) (offset : BitVec 13) (v1 v2 : Word)
     (addr : Addr) :
     cpsBranch addr
       ((addr ↦ᵢ .BNE rs1 rs2 offset) ** (rs1 ↦ᵣ v1) ** (rs2 ↦ᵣ v2))
@@ -1492,7 +1493,7 @@ theorem bne_spec_gen (rs1 rs2 : Reg) (offset : BitVec 13) (v1 v2 : Word)
 /-- BEQ spec for any code memory:
     Branch taken (v1 = v2) → PC = addr + sext(offset)
     Branch not taken (v1 ≠ v2) → PC = addr + 4 -/
-theorem beq_spec_gen (rs1 rs2 : Reg) (offset : BitVec 13) (v1 v2 : Word)
+@[spec_gen] theorem beq_spec_gen (rs1 rs2 : Reg) (offset : BitVec 13) (v1 v2 : Word)
     (addr : Addr) :
     cpsBranch addr
       ((addr ↦ᵢ .BEQ rs1 rs2 offset) ** (rs1 ↦ᵣ v1) ** (rs2 ↦ᵣ v2))
@@ -1502,7 +1503,7 @@ theorem beq_spec_gen (rs1 rs2 : Reg) (offset : BitVec 13) (v1 v2 : Word)
 
 /-- JAL x0 spec for any code memory: pure PC jump, no register/memory changes.
     Since x0 writes are dropped, JAL x0 just updates PC. -/
-theorem jal_x0_spec_gen (offset : BitVec 21) (addr : Addr) :
+@[spec_gen] theorem jal_x0_spec_gen (offset : BitVec 21) (addr : Addr) :
     cpsTriple addr (addr + signExtend21 offset)
       (addr ↦ᵢ .JAL .x0 offset)
       (addr ↦ᵢ .JAL .x0 offset) :=
