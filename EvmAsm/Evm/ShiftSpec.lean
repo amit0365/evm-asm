@@ -13,6 +13,7 @@
 import EvmAsm.Evm.Shift
 import EvmAsm.SyscallSpecs
 import EvmAsm.Tactics.XSimp
+import EvmAsm.Tactics.RunBlock
 
 open EvmAsm.Tactics
 
@@ -62,101 +63,7 @@ theorem shr_merge_limb_spec (src_off next_off dst_off : BitVec 12)
        (.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ result) ** (.x6 ↦ᵣ bit_shift) **
        (.x7 ↦ᵣ anti_shift) ** (.x10 ↦ᵣ shifted_next) ** (.x11 ↦ᵣ mask) **
        (mem_src ↦ₘ src) ** (mem_next ↦ₘ next) ** (mem_dst ↦ₘ result)) := by
-  -- Address normalization
-  have ha1 : (base + 4 : Addr) + 4 = base + 8 := by bv_omega
-  have ha2 : (base + 8 : Addr) + 4 = base + 12 := by bv_omega
-  have ha3 : (base + 12 : Addr) + 4 = base + 16 := by bv_omega
-  have ha4 : (base + 16 : Addr) + 4 = base + 20 := by bv_omega
-  have ha5 : (base + 20 : Addr) + 4 = base + 24 := by bv_omega
-  have ha6 : (base + 24 : Addr) + 4 = base + 28 := by bv_omega
-  -- Step 1: LW x5 x12 src_off at base
-  have s1 := cpsTriple_frame_left _ _ _ _
-    (((base + 4) ↦ᵢ .SRL .x5 .x5 .x6) ** ((base + 8) ↦ᵢ .LW .x10 .x12 next_off) **
-     ((base + 12) ↦ᵢ .SLL .x10 .x10 .x7) ** ((base + 16) ↦ᵢ .AND .x10 .x10 .x11) **
-     ((base + 20) ↦ᵢ .OR .x5 .x5 .x10) ** ((base + 24) ↦ᵢ .SW .x12 .x5 dst_off) **
-     (.x6 ↦ᵣ bit_shift) ** (.x7 ↦ᵣ anti_shift) ** (.x10 ↦ᵣ v10) ** (.x11 ↦ᵣ mask) **
-     ((sp + signExtend12 next_off) ↦ₘ next) ** ((sp + signExtend12 dst_off) ↦ₘ dst_old))
-    (by pcFree) (lw_spec_gen .x5 .x12 sp v5 src src_off base (by nofun) hvalid_src)
-  -- Step 2: SRL x5 x5 x6 at base+4
-  have s2_raw := srl_spec_gen_rd_eq_rs1 .x5 .x6 src bit_shift (base + 4) (by nofun) (by nofun)
-  rw [ha1] at s2_raw
-  have s2 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .LW .x5 .x12 src_off) ** ((base + 8) ↦ᵢ .LW .x10 .x12 next_off) **
-     ((base + 12) ↦ᵢ .SLL .x10 .x10 .x7) ** ((base + 16) ↦ᵢ .AND .x10 .x10 .x11) **
-     ((base + 20) ↦ᵢ .OR .x5 .x5 .x10) ** ((base + 24) ↦ᵢ .SW .x12 .x5 dst_off) **
-     (.x12 ↦ᵣ sp) ** (.x7 ↦ᵣ anti_shift) ** (.x10 ↦ᵣ v10) ** (.x11 ↦ᵣ mask) **
-     ((sp + signExtend12 src_off) ↦ₘ src) ** ((sp + signExtend12 next_off) ↦ₘ next) ** ((sp + signExtend12 dst_off) ↦ₘ dst_old))
-    (by pcFree) s2_raw
-  have s12 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) s1 s2; clear s1 s2 s2_raw
-  -- Step 3: LW x10 x12 next_off at base+8
-  have s3_raw := lw_spec_gen .x10 .x12 sp v10 next next_off (base + 8) (by nofun) hvalid_next
-  rw [ha2] at s3_raw
-  have s3 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .LW .x5 .x12 src_off) ** ((base + 4) ↦ᵢ .SRL .x5 .x5 .x6) **
-     ((base + 12) ↦ᵢ .SLL .x10 .x10 .x7) ** ((base + 16) ↦ᵢ .AND .x10 .x10 .x11) **
-     ((base + 20) ↦ᵢ .OR .x5 .x5 .x10) ** ((base + 24) ↦ᵢ .SW .x12 .x5 dst_off) **
-     (.x5 ↦ᵣ (src >>> (bit_shift.toNat % 32))) ** (.x6 ↦ᵣ bit_shift) **
-     (.x7 ↦ᵣ anti_shift) ** (.x11 ↦ᵣ mask) **
-     ((sp + signExtend12 src_off) ↦ₘ src) ** ((sp + signExtend12 dst_off) ↦ₘ dst_old))
-    (by pcFree) s3_raw
-  have s123 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) s12 s3; clear s12 s3 s3_raw
-  -- Step 4: SLL x10 x10 x7 at base+12
-  have s4_raw := sll_spec_gen_rd_eq_rs1 .x10 .x7 next anti_shift (base + 12) (by nofun) (by nofun)
-  rw [ha3] at s4_raw
-  have s4 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .LW .x5 .x12 src_off) ** ((base + 4) ↦ᵢ .SRL .x5 .x5 .x6) **
-     ((base + 8) ↦ᵢ .LW .x10 .x12 next_off) ** ((base + 16) ↦ᵢ .AND .x10 .x10 .x11) **
-     ((base + 20) ↦ᵢ .OR .x5 .x5 .x10) ** ((base + 24) ↦ᵢ .SW .x12 .x5 dst_off) **
-     (.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ (src >>> (bit_shift.toNat % 32))) ** (.x6 ↦ᵣ bit_shift) **
-     (.x11 ↦ᵣ mask) ** ((sp + signExtend12 src_off) ↦ₘ src) ** ((sp + signExtend12 next_off) ↦ₘ next) ** ((sp + signExtend12 dst_off) ↦ₘ dst_old))
-    (by pcFree) s4_raw
-  have s1234 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) s123 s4; clear s123 s4 s4_raw
-  -- Step 5: AND x10 x10 x11 at base+16
-  have s5_raw := and_spec_gen_rd_eq_rs1 .x10 .x11 (next <<< (anti_shift.toNat % 32)) mask (base + 16) (by nofun) (by nofun)
-  rw [ha4] at s5_raw
-  have s5 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .LW .x5 .x12 src_off) ** ((base + 4) ↦ᵢ .SRL .x5 .x5 .x6) **
-     ((base + 8) ↦ᵢ .LW .x10 .x12 next_off) ** ((base + 12) ↦ᵢ .SLL .x10 .x10 .x7) **
-     ((base + 20) ↦ᵢ .OR .x5 .x5 .x10) ** ((base + 24) ↦ᵢ .SW .x12 .x5 dst_off) **
-     (.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ (src >>> (bit_shift.toNat % 32))) ** (.x6 ↦ᵣ bit_shift) **
-     (.x7 ↦ᵣ anti_shift) ** ((sp + signExtend12 src_off) ↦ₘ src) ** ((sp + signExtend12 next_off) ↦ₘ next) ** ((sp + signExtend12 dst_off) ↦ₘ dst_old))
-    (by pcFree) s5_raw
-  have s12345 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) s1234 s5; clear s1234 s5 s5_raw
-  -- Step 6: OR x5 x5 x10 at base+20
-  have s6_raw := or_spec_gen_rd_eq_rs1 .x5 .x10
-    (src >>> (bit_shift.toNat % 32)) ((next <<< (anti_shift.toNat % 32)) &&& mask)
-    (base + 20) (by nofun) (by nofun)
-  rw [ha5] at s6_raw
-  have s6 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .LW .x5 .x12 src_off) ** ((base + 4) ↦ᵢ .SRL .x5 .x5 .x6) **
-     ((base + 8) ↦ᵢ .LW .x10 .x12 next_off) ** ((base + 12) ↦ᵢ .SLL .x10 .x10 .x7) **
-     ((base + 16) ↦ᵢ .AND .x10 .x10 .x11) ** ((base + 24) ↦ᵢ .SW .x12 .x5 dst_off) **
-     (.x12 ↦ᵣ sp) ** (.x6 ↦ᵣ bit_shift) ** (.x7 ↦ᵣ anti_shift) ** (.x11 ↦ᵣ mask) **
-     ((sp + signExtend12 src_off) ↦ₘ src) ** ((sp + signExtend12 next_off) ↦ₘ next) ** ((sp + signExtend12 dst_off) ↦ₘ dst_old))
-    (by pcFree) s6_raw
-  have s123456 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) s12345 s6; clear s12345 s6 s6_raw
-  -- Step 7: SW x12 x5 dst_off at base+24
-  have s7_raw := sw_spec_gen .x12 .x5 sp
-    ((src >>> (bit_shift.toNat % 32)) ||| ((next <<< (anti_shift.toNat % 32)) &&& mask))
-    dst_old dst_off (base + 24) hvalid_dst
-  rw [ha6] at s7_raw
-  have s7 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .LW .x5 .x12 src_off) ** ((base + 4) ↦ᵢ .SRL .x5 .x5 .x6) **
-     ((base + 8) ↦ᵢ .LW .x10 .x12 next_off) ** ((base + 12) ↦ᵢ .SLL .x10 .x10 .x7) **
-     ((base + 16) ↦ᵢ .AND .x10 .x10 .x11) ** ((base + 20) ↦ᵢ .OR .x5 .x5 .x10) **
-     (.x6 ↦ᵣ bit_shift) ** (.x7 ↦ᵣ anti_shift) **
-     (.x10 ↦ᵣ ((next <<< (anti_shift.toNat % 32)) &&& mask)) ** (.x11 ↦ᵣ mask) **
-     ((sp + signExtend12 src_off) ↦ₘ src) ** ((sp + signExtend12 next_off) ↦ₘ next))
-    (by pcFree) s7_raw
-  exact cpsTriple_consequence _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) (fun h hq => by xperm_hyp hq)
-    (cpsTriple_seq_with_perm _ _ _ _ _ _ _
-      (fun h hp => by xperm_hyp hp) s123456 s7)
+  runBlock
 
 -- ============================================================================
 -- Per-limb Specs: SHR Last Limb (3 instructions)
@@ -186,34 +93,7 @@ theorem shr_last_limb_spec (dst_off : BitVec 12)
        ((base + 8) ↦ᵢ .SW .x12 .x5 dst_off) **
        (.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ result) ** (.x6 ↦ᵣ bit_shift) **
        (mem_src ↦ₘ src) ** (mem_dst ↦ₘ result)) := by
-  have ha1 : (base + 4 : Addr) + 4 = base + 8 := by bv_omega
-  have ha2 : (base + 8 : Addr) + 4 = base + 12 := by bv_omega
-  -- Step 1: LW x5 x12 28 at base
-  have s1 := cpsTriple_frame_left _ _ _ _
-    (((base + 4) ↦ᵢ .SRL .x5 .x5 .x6) ** ((base + 8) ↦ᵢ .SW .x12 .x5 dst_off) **
-     (.x6 ↦ᵣ bit_shift) ** ((sp + signExtend12 dst_off) ↦ₘ dst_old))
-    (by pcFree) (lw_spec_gen .x5 .x12 sp v5 src 28 base (by nofun) hvalid_src)
-  -- Step 2: SRL x5 x5 x6 at base+4
-  have s2_raw := srl_spec_gen_rd_eq_rs1 .x5 .x6 src bit_shift (base + 4) (by nofun) (by nofun)
-  rw [ha1] at s2_raw
-  have s2 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .LW .x5 .x12 28) ** ((base + 8) ↦ᵢ .SW .x12 .x5 dst_off) **
-     (.x12 ↦ᵣ sp) ** ((sp + signExtend12 (28 : BitVec 12)) ↦ₘ src) ** ((sp + signExtend12 dst_off) ↦ₘ dst_old))
-    (by pcFree) s2_raw
-  have s12 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) s1 s2
-  clear s1 s2 s2_raw
-  -- Step 3: SW x12 x5 dst_off at base+8
-  have s3_raw := sw_spec_gen .x12 .x5 sp (src >>> (bit_shift.toNat % 32)) dst_old dst_off (base + 8) hvalid_dst
-  rw [ha2] at s3_raw
-  have s3 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .LW .x5 .x12 28) ** ((base + 4) ↦ᵢ .SRL .x5 .x5 .x6) **
-     (.x6 ↦ᵣ bit_shift) ** ((sp + signExtend12 (28 : BitVec 12)) ↦ₘ src))
-    (by pcFree) s3_raw
-  exact cpsTriple_consequence _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) (fun h hq => by xperm_hyp hq)
-    (cpsTriple_seq_with_perm _ _ _ _ _ _ _
-      (fun h hp => by xperm_hyp hp) s12 s3)
+  runBlock
 
 -- ============================================================================
 -- Per-limb Specs: SHR Merge Limb In-place (7 instructions, src_off = dst_off)
@@ -246,101 +126,7 @@ theorem shr_merge_limb_inplace_spec (off next_off : BitVec 12)
        (.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ result) ** (.x6 ↦ᵣ bit_shift) **
        (.x7 ↦ᵣ anti_shift) ** (.x10 ↦ᵣ shifted_next) ** (.x11 ↦ᵣ mask) **
        (mem_loc ↦ₘ result) ** (mem_next ↦ₘ next)) := by
-  -- Address normalization
-  have ha1 : (base + 4 : Addr) + 4 = base + 8 := by bv_omega
-  have ha2 : (base + 8 : Addr) + 4 = base + 12 := by bv_omega
-  have ha3 : (base + 12 : Addr) + 4 = base + 16 := by bv_omega
-  have ha4 : (base + 16 : Addr) + 4 = base + 20 := by bv_omega
-  have ha5 : (base + 20 : Addr) + 4 = base + 24 := by bv_omega
-  have ha6 : (base + 24 : Addr) + 4 = base + 28 := by bv_omega
-  -- Step 1: LW x5 x12 off at base
-  have s1 := cpsTriple_frame_left _ _ _ _
-    (((base + 4) ↦ᵢ .SRL .x5 .x5 .x6) ** ((base + 8) ↦ᵢ .LW .x10 .x12 next_off) **
-     ((base + 12) ↦ᵢ .SLL .x10 .x10 .x7) ** ((base + 16) ↦ᵢ .AND .x10 .x10 .x11) **
-     ((base + 20) ↦ᵢ .OR .x5 .x5 .x10) ** ((base + 24) ↦ᵢ .SW .x12 .x5 off) **
-     (.x6 ↦ᵣ bit_shift) ** (.x7 ↦ᵣ anti_shift) ** (.x10 ↦ᵣ v10) ** (.x11 ↦ᵣ mask) **
-     ((sp + signExtend12 next_off) ↦ₘ next))
-    (by pcFree) (lw_spec_gen .x5 .x12 sp v5 src off base (by nofun) hvalid_loc)
-  -- Step 2: SRL x5 x5 x6 at base+4
-  have s2_raw := srl_spec_gen_rd_eq_rs1 .x5 .x6 src bit_shift (base + 4) (by nofun) (by nofun)
-  rw [ha1] at s2_raw
-  have s2 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .LW .x5 .x12 off) ** ((base + 8) ↦ᵢ .LW .x10 .x12 next_off) **
-     ((base + 12) ↦ᵢ .SLL .x10 .x10 .x7) ** ((base + 16) ↦ᵢ .AND .x10 .x10 .x11) **
-     ((base + 20) ↦ᵢ .OR .x5 .x5 .x10) ** ((base + 24) ↦ᵢ .SW .x12 .x5 off) **
-     (.x12 ↦ᵣ sp) ** (.x7 ↦ᵣ anti_shift) ** (.x10 ↦ᵣ v10) ** (.x11 ↦ᵣ mask) **
-     ((sp + signExtend12 off) ↦ₘ src) ** ((sp + signExtend12 next_off) ↦ₘ next))
-    (by pcFree) s2_raw
-  have s12 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) s1 s2; clear s1 s2 s2_raw
-  -- Step 3: LW x10 x12 next_off at base+8
-  have s3_raw := lw_spec_gen .x10 .x12 sp v10 next next_off (base + 8) (by nofun) hvalid_next
-  rw [ha2] at s3_raw
-  have s3 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .LW .x5 .x12 off) ** ((base + 4) ↦ᵢ .SRL .x5 .x5 .x6) **
-     ((base + 12) ↦ᵢ .SLL .x10 .x10 .x7) ** ((base + 16) ↦ᵢ .AND .x10 .x10 .x11) **
-     ((base + 20) ↦ᵢ .OR .x5 .x5 .x10) ** ((base + 24) ↦ᵢ .SW .x12 .x5 off) **
-     (.x5 ↦ᵣ (src >>> (bit_shift.toNat % 32))) ** (.x6 ↦ᵣ bit_shift) **
-     (.x7 ↦ᵣ anti_shift) ** (.x11 ↦ᵣ mask) **
-     ((sp + signExtend12 off) ↦ₘ src))
-    (by pcFree) s3_raw
-  have s123 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) s12 s3; clear s12 s3 s3_raw
-  -- Step 4: SLL x10 x10 x7 at base+12
-  have s4_raw := sll_spec_gen_rd_eq_rs1 .x10 .x7 next anti_shift (base + 12) (by nofun) (by nofun)
-  rw [ha3] at s4_raw
-  have s4 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .LW .x5 .x12 off) ** ((base + 4) ↦ᵢ .SRL .x5 .x5 .x6) **
-     ((base + 8) ↦ᵢ .LW .x10 .x12 next_off) ** ((base + 16) ↦ᵢ .AND .x10 .x10 .x11) **
-     ((base + 20) ↦ᵢ .OR .x5 .x5 .x10) ** ((base + 24) ↦ᵢ .SW .x12 .x5 off) **
-     (.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ (src >>> (bit_shift.toNat % 32))) ** (.x6 ↦ᵣ bit_shift) **
-     (.x11 ↦ᵣ mask) ** ((sp + signExtend12 off) ↦ₘ src) ** ((sp + signExtend12 next_off) ↦ₘ next))
-    (by pcFree) s4_raw
-  have s1234 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) s123 s4; clear s123 s4 s4_raw
-  -- Step 5: AND x10 x10 x11 at base+16
-  have s5_raw := and_spec_gen_rd_eq_rs1 .x10 .x11 (next <<< (anti_shift.toNat % 32)) mask (base + 16) (by nofun) (by nofun)
-  rw [ha4] at s5_raw
-  have s5 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .LW .x5 .x12 off) ** ((base + 4) ↦ᵢ .SRL .x5 .x5 .x6) **
-     ((base + 8) ↦ᵢ .LW .x10 .x12 next_off) ** ((base + 12) ↦ᵢ .SLL .x10 .x10 .x7) **
-     ((base + 20) ↦ᵢ .OR .x5 .x5 .x10) ** ((base + 24) ↦ᵢ .SW .x12 .x5 off) **
-     (.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ (src >>> (bit_shift.toNat % 32))) ** (.x6 ↦ᵣ bit_shift) **
-     (.x7 ↦ᵣ anti_shift) ** ((sp + signExtend12 off) ↦ₘ src) ** ((sp + signExtend12 next_off) ↦ₘ next))
-    (by pcFree) s5_raw
-  have s12345 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) s1234 s5; clear s1234 s5 s5_raw
-  -- Step 6: OR x5 x5 x10 at base+20
-  have s6_raw := or_spec_gen_rd_eq_rs1 .x5 .x10
-    (src >>> (bit_shift.toNat % 32)) ((next <<< (anti_shift.toNat % 32)) &&& mask)
-    (base + 20) (by nofun) (by nofun)
-  rw [ha5] at s6_raw
-  have s6 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .LW .x5 .x12 off) ** ((base + 4) ↦ᵢ .SRL .x5 .x5 .x6) **
-     ((base + 8) ↦ᵢ .LW .x10 .x12 next_off) ** ((base + 12) ↦ᵢ .SLL .x10 .x10 .x7) **
-     ((base + 16) ↦ᵢ .AND .x10 .x10 .x11) ** ((base + 24) ↦ᵢ .SW .x12 .x5 off) **
-     (.x12 ↦ᵣ sp) ** (.x6 ↦ᵣ bit_shift) ** (.x7 ↦ᵣ anti_shift) ** (.x11 ↦ᵣ mask) **
-     ((sp + signExtend12 off) ↦ₘ src) ** ((sp + signExtend12 next_off) ↦ₘ next))
-    (by pcFree) s6_raw
-  have s123456 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) s12345 s6; clear s12345 s6 s6_raw
-  -- Step 7: SW x12 x5 off at base+24 (overwrites mem_loc)
-  have s7_raw := sw_spec_gen .x12 .x5 sp
-    ((src >>> (bit_shift.toNat % 32)) ||| ((next <<< (anti_shift.toNat % 32)) &&& mask))
-    src off (base + 24) hvalid_loc
-  rw [ha6] at s7_raw
-  have s7 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .LW .x5 .x12 off) ** ((base + 4) ↦ᵢ .SRL .x5 .x5 .x6) **
-     ((base + 8) ↦ᵢ .LW .x10 .x12 next_off) ** ((base + 12) ↦ᵢ .SLL .x10 .x10 .x7) **
-     ((base + 16) ↦ᵢ .AND .x10 .x10 .x11) ** ((base + 20) ↦ᵢ .OR .x5 .x5 .x10) **
-     (.x6 ↦ᵣ bit_shift) ** (.x7 ↦ᵣ anti_shift) **
-     (.x10 ↦ᵣ ((next <<< (anti_shift.toNat % 32)) &&& mask)) ** (.x11 ↦ᵣ mask) **
-     ((sp + signExtend12 next_off) ↦ₘ next))
-    (by pcFree) s7_raw
-  exact cpsTriple_consequence _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) (fun h hq => by xperm_hyp hq)
-    (cpsTriple_seq_with_perm _ _ _ _ _ _ _
-      (fun h hp => by xperm_hyp hp) s123456 s7)
+  runBlock
 
 -- ============================================================================
 -- Per-limb Specs: SHR Last Limb In-place (3 instructions, dst_off = 28)
@@ -361,32 +147,7 @@ theorem shr_last_limb_inplace_spec
       ((base ↦ᵢ .LW .x5 .x12 28) ** ((base + 4) ↦ᵢ .SRL .x5 .x5 .x6) **
        ((base + 8) ↦ᵢ .SW .x12 .x5 28) **
        (.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ result) ** (.x6 ↦ᵣ bit_shift) ** (mem ↦ₘ result)) := by
-  have ha1 : (base + 4 : Addr) + 4 = base + 8 := by bv_omega
-  have ha2 : (base + 8 : Addr) + 4 = base + 12 := by bv_omega
-  -- Step 1: LW x5 x12 28 at base
-  have s1 := cpsTriple_frame_left _ _ _ _
-    (((base + 4) ↦ᵢ .SRL .x5 .x5 .x6) ** ((base + 8) ↦ᵢ .SW .x12 .x5 28) ** (.x6 ↦ᵣ bit_shift))
-    (by pcFree) (lw_spec_gen .x5 .x12 sp v5 src 28 base (by nofun) hvalid)
-  -- Step 2: SRL x5 x5 x6 at base+4 (rd=rs1=x5, rs2=x6)
-  have s2_raw := srl_spec_gen_rd_eq_rs1 .x5 .x6 src bit_shift (base + 4) (by nofun) (by nofun)
-  rw [ha1] at s2_raw
-  have s2 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .LW .x5 .x12 28) ** ((base + 8) ↦ᵢ .SW .x12 .x5 28) **
-     (.x12 ↦ᵣ sp) ** ((sp + signExtend12 (28 : BitVec 12)) ↦ₘ src))
-    (by pcFree) s2_raw
-  have s12 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) s1 s2
-  clear s1 s2 s2_raw
-  -- Step 3: SW x12 x5 28 at base+8
-  have s3_raw := sw_spec_gen .x12 .x5 sp (src >>> (bit_shift.toNat % 32)) src 28 (base + 8) hvalid
-  rw [ha2] at s3_raw
-  have s3 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .LW .x5 .x12 28) ** ((base + 4) ↦ᵢ .SRL .x5 .x5 .x6) ** (.x6 ↦ᵣ bit_shift))
-    (by pcFree) s3_raw
-  exact cpsTriple_consequence _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) (fun h hq => by xperm_hyp hq)
-    (cpsTriple_seq_with_perm _ _ _ _ _ _ _
-      (fun h hp => by xperm_hyp hp) s12 s3)
+  runBlock
 
 -- ============================================================================
 -- Zero-fill helper: SW x12, x0, offset (1 instruction)
@@ -621,100 +382,7 @@ theorem shr_phase_b_spec (shift0 sp r6 r7 r11 : Word) (base : Addr) :
        ((base + 24) ↦ᵢ .ADDI .x12 .x12 32) **
        (.x5 ↦ᵣ limb_shift) ** (.x6 ↦ᵣ bit_shift) ** (.x0 ↦ᵣ (0 : Word)) **
        (.x11 ↦ᵣ mask) ** (.x7 ↦ᵣ anti_shift) ** (.x12 ↦ᵣ (sp + signExtend12 32))) := by
-  -- Address normalization
-  have ha1 : (base + 4 : Addr) + 4 = base + 8 := by bv_omega
-  have ha2 : (base + 8 : Addr) + 4 = base + 12 := by bv_omega
-  have ha3 : (base + 12 : Addr) + 4 = base + 16 := by bv_omega
-  have ha4 : (base + 16 : Addr) + 4 = base + 20 := by bv_omega
-  have ha5 : (base + 20 : Addr) + 4 = base + 24 := by bv_omega
-  have ha6 : (base + 24 : Addr) + 4 = base + 28 := by bv_omega
-  -- Step 1: ANDI x6, x5, 31 at base (rd=x6, rs1=x5, rd≠rs1)
-  have s1 := cpsTriple_frame_left _ _ _ _
-    (((base + 4) ↦ᵢ .SRLI .x5 .x5 5) ** ((base + 8) ↦ᵢ .SLTU .x11 .x0 .x6) **
-     ((base + 12) ↦ᵢ .SUB .x11 .x0 .x11) ** ((base + 16) ↦ᵢ .LI .x7 32) **
-     ((base + 20) ↦ᵢ .SUB .x7 .x7 .x6) ** ((base + 24) ↦ᵢ .ADDI .x12 .x12 32) **
-     (.x0 ↦ᵣ (0 : Word)) ** (.x11 ↦ᵣ r11) ** (.x7 ↦ᵣ r7) ** (.x12 ↦ᵣ sp))
-    (by pcFree) (andi_spec_gen .x6 .x5 r6 shift0 31 base (by nofun) (by nofun))
-  -- Step 2: SRLI x5, x5, 5 at base+4 (rd=rs1=x5)
-  have s2_raw := srli_spec_gen_same .x5 shift0 5 (base + 4) (by nofun)
-  rw [ha1] at s2_raw
-  have s2 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .ANDI .x6 .x5 31) ** ((base + 8) ↦ᵢ .SLTU .x11 .x0 .x6) **
-     ((base + 12) ↦ᵢ .SUB .x11 .x0 .x11) ** ((base + 16) ↦ᵢ .LI .x7 32) **
-     ((base + 20) ↦ᵢ .SUB .x7 .x7 .x6) ** ((base + 24) ↦ᵢ .ADDI .x12 .x12 32) **
-     (.x6 ↦ᵣ (shift0 &&& signExtend12 31)) ** (.x0 ↦ᵣ (0 : Word)) **
-     (.x11 ↦ᵣ r11) ** (.x7 ↦ᵣ r7) ** (.x12 ↦ᵣ sp))
-    (by pcFree) s2_raw
-  have s12 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) s1 s2; clear s1 s2 s2_raw
-  -- Step 3: SLTU x11, x0, x6 at base+8 (rd=x11, rs1=x0, rs2=x6, 3-reg spec)
-  have s3_raw := sltu_spec_gen .x11 .x0 .x6 r11 0 (shift0 &&& signExtend12 31) (base + 8) (by nofun)
-  rw [ha2] at s3_raw
-  have s3 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .ANDI .x6 .x5 31) ** ((base + 4) ↦ᵢ .SRLI .x5 .x5 5) **
-     ((base + 12) ↦ᵢ .SUB .x11 .x0 .x11) ** ((base + 16) ↦ᵢ .LI .x7 32) **
-     ((base + 20) ↦ᵢ .SUB .x7 .x7 .x6) ** ((base + 24) ↦ᵢ .ADDI .x12 .x12 32) **
-     (.x5 ↦ᵣ (shift0 >>> (5 : BitVec 5).toNat)) ** (.x7 ↦ᵣ r7) ** (.x12 ↦ᵣ sp))
-    (by pcFree) s3_raw
-  have s123 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) s12 s3; clear s12 s3 s3_raw
-  -- Step 4: SUB x11, x0, x11 at base+12 (rd=x11, rs1=x0, rs2=x11 -> rd_eq_rs2)
-  have s4_raw := sub_spec_gen_rd_eq_rs2 .x11 .x0
-    (0 : Word) (if BitVec.ult (0 : Word) (shift0 &&& signExtend12 31) then (1 : Word) else 0)
-    (base + 12) (by nofun) (by nofun)
-  rw [ha3] at s4_raw
-  have s4 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .ANDI .x6 .x5 31) ** ((base + 4) ↦ᵢ .SRLI .x5 .x5 5) **
-     ((base + 8) ↦ᵢ .SLTU .x11 .x0 .x6) ** ((base + 16) ↦ᵢ .LI .x7 32) **
-     ((base + 20) ↦ᵢ .SUB .x7 .x7 .x6) ** ((base + 24) ↦ᵢ .ADDI .x12 .x12 32) **
-     (.x5 ↦ᵣ (shift0 >>> (5 : BitVec 5).toNat)) ** (.x6 ↦ᵣ (shift0 &&& signExtend12 31)) **
-     (.x7 ↦ᵣ r7) ** (.x12 ↦ᵣ sp))
-    (by pcFree) s4_raw
-  have s1234 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) s123 s4; clear s123 s4 s4_raw
-  -- Step 5: LI x7, 32 at base+16 (rd=x7)
-  have s5_raw := li_spec_gen .x7 r7 32 (base + 16) (by nofun)
-  rw [ha4] at s5_raw
-  have s5 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .ANDI .x6 .x5 31) ** ((base + 4) ↦ᵢ .SRLI .x5 .x5 5) **
-     ((base + 8) ↦ᵢ .SLTU .x11 .x0 .x6) ** ((base + 12) ↦ᵢ .SUB .x11 .x0 .x11) **
-     ((base + 20) ↦ᵢ .SUB .x7 .x7 .x6) ** ((base + 24) ↦ᵢ .ADDI .x12 .x12 32) **
-     (.x5 ↦ᵣ (shift0 >>> (5 : BitVec 5).toNat)) ** (.x6 ↦ᵣ (shift0 &&& signExtend12 31)) **
-     (.x0 ↦ᵣ (0 : Word)) **
-     (.x11 ↦ᵣ ((0 : Word) - (if BitVec.ult (0 : Word) (shift0 &&& signExtend12 31) then (1 : Word) else 0))) **
-     (.x12 ↦ᵣ sp))
-    (by pcFree) s5_raw
-  have s12345 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) s1234 s5; clear s1234 s5 s5_raw
-  -- Step 6: SUB x7, x7, x6 at base+20 (rd=x7, rs1=x7, rs2=x6 -> rd_eq_rs1)
-  have s6_raw := sub_spec_gen_rd_eq_rs1 .x7 .x6 32 (shift0 &&& signExtend12 31) (base + 20) (by nofun) (by nofun)
-  rw [ha5] at s6_raw
-  have s6 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .ANDI .x6 .x5 31) ** ((base + 4) ↦ᵢ .SRLI .x5 .x5 5) **
-     ((base + 8) ↦ᵢ .SLTU .x11 .x0 .x6) ** ((base + 12) ↦ᵢ .SUB .x11 .x0 .x11) **
-     ((base + 16) ↦ᵢ .LI .x7 32) ** ((base + 24) ↦ᵢ .ADDI .x12 .x12 32) **
-     (.x5 ↦ᵣ (shift0 >>> (5 : BitVec 5).toNat)) ** (.x0 ↦ᵣ (0 : Word)) **
-     (.x11 ↦ᵣ ((0 : Word) - (if BitVec.ult (0 : Word) (shift0 &&& signExtend12 31) then (1 : Word) else 0))) **
-     (.x12 ↦ᵣ sp))
-    (by pcFree) s6_raw
-  have s123456 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) s12345 s6; clear s12345 s6 s6_raw
-  -- Step 7: ADDI x12, x12, 32 at base+24 (rd=rs1=x12)
-  have s7_raw := addi_spec_gen_same .x12 sp 32 (base + 24) (by nofun)
-  rw [ha6] at s7_raw
-  have s7 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .ANDI .x6 .x5 31) ** ((base + 4) ↦ᵢ .SRLI .x5 .x5 5) **
-     ((base + 8) ↦ᵢ .SLTU .x11 .x0 .x6) ** ((base + 12) ↦ᵢ .SUB .x11 .x0 .x11) **
-     ((base + 16) ↦ᵢ .LI .x7 32) ** ((base + 20) ↦ᵢ .SUB .x7 .x7 .x6) **
-     (.x5 ↦ᵣ (shift0 >>> (5 : BitVec 5).toNat)) ** (.x6 ↦ᵣ (shift0 &&& signExtend12 31)) **
-     (.x0 ↦ᵣ (0 : Word)) **
-     (.x11 ↦ᵣ ((0 : Word) - (if BitVec.ult (0 : Word) (shift0 &&& signExtend12 31) then (1 : Word) else 0))) **
-     (.x7 ↦ᵣ (32 : Word) - (shift0 &&& signExtend12 31)))
-    (by pcFree) s7_raw
-  exact cpsTriple_consequence _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) (fun h hq => by xperm_hyp hq)
-    (cpsTriple_seq_with_perm _ _ _ _ _ _ _
-      (fun h hp => by xperm_hyp hp) s123456 s7)
+  runBlock
 
 -- ============================================================================
 -- Cascade step helper: ADDI x10,x0,k; BEQ x5,x10,off (2 instructions)
@@ -4523,21 +4191,7 @@ theorem shr_lw_or_acc_spec (sp acc prev_x10 val : Word) (off : BitVec 12)
        (.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ acc) ** (.x10 ↦ᵣ prev_x10) ** ((sp + signExtend12 off) ↦ₘ val))
       ((base ↦ᵢ .LW .x10 .x12 off) ** ((base + 4) ↦ᵢ .OR .x5 .x5 .x10) **
        (.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ (acc ||| val)) ** (.x10 ↦ᵣ val) ** ((sp + signExtend12 off) ↦ₘ val)) := by
-  have ha1 : (base + 4 : Addr) + 4 = base + 8 := by bv_omega
-  -- Step 1: LW x10 x12 off at base
-  have s1 := cpsTriple_frame_left _ _ _ _
-    (((base + 4) ↦ᵢ .OR .x5 .x5 .x10) ** (.x5 ↦ᵣ acc))
-    (by pcFree) (lw_spec_gen .x10 .x12 sp prev_x10 val off base (by nofun) hvalid)
-  -- Step 2: OR x5 x5 x10 at base+4 (rd=rs1=x5, rs2=x10)
-  have s2_raw := or_spec_gen_rd_eq_rs1 .x5 .x10 acc val (base + 4) (by nofun) (by nofun)
-  rw [ha1] at s2_raw
-  have s2 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .LW .x10 .x12 off) ** (.x12 ↦ᵣ sp) ** ((sp + signExtend12 off) ↦ₘ val))
-    (by pcFree) s2_raw
-  exact cpsTriple_consequence _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) (fun h hq => by xperm_hyp hq)
-    (cpsTriple_seq_with_perm _ _ _ _ _ _ _
-      (fun h hp => by xperm_hyp hp) s1 s2)
+  runBlock
 private theorem regIs_to_regOwn (r : Reg) (v : Word) : ∀ h, (r ↦ᵣ v) h → (regOwn r) h :=
   fun _ hp => ⟨v, hp⟩
 

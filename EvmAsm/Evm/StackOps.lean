@@ -11,6 +11,7 @@
 import EvmAsm.Evm.Stack
 import EvmAsm.SyscallSpecs
 import EvmAsm.Tactics.XSimp
+import EvmAsm.Tactics.RunBlock
 
 open EvmAsm.Tactics
 
@@ -319,25 +320,7 @@ theorem dup1_pair_spec (sp : Addr)
       ((base ↦ᵢ .LW .x7 .x12 off_src) ** ((base + 4) ↦ᵢ .SW .x12 .x7 off_dst) **
        (.x12 ↦ᵣ sp) ** (.x7 ↦ᵣ src_val) **
        ((sp + signExtend12 off_src) ↦ₘ src_val) ** ((sp + signExtend12 off_dst) ↦ₘ src_val)) := by
-  -- Step 1: LW x7 x12 off_src at base, framed with SW instrAt + dst mem
-  have h1 := cpsTriple_frame_left _ _ _ _
-    (((base + 4) ↦ᵢ .SW .x12 .x7 off_dst) ** ((sp + signExtend12 off_dst) ↦ₘ dst_old))
-    (by pcFree)
-    (lw_spec_gen .x7 .x12 sp v7 src_val off_src base (by nofun) hvalid_src)
-  -- Step 2: SW x12 x7 off_dst at base+4, framed with LW instrAt + src mem
-  -- Normalize (base+4)+4 to base+8
-  have h2_raw := sw_spec_gen .x12 .x7 sp src_val dst_old off_dst (base + 4) hvalid_dst
-  have h_addr : (base + 4 : Addr) + 4 = base + 8 := by bv_addr
-  rw [h_addr] at h2_raw
-  have h2 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .LW .x7 .x12 off_src) ** ((sp + signExtend12 off_src) ↦ₘ src_val))
-    (by pcFree) h2_raw
-  -- Compose with midpoint permutation, then permute pre/post to match spec
-  exact cpsTriple_consequence _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp)
-    (fun h hq => by xperm_hyp hq)
-    (cpsTriple_seq_with_perm _ _ _ _ _ _ _
-      (fun h hp => by xperm_hyp hp) h1 h2)
+  runBlock
 
 -- ============================================================================
 -- DUP1 spec (Phase 2.3)
@@ -751,49 +734,7 @@ theorem swap1_limb_spec (sp : Addr)
        ((base + 8) ↦ᵢ .SW .x12 .x6 off_a) ** ((base + 12) ↦ᵢ .SW .x12 .x7 off_b) **
        (.x12 ↦ᵣ sp) ** (.x7 ↦ᵣ a) ** (.x6 ↦ᵣ b) **
        (mem_a ↦ₘ b) ** (mem_b ↦ₘ a)) := by
-  have ha1 : (base + 4 : Addr) + 4 = base + 8 := by bv_omega
-  have ha2 : (base + 8 : Addr) + 4 = base + 12 := by bv_omega
-  have ha3 : (base + 12 : Addr) + 4 = base + 16 := by bv_omega
-  -- Step 1: LW x7 x12 off_a at base
-  have s1 := cpsTriple_frame_left _ _ _ _
-    (((base + 4) ↦ᵢ .LW .x6 .x12 off_b) ** ((base + 8) ↦ᵢ .SW .x12 .x6 off_a) **
-     ((base + 12) ↦ᵢ .SW .x12 .x7 off_b) ** (.x6 ↦ᵣ v6) **
-     ((sp + signExtend12 off_b) ↦ₘ b))
-    (by pcFree) (lw_spec_gen .x7 .x12 sp v7 a off_a base (by nofun) hvalid_a)
-  -- Step 2: LW x6 x12 off_b at base+4
-  have s2_raw := lw_spec_gen .x6 .x12 sp v6 b off_b (base + 4) (by nofun) hvalid_b
-  rw [ha1] at s2_raw
-  have s2 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .LW .x7 .x12 off_a) ** ((base + 8) ↦ᵢ .SW .x12 .x6 off_a) **
-     ((base + 12) ↦ᵢ .SW .x12 .x7 off_b) ** (.x7 ↦ᵣ a) **
-     ((sp + signExtend12 off_a) ↦ₘ a))
-    (by pcFree) s2_raw
-  have s12 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) s1 s2
-  clear s1 s2 s2_raw
-  -- Step 3: SW x12 x6 off_a at base+8 (stores b into mem_a)
-  have s3_raw := sw_spec_gen .x12 .x6 sp b a off_a (base + 8) hvalid_a
-  rw [ha2] at s3_raw
-  have s3 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .LW .x7 .x12 off_a) ** ((base + 4) ↦ᵢ .LW .x6 .x12 off_b) **
-     ((base + 12) ↦ᵢ .SW .x12 .x7 off_b) ** (.x7 ↦ᵣ a) **
-     ((sp + signExtend12 off_b) ↦ₘ b))
-    (by pcFree) s3_raw
-  have s123 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) s12 s3
-  clear s12 s3 s3_raw
-  -- Step 4: SW x12 x7 off_b at base+12 (stores a into mem_b)
-  have s4_raw := sw_spec_gen .x12 .x7 sp a b off_b (base + 12) hvalid_b
-  rw [ha3] at s4_raw
-  have s4 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .LW .x7 .x12 off_a) ** ((base + 4) ↦ᵢ .LW .x6 .x12 off_b) **
-     ((base + 8) ↦ᵢ .SW .x12 .x6 off_a) ** (.x6 ↦ᵣ b) **
-     ((sp + signExtend12 off_a) ↦ₘ b))
-    (by pcFree) s4_raw
-  exact cpsTriple_consequence _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) (fun h hq => by xperm_hyp hq)
-    (cpsTriple_seq_with_perm _ _ _ _ _ _ _
-      (fun h hp => by xperm_hyp hp) s123 s4)
+  runBlock
 
 -- ============================================================================
 -- SWAP1 spec (Phase 2.4)
