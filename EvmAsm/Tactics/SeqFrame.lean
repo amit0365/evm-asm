@@ -17,7 +17,7 @@ namespace EvmAsm.Tactics
 
 /-- Parse `cpsTriple entry exit_ P Q` returning the four arguments.
     Does NOT whnf (which would unfold the def). -/
-private def parseCpsTriple? (e : Expr) : MetaM (Option (Expr × Expr × Expr × Expr)) := do
+def parseCpsTriple? (e : Expr) : MetaM (Option (Expr × Expr × Expr × Expr)) := do
   let e ← instantiateMVars e
   if e.isAppOfArity ``EvmAsm.cpsTriple 4 then
     let args := e.getAppArgs
@@ -27,7 +27,7 @@ private def parseCpsTriple? (e : Expr) : MetaM (Option (Expr × Expr × Expr × 
 /-- Given Q1 (postcondition of h1) and P2 (precondition of h2),
     find atoms of P2 within Q1 and return the frame (residual Q1 atoms).
     Both sides are first reassociated to right-associated form for proper flattening. -/
-private def computeFrame (q1 p2 : Expr) : MetaM (List Expr) := do
+def computeFrame (q1 p2 : Expr) : MetaM (List Expr) := do
   -- Reassociate to right-associated form before flattening
   let (q1RA, _) ← reassocProof q1
   let (p2RA, _) ← reassocProof p2
@@ -52,7 +52,7 @@ private def computeFrame (q1 p2 : Expr) : MetaM (List Expr) := do
 
 /-- Build a lambda `fun (h : PartialState) (hp : P h) => proof h hp`
     where proof converts `P h` to `Q h` using a permutation equality `P = Q`. -/
-private def mkPermLambda (src tgt : Expr) : MetaM Expr := do
+def mkPermLambda (src tgt : Expr) : MetaM Expr := do
   let permProof ← buildPermProof src tgt
   let psType := mkConst ``EvmAsm.PartialState
   withLocalDeclD `h psType fun h => do
@@ -61,7 +61,7 @@ private def mkPermLambda (src tgt : Expr) : MetaM Expr := do
       mkLambdaFVars #[h, hp] proof
 
 /-- Build identity lambda: `fun (h : PartialState) (hp : P h) => hp` -/
-private def mkIdLambda (p : Expr) : MetaM Expr := do
+def mkIdLambda (p : Expr) : MetaM Expr := do
   let psType := mkConst ``EvmAsm.PartialState
   withLocalDeclD `h psType fun h =>
     withLocalDeclD `hp (mkApp p h) fun hp =>
@@ -69,7 +69,7 @@ private def mkIdLambda (p : Expr) : MetaM Expr := do
 
 /-- Core MetaM implementation of seqFrame.
     Returns the composed proof term. -/
-private def seqFrameCore (h1Expr h2Expr : Expr) : MetaM Expr := do
+def seqFrameCore (h1Expr h2Expr : Expr) : MetaM Expr := do
   let h1Type ← inferType h1Expr
   let h2Type ← inferType h2Expr
 
@@ -110,7 +110,7 @@ private def seqFrameCore (h1Expr h2Expr : Expr) : MetaM Expr := do
       hperm, h1Expr, h2Framed]
 
 /-- Try to assign `result` directly to `goal`, or with a postcondition permutation. -/
-private def assignOrPermute (goal : MVarId) (result : Expr) : MetaM Unit := do
+def assignOrPermute (goal : MVarId) (result : Expr) : MetaM Unit := do
   let goalType ← goal.getType
   let resultType ← inferType result
   -- Attempt 1: types already match (check without side effects first)
