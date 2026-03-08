@@ -1,0 +1,113 @@
+/-
+  EvmAsm.Evm64.Eq
+
+  Full 256-bit EVM EQ spec composed from per-limb specs.
+  21 instructions total (3 + 3×4 + 6 store).
+-/
+
+import EvmAsm.Evm64.Comparison
+
+open EvmAsm.Rv64.Tactics
+
+namespace EvmAsm.Rv64
+
+local macro "bv_addr" : tactic =>
+  `(tactic| (apply BitVec.eq_of_toNat_eq; simp [BitVec.toNat_add, BitVec.toNat_ofNat]))
+
+set_option maxHeartbeats 6400000 in
+/-- Full 256-bit EVM EQ: EQ(a, b) = 1 iff a == b (unsigned).
+    XOR each limb pair, OR-reduce, SLTIU to boolean.
+    Pops 2 stack words (A at sp, B at sp+32),
+    writes result to sp+32..sp+56, advances sp by 32.
+    21 instructions = 84 bytes total. -/
+theorem evm_eq_spec (sp : Addr) (base : Addr)
+    (a0 a1 a2 a3 b0 b1 b2 b3 : Word)
+    (v7 v6 v5 v11 : Word)
+    (hvalid : ValidMemRange sp 8) :
+    -- XOR-OR accumulation chain
+    let acc0 := a0 ^^^ b0
+    let acc1 := acc0 ||| (a1 ^^^ b1)
+    let acc2 := acc1 ||| (a2 ^^^ b2)
+    let acc3 := acc2 ||| (a3 ^^^ b3)
+    let eq_result := if BitVec.ult acc3 (1 : Word) then (1 : Word) else 0
+    cpsTriple base (base + 84)
+      (-- Limb 0 code (3 instrs)
+       (base ↦ᵢ .LD .x7 .x12 0) ** ((base + 4) ↦ᵢ .LD .x6 .x12 32) **
+       ((base + 8) ↦ᵢ .XOR .x7 .x7 .x6) **
+       -- Limb 1 code (4 instrs)
+       ((base + 12) ↦ᵢ .LD .x6 .x12 8) ** ((base + 16) ↦ᵢ .LD .x5 .x12 40) **
+       ((base + 20) ↦ᵢ .XOR .x6 .x6 .x5) ** ((base + 24) ↦ᵢ .OR .x7 .x7 .x6) **
+       -- Limb 2 code (4 instrs)
+       ((base + 28) ↦ᵢ .LD .x6 .x12 16) ** ((base + 32) ↦ᵢ .LD .x5 .x12 48) **
+       ((base + 36) ↦ᵢ .XOR .x6 .x6 .x5) ** ((base + 40) ↦ᵢ .OR .x7 .x7 .x6) **
+       -- Limb 3 code (4 instrs)
+       ((base + 44) ↦ᵢ .LD .x6 .x12 24) ** ((base + 48) ↦ᵢ .LD .x5 .x12 56) **
+       ((base + 52) ↦ᵢ .XOR .x6 .x6 .x5) ** ((base + 56) ↦ᵢ .OR .x7 .x7 .x6) **
+       -- Store phase (6 instrs)
+       ((base + 60) ↦ᵢ .SLTIU .x7 .x7 1) ** ((base + 64) ↦ᵢ .ADDI .x12 .x12 32) **
+       ((base + 68) ↦ᵢ .SD .x12 .x7 0) ** ((base + 72) ↦ᵢ .SD .x12 .x0 8) **
+       ((base + 76) ↦ᵢ .SD .x12 .x0 16) ** ((base + 80) ↦ᵢ .SD .x12 .x0 24) **
+       -- Registers + memory
+       (.x12 ↦ᵣ sp) ** (.x7 ↦ᵣ v7) ** (.x6 ↦ᵣ v6) ** (.x5 ↦ᵣ v5) ** (.x11 ↦ᵣ v11) **
+       (sp ↦ₘ a0) ** ((sp + 8) ↦ₘ a1) ** ((sp + 16) ↦ₘ a2) ** ((sp + 24) ↦ₘ a3) **
+       ((sp + 32) ↦ₘ b0) ** ((sp + 40) ↦ₘ b1) ** ((sp + 48) ↦ₘ b2) ** ((sp + 56) ↦ₘ b3))
+      (-- Same code (preserved)
+       (base ↦ᵢ .LD .x7 .x12 0) ** ((base + 4) ↦ᵢ .LD .x6 .x12 32) **
+       ((base + 8) ↦ᵢ .XOR .x7 .x7 .x6) **
+       ((base + 12) ↦ᵢ .LD .x6 .x12 8) ** ((base + 16) ↦ᵢ .LD .x5 .x12 40) **
+       ((base + 20) ↦ᵢ .XOR .x6 .x6 .x5) ** ((base + 24) ↦ᵢ .OR .x7 .x7 .x6) **
+       ((base + 28) ↦ᵢ .LD .x6 .x12 16) ** ((base + 32) ↦ᵢ .LD .x5 .x12 48) **
+       ((base + 36) ↦ᵢ .XOR .x6 .x6 .x5) ** ((base + 40) ↦ᵢ .OR .x7 .x7 .x6) **
+       ((base + 44) ↦ᵢ .LD .x6 .x12 24) ** ((base + 48) ↦ᵢ .LD .x5 .x12 56) **
+       ((base + 52) ↦ᵢ .XOR .x6 .x6 .x5) ** ((base + 56) ↦ᵢ .OR .x7 .x7 .x6) **
+       ((base + 60) ↦ᵢ .SLTIU .x7 .x7 1) ** ((base + 64) ↦ᵢ .ADDI .x12 .x12 32) **
+       ((base + 68) ↦ᵢ .SD .x12 .x7 0) ** ((base + 72) ↦ᵢ .SD .x12 .x0 8) **
+       ((base + 76) ↦ᵢ .SD .x12 .x0 16) ** ((base + 80) ↦ᵢ .SD .x12 .x0 24) **
+       -- Registers + memory (updated)
+       (.x12 ↦ᵣ (sp + 32)) **
+       (.x7 ↦ᵣ eq_result) ** (.x6 ↦ᵣ (a3 ^^^ b3)) ** (.x5 ↦ᵣ b3) ** (.x11 ↦ᵣ v11) **
+       (sp ↦ₘ a0) ** ((sp + 8) ↦ₘ a1) ** ((sp + 16) ↦ₘ a2) ** ((sp + 24) ↦ₘ a3) **
+       ((sp + 32) ↦ₘ eq_result) ** ((sp + 40) ↦ₘ 0) ** ((sp + 48) ↦ₘ 0) ** ((sp + 56) ↦ₘ 0)) := by
+  intro acc0; intro acc1; intro acc2; intro acc3; intro eq_result
+  have hv0 : isValidDwordAccess (sp + signExtend12 (0 : BitVec 12)) = true := by
+    simp only [signExtend12_0]; have := hvalid.get (i := 0) (by omega); simpa using this
+  have hv8 : isValidDwordAccess (sp + signExtend12 (8 : BitVec 12)) = true := by
+    simp only [signExtend12_8]; have := hvalid.get (i := 1) (by omega); simpa using this
+  have hv16 : isValidDwordAccess (sp + signExtend12 (16 : BitVec 12)) = true := by
+    simp only [signExtend12_16]; have := hvalid.get (i := 2) (by omega); simpa using this
+  have hv24 : isValidDwordAccess (sp + signExtend12 (24 : BitVec 12)) = true := by
+    simp only [signExtend12_24]; have := hvalid.get (i := 3) (by omega); simpa using this
+  have hv32 : isValidDwordAccess (sp + signExtend12 (32 : BitVec 12)) = true := by
+    simp only [signExtend12_32]; have := hvalid.get (i := 4) (by omega); simpa using this
+  have hv40 : isValidDwordAccess (sp + signExtend12 (40 : BitVec 12)) = true := by
+    simp only [signExtend12_40]; have := hvalid.get (i := 5) (by omega); simpa using this
+  have hv48 : isValidDwordAccess (sp + signExtend12 (48 : BitVec 12)) = true := by
+    simp only [signExtend12_48]; have := hvalid.get (i := 6) (by omega); simpa using this
+  have hv56 : isValidDwordAccess (sp + signExtend12 (56 : BitVec 12)) = true := by
+    simp only [signExtend12_56]; have := hvalid.get (i := 7) (by omega); simpa using this
+  -- Per-limb EQ specs
+  have L0 := eq_limb0_spec 0 32 sp a0 b0 v7 v6 base hv0 hv32
+  have L1 := eq_or_limb_spec 8 40 sp a1 b1 b0 v5 (a0 ^^^ b0) (base + 12) hv8 hv40
+  have L2 := eq_or_limb_spec 16 48 sp a2 b2 (a1 ^^^ b1) b1
+    ((a0 ^^^ b0) ||| (a1 ^^^ b1)) (base + 28) hv16 hv48
+  have L3 := eq_or_limb_spec 24 56 sp a3 b3 (a2 ^^^ b2) b2
+    ((a0 ^^^ b0) ||| (a1 ^^^ b1) ||| (a2 ^^^ b2)) (base + 44) hv24 hv56
+  -- Store phase: SLTIU + ADDI + SD eq_result + 3×SD 0
+  have T := sltiu_spec_gen_same .x7
+    ((a0 ^^^ b0) ||| (a1 ^^^ b1) ||| (a2 ^^^ b2) ||| (a3 ^^^ b3)) 1 (base + 60) (by nofun)
+  simp only [signExtend12_1] at T
+  have A := addi_spec_gen_same .x12 sp 32 (base + 64) (by nofun)
+  simp only [signExtend12_32] at A
+  have S0 := sd_spec_gen .x12 .x7 (sp + 32)
+    (if BitVec.ult ((a0 ^^^ b0) ||| (a1 ^^^ b1) ||| (a2 ^^^ b2) ||| (a3 ^^^ b3)) (1 : Word) then (1 : Word) else 0)
+    b0 0 (base + 68)
+    (by simp only [signExtend12_0]; rwa [show (sp + 32 : Word) + 0 = sp + 32 from by bv_addr])
+  have S1 := sd_x0_spec_gen .x12 (sp + 32) b1 8 (base + 72)
+    (by simp only [signExtend12_8]; rwa [show (sp + 32 : Word) + 8 = sp + 40 from by bv_omega])
+  have S2 := sd_x0_spec_gen .x12 (sp + 32) b2 16 (base + 76)
+    (by simp only [signExtend12_16]; rwa [show (sp + 32 : Word) + 16 = sp + 48 from by bv_omega])
+  have S3 := sd_x0_spec_gen .x12 (sp + 32) b3 24 (base + 80)
+    (by simp only [signExtend12_24]; rwa [show (sp + 32 : Word) + 24 = sp + 56 from by bv_omega])
+  runBlock L0 L1 L2 L3 T A S0 S1 S2 S3
+
+end EvmAsm.Rv64
