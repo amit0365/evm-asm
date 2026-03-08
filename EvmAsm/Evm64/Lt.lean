@@ -34,45 +34,28 @@ theorem evm_lt_spec (sp : Addr) (base : Addr)
     let temp3 := a3 - b3
     let borrow3b := if BitVec.ult temp3 borrow2 then (1 : Word) else 0
     let borrow3 := borrow3a ||| borrow3b
+    let code :=
+      (base ↦ᵢ .LD .x7 .x12 0) ** ((base + 4) ↦ᵢ .LD .x6 .x12 32) **
+      ((base + 8) ↦ᵢ .SLTU .x5 .x7 .x6) **
+      ((base + 12) ↦ᵢ .LD .x7 .x12 8) ** ((base + 16) ↦ᵢ .LD .x6 .x12 40) **
+      ((base + 20) ↦ᵢ .SLTU .x11 .x7 .x6) ** ((base + 24) ↦ᵢ .SUB .x7 .x7 .x6) **
+      ((base + 28) ↦ᵢ .SLTU .x6 .x7 .x5) ** ((base + 32) ↦ᵢ .OR .x5 .x11 .x6) **
+      ((base + 36) ↦ᵢ .LD .x7 .x12 16) ** ((base + 40) ↦ᵢ .LD .x6 .x12 48) **
+      ((base + 44) ↦ᵢ .SLTU .x11 .x7 .x6) ** ((base + 48) ↦ᵢ .SUB .x7 .x7 .x6) **
+      ((base + 52) ↦ᵢ .SLTU .x6 .x7 .x5) ** ((base + 56) ↦ᵢ .OR .x5 .x11 .x6) **
+      ((base + 60) ↦ᵢ .LD .x7 .x12 24) ** ((base + 64) ↦ᵢ .LD .x6 .x12 56) **
+      ((base + 68) ↦ᵢ .SLTU .x11 .x7 .x6) ** ((base + 72) ↦ᵢ .SUB .x7 .x7 .x6) **
+      ((base + 76) ↦ᵢ .SLTU .x6 .x7 .x5) ** ((base + 80) ↦ᵢ .OR .x5 .x11 .x6) **
+      ((base + 84) ↦ᵢ .ADDI .x12 .x12 32) ** ((base + 88) ↦ᵢ .SD .x12 .x5 0) **
+      ((base + 92) ↦ᵢ .SD .x12 .x0 8) ** ((base + 96) ↦ᵢ .SD .x12 .x0 16) **
+      ((base + 100) ↦ᵢ .SD .x12 .x0 24)
     cpsTriple base (base + 104)
-      (-- Limb 0 code (3 instrs)
-       (base ↦ᵢ .LD .x7 .x12 0) ** ((base + 4) ↦ᵢ .LD .x6 .x12 32) **
-       ((base + 8) ↦ᵢ .SLTU .x5 .x7 .x6) **
-       -- Limb 1 code (6 instrs)
-       ((base + 12) ↦ᵢ .LD .x7 .x12 8) ** ((base + 16) ↦ᵢ .LD .x6 .x12 40) **
-       ((base + 20) ↦ᵢ .SLTU .x11 .x7 .x6) ** ((base + 24) ↦ᵢ .SUB .x7 .x7 .x6) **
-       ((base + 28) ↦ᵢ .SLTU .x6 .x7 .x5) ** ((base + 32) ↦ᵢ .OR .x5 .x11 .x6) **
-       -- Limb 2 code (6 instrs)
-       ((base + 36) ↦ᵢ .LD .x7 .x12 16) ** ((base + 40) ↦ᵢ .LD .x6 .x12 48) **
-       ((base + 44) ↦ᵢ .SLTU .x11 .x7 .x6) ** ((base + 48) ↦ᵢ .SUB .x7 .x7 .x6) **
-       ((base + 52) ↦ᵢ .SLTU .x6 .x7 .x5) ** ((base + 56) ↦ᵢ .OR .x5 .x11 .x6) **
-       -- Limb 3 code (6 instrs)
-       ((base + 60) ↦ᵢ .LD .x7 .x12 24) ** ((base + 64) ↦ᵢ .LD .x6 .x12 56) **
-       ((base + 68) ↦ᵢ .SLTU .x11 .x7 .x6) ** ((base + 72) ↦ᵢ .SUB .x7 .x7 .x6) **
-       ((base + 76) ↦ᵢ .SLTU .x6 .x7 .x5) ** ((base + 80) ↦ᵢ .OR .x5 .x11 .x6) **
-       -- Store phase (5 instrs)
-       ((base + 84) ↦ᵢ .ADDI .x12 .x12 32) ** ((base + 88) ↦ᵢ .SD .x12 .x5 0) **
-       ((base + 92) ↦ᵢ .SD .x12 .x0 8) ** ((base + 96) ↦ᵢ .SD .x12 .x0 16) **
-       ((base + 100) ↦ᵢ .SD .x12 .x0 24) **
+      (code **
        -- Registers + memory
        (.x12 ↦ᵣ sp) ** (.x7 ↦ᵣ v7) ** (.x6 ↦ᵣ v6) ** (.x5 ↦ᵣ v5) ** (.x11 ↦ᵣ v11) **
        (sp ↦ₘ a0) ** ((sp + 8) ↦ₘ a1) ** ((sp + 16) ↦ₘ a2) ** ((sp + 24) ↦ₘ a3) **
        ((sp + 32) ↦ₘ b0) ** ((sp + 40) ↦ₘ b1) ** ((sp + 48) ↦ₘ b2) ** ((sp + 56) ↦ₘ b3))
-      (-- Same code (preserved)
-       (base ↦ᵢ .LD .x7 .x12 0) ** ((base + 4) ↦ᵢ .LD .x6 .x12 32) **
-       ((base + 8) ↦ᵢ .SLTU .x5 .x7 .x6) **
-       ((base + 12) ↦ᵢ .LD .x7 .x12 8) ** ((base + 16) ↦ᵢ .LD .x6 .x12 40) **
-       ((base + 20) ↦ᵢ .SLTU .x11 .x7 .x6) ** ((base + 24) ↦ᵢ .SUB .x7 .x7 .x6) **
-       ((base + 28) ↦ᵢ .SLTU .x6 .x7 .x5) ** ((base + 32) ↦ᵢ .OR .x5 .x11 .x6) **
-       ((base + 36) ↦ᵢ .LD .x7 .x12 16) ** ((base + 40) ↦ᵢ .LD .x6 .x12 48) **
-       ((base + 44) ↦ᵢ .SLTU .x11 .x7 .x6) ** ((base + 48) ↦ᵢ .SUB .x7 .x7 .x6) **
-       ((base + 52) ↦ᵢ .SLTU .x6 .x7 .x5) ** ((base + 56) ↦ᵢ .OR .x5 .x11 .x6) **
-       ((base + 60) ↦ᵢ .LD .x7 .x12 24) ** ((base + 64) ↦ᵢ .LD .x6 .x12 56) **
-       ((base + 68) ↦ᵢ .SLTU .x11 .x7 .x6) ** ((base + 72) ↦ᵢ .SUB .x7 .x7 .x6) **
-       ((base + 76) ↦ᵢ .SLTU .x6 .x7 .x5) ** ((base + 80) ↦ᵢ .OR .x5 .x11 .x6) **
-       ((base + 84) ↦ᵢ .ADDI .x12 .x12 32) ** ((base + 88) ↦ᵢ .SD .x12 .x5 0) **
-       ((base + 92) ↦ᵢ .SD .x12 .x0 8) ** ((base + 96) ↦ᵢ .SD .x12 .x0 16) **
-       ((base + 100) ↦ᵢ .SD .x12 .x0 24) **
+      (code **
        -- Registers + memory (updated)
        (.x12 ↦ᵣ (sp + 32)) ** (.x7 ↦ᵣ temp3) ** (.x6 ↦ᵣ borrow3b) **
        (.x5 ↦ᵣ borrow3) ** (.x11 ↦ᵣ borrow3a) **

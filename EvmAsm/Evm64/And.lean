@@ -19,31 +19,23 @@ set_option maxHeartbeats 6400000 in
 theorem evm_and_spec (sp base : Addr)
     (a0 a1 a2 a3 b0 b1 b2 b3 v7 v6 : Word)
     (hvalid : ValidMemRange sp 8) :
+    let code :=
+      (base ↦ᵢ .LD .x7 .x12 0) ** ((base + 4) ↦ᵢ .LD .x6 .x12 32) **
+      ((base + 8) ↦ᵢ .AND .x7 .x7 .x6) ** ((base + 12) ↦ᵢ .SD .x12 .x7 32) **
+      ((base + 16) ↦ᵢ .LD .x7 .x12 8) ** ((base + 20) ↦ᵢ .LD .x6 .x12 40) **
+      ((base + 24) ↦ᵢ .AND .x7 .x7 .x6) ** ((base + 28) ↦ᵢ .SD .x12 .x7 40) **
+      ((base + 32) ↦ᵢ .LD .x7 .x12 16) ** ((base + 36) ↦ᵢ .LD .x6 .x12 48) **
+      ((base + 40) ↦ᵢ .AND .x7 .x7 .x6) ** ((base + 44) ↦ᵢ .SD .x12 .x7 48) **
+      ((base + 48) ↦ᵢ .LD .x7 .x12 24) ** ((base + 52) ↦ᵢ .LD .x6 .x12 56) **
+      ((base + 56) ↦ᵢ .AND .x7 .x7 .x6) ** ((base + 60) ↦ᵢ .SD .x12 .x7 56) **
+      ((base + 64) ↦ᵢ .ADDI .x12 .x12 32)
     cpsTriple base (base + 68)
-      (-- Code
-       (base ↦ᵢ .LD .x7 .x12 0) ** ((base + 4) ↦ᵢ .LD .x6 .x12 32) **
-       ((base + 8) ↦ᵢ .AND .x7 .x7 .x6) ** ((base + 12) ↦ᵢ .SD .x12 .x7 32) **
-       ((base + 16) ↦ᵢ .LD .x7 .x12 8) ** ((base + 20) ↦ᵢ .LD .x6 .x12 40) **
-       ((base + 24) ↦ᵢ .AND .x7 .x7 .x6) ** ((base + 28) ↦ᵢ .SD .x12 .x7 40) **
-       ((base + 32) ↦ᵢ .LD .x7 .x12 16) ** ((base + 36) ↦ᵢ .LD .x6 .x12 48) **
-       ((base + 40) ↦ᵢ .AND .x7 .x7 .x6) ** ((base + 44) ↦ᵢ .SD .x12 .x7 48) **
-       ((base + 48) ↦ᵢ .LD .x7 .x12 24) ** ((base + 52) ↦ᵢ .LD .x6 .x12 56) **
-       ((base + 56) ↦ᵢ .AND .x7 .x7 .x6) ** ((base + 60) ↦ᵢ .SD .x12 .x7 56) **
-       ((base + 64) ↦ᵢ .ADDI .x12 .x12 32) **
+      (code **
        -- Registers + memory
        (.x12 ↦ᵣ sp) ** (.x7 ↦ᵣ v7) ** (.x6 ↦ᵣ v6) **
        (sp ↦ₘ a0) ** ((sp + 8) ↦ₘ a1) ** ((sp + 16) ↦ₘ a2) ** ((sp + 24) ↦ₘ a3) **
        ((sp + 32) ↦ₘ b0) ** ((sp + 40) ↦ₘ b1) ** ((sp + 48) ↦ₘ b2) ** ((sp + 56) ↦ₘ b3))
-      (-- Same code (preserved)
-       (base ↦ᵢ .LD .x7 .x12 0) ** ((base + 4) ↦ᵢ .LD .x6 .x12 32) **
-       ((base + 8) ↦ᵢ .AND .x7 .x7 .x6) ** ((base + 12) ↦ᵢ .SD .x12 .x7 32) **
-       ((base + 16) ↦ᵢ .LD .x7 .x12 8) ** ((base + 20) ↦ᵢ .LD .x6 .x12 40) **
-       ((base + 24) ↦ᵢ .AND .x7 .x7 .x6) ** ((base + 28) ↦ᵢ .SD .x12 .x7 40) **
-       ((base + 32) ↦ᵢ .LD .x7 .x12 16) ** ((base + 36) ↦ᵢ .LD .x6 .x12 48) **
-       ((base + 40) ↦ᵢ .AND .x7 .x7 .x6) ** ((base + 44) ↦ᵢ .SD .x12 .x7 48) **
-       ((base + 48) ↦ᵢ .LD .x7 .x12 24) ** ((base + 52) ↦ᵢ .LD .x6 .x12 56) **
-       ((base + 56) ↦ᵢ .AND .x7 .x7 .x6) ** ((base + 60) ↦ᵢ .SD .x12 .x7 56) **
-       ((base + 64) ↦ᵢ .ADDI .x12 .x12 32) **
+      (code **
        -- Registers + memory (updated)
        (.x12 ↦ᵣ (sp + 32)) ** (.x7 ↦ᵣ (a3 &&& b3)) ** (.x6 ↦ᵣ b3) **
        (sp ↦ₘ a0) ** ((sp + 8) ↦ₘ a1) ** ((sp + 16) ↦ₘ a2) ** ((sp + 24) ↦ₘ a3) **
@@ -64,30 +56,22 @@ set_option maxHeartbeats 6400000 in
 theorem evm_and_stack_spec (sp base : Addr)
     (a b : EvmWord) (v7 v6 : Word)
     (hvalid : ValidMemRange sp 8) :
+    let code :=
+      (base ↦ᵢ .LD .x7 .x12 0) ** ((base + 4) ↦ᵢ .LD .x6 .x12 32) **
+      ((base + 8) ↦ᵢ .AND .x7 .x7 .x6) ** ((base + 12) ↦ᵢ .SD .x12 .x7 32) **
+      ((base + 16) ↦ᵢ .LD .x7 .x12 8) ** ((base + 20) ↦ᵢ .LD .x6 .x12 40) **
+      ((base + 24) ↦ᵢ .AND .x7 .x7 .x6) ** ((base + 28) ↦ᵢ .SD .x12 .x7 40) **
+      ((base + 32) ↦ᵢ .LD .x7 .x12 16) ** ((base + 36) ↦ᵢ .LD .x6 .x12 48) **
+      ((base + 40) ↦ᵢ .AND .x7 .x7 .x6) ** ((base + 44) ↦ᵢ .SD .x12 .x7 48) **
+      ((base + 48) ↦ᵢ .LD .x7 .x12 24) ** ((base + 52) ↦ᵢ .LD .x6 .x12 56) **
+      ((base + 56) ↦ᵢ .AND .x7 .x7 .x6) ** ((base + 60) ↦ᵢ .SD .x12 .x7 56) **
+      ((base + 64) ↦ᵢ .ADDI .x12 .x12 32)
     cpsTriple base (base + 68)
-      (-- Code
-       (base ↦ᵢ .LD .x7 .x12 0) ** ((base + 4) ↦ᵢ .LD .x6 .x12 32) **
-       ((base + 8) ↦ᵢ .AND .x7 .x7 .x6) ** ((base + 12) ↦ᵢ .SD .x12 .x7 32) **
-       ((base + 16) ↦ᵢ .LD .x7 .x12 8) ** ((base + 20) ↦ᵢ .LD .x6 .x12 40) **
-       ((base + 24) ↦ᵢ .AND .x7 .x7 .x6) ** ((base + 28) ↦ᵢ .SD .x12 .x7 40) **
-       ((base + 32) ↦ᵢ .LD .x7 .x12 16) ** ((base + 36) ↦ᵢ .LD .x6 .x12 48) **
-       ((base + 40) ↦ᵢ .AND .x7 .x7 .x6) ** ((base + 44) ↦ᵢ .SD .x12 .x7 48) **
-       ((base + 48) ↦ᵢ .LD .x7 .x12 24) ** ((base + 52) ↦ᵢ .LD .x6 .x12 56) **
-       ((base + 56) ↦ᵢ .AND .x7 .x7 .x6) ** ((base + 60) ↦ᵢ .SD .x12 .x7 56) **
-       ((base + 64) ↦ᵢ .ADDI .x12 .x12 32) **
+      (code **
        -- Registers + memory
        (.x12 ↦ᵣ sp) ** (.x7 ↦ᵣ v7) ** (.x6 ↦ᵣ v6) **
        evmWordIs sp a ** evmWordIs (sp + 32) b)
-      (-- Same code (preserved)
-       (base ↦ᵢ .LD .x7 .x12 0) ** ((base + 4) ↦ᵢ .LD .x6 .x12 32) **
-       ((base + 8) ↦ᵢ .AND .x7 .x7 .x6) ** ((base + 12) ↦ᵢ .SD .x12 .x7 32) **
-       ((base + 16) ↦ᵢ .LD .x7 .x12 8) ** ((base + 20) ↦ᵢ .LD .x6 .x12 40) **
-       ((base + 24) ↦ᵢ .AND .x7 .x7 .x6) ** ((base + 28) ↦ᵢ .SD .x12 .x7 40) **
-       ((base + 32) ↦ᵢ .LD .x7 .x12 16) ** ((base + 36) ↦ᵢ .LD .x6 .x12 48) **
-       ((base + 40) ↦ᵢ .AND .x7 .x7 .x6) ** ((base + 44) ↦ᵢ .SD .x12 .x7 48) **
-       ((base + 48) ↦ᵢ .LD .x7 .x12 24) ** ((base + 52) ↦ᵢ .LD .x6 .x12 56) **
-       ((base + 56) ↦ᵢ .AND .x7 .x7 .x6) ** ((base + 60) ↦ᵢ .SD .x12 .x7 56) **
-       ((base + 64) ↦ᵢ .ADDI .x12 .x12 32) **
+      (code **
        -- Registers + memory (updated)
        (.x12 ↦ᵣ (sp + 32)) ** (.x7 ↦ᵣ (a.getLimb 3 &&& b.getLimb 3)) ** (.x6 ↦ᵣ b.getLimb 3) **
        evmWordIs sp a ** evmWordIs (sp + 32) (a &&& b)) := by

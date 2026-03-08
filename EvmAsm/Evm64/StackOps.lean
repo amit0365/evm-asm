@@ -76,15 +76,15 @@ set_option maxHeartbeats 6400000 in
 theorem evm_push0_spec (nsp base : Addr)
     (d0 d1 d2 d3 : Word)
     (hvalid : ValidMemRange nsp 4) :
+    let code :=
+      (base ↦ᵢ .ADDI .x12 .x12 (-32)) **
+      ((base + 4) ↦ᵢ .SD .x12 .x0 0) ** ((base + 8) ↦ᵢ .SD .x12 .x0 8) **
+      ((base + 12) ↦ᵢ .SD .x12 .x0 16) ** ((base + 16) ↦ᵢ .SD .x12 .x0 24)
     cpsTriple base (base + 20)
-      ((base ↦ᵢ .ADDI .x12 .x12 (-32)) **
-       ((base + 4) ↦ᵢ .SD .x12 .x0 0) ** ((base + 8) ↦ᵢ .SD .x12 .x0 8) **
-       ((base + 12) ↦ᵢ .SD .x12 .x0 16) ** ((base + 16) ↦ᵢ .SD .x12 .x0 24) **
+      (code **
        (.x12 ↦ᵣ (nsp + 32)) **
        (nsp ↦ₘ d0) ** ((nsp + 8) ↦ₘ d1) ** ((nsp + 16) ↦ₘ d2) ** ((nsp + 24) ↦ₘ d3))
-      ((base ↦ᵢ .ADDI .x12 .x12 (-32)) **
-       ((base + 4) ↦ᵢ .SD .x12 .x0 0) ** ((base + 8) ↦ᵢ .SD .x12 .x0 8) **
-       ((base + 12) ↦ᵢ .SD .x12 .x0 16) ** ((base + 16) ↦ᵢ .SD .x12 .x0 24) **
+      (code **
        (.x12 ↦ᵣ nsp) **
        (nsp ↦ₘ 0) ** ((nsp + 8) ↦ₘ 0) ** ((nsp + 16) ↦ₘ 0) ** ((nsp + 24) ↦ₘ 0)) := by
   have LADDI := addi_spec_gen_same .x12 (nsp + 32) (-32) base (by nofun)
@@ -99,16 +99,16 @@ theorem evm_push0_spec (nsp base : Addr)
 theorem evm_push0_stack_spec (nsp base : Addr)
     (d0 d1 d2 d3 : Word) (rest : List EvmWord)
     (hvalid : ValidMemRange nsp 4) :
+    let code :=
+      (base ↦ᵢ .ADDI .x12 .x12 (-32)) **
+      ((base + 4) ↦ᵢ .SD .x12 .x0 0) ** ((base + 8) ↦ᵢ .SD .x12 .x0 8) **
+      ((base + 12) ↦ᵢ .SD .x12 .x0 16) ** ((base + 16) ↦ᵢ .SD .x12 .x0 24)
     cpsTriple base (base + 20)
-      ((base ↦ᵢ .ADDI .x12 .x12 (-32)) **
-       ((base + 4) ↦ᵢ .SD .x12 .x0 0) ** ((base + 8) ↦ᵢ .SD .x12 .x0 8) **
-       ((base + 12) ↦ᵢ .SD .x12 .x0 16) ** ((base + 16) ↦ᵢ .SD .x12 .x0 24) **
+      (code **
        (.x12 ↦ᵣ (nsp + 32)) **
        (nsp ↦ₘ d0) ** ((nsp + 8) ↦ₘ d1) ** ((nsp + 16) ↦ₘ d2) ** ((nsp + 24) ↦ₘ d3) **
        evmStackIs (nsp + 32) rest)
-      ((base ↦ᵢ .ADDI .x12 .x12 (-32)) **
-       ((base + 4) ↦ᵢ .SD .x12 .x0 0) ** ((base + 8) ↦ᵢ .SD .x12 .x0 8) **
-       ((base + 12) ↦ᵢ .SD .x12 .x0 16) ** ((base + 16) ↦ᵢ .SD .x12 .x0 24) **
+      (code **
        (.x12 ↦ᵣ nsp) ** evmWordIs nsp 0 ** evmStackIs (nsp + 32) rest) :=
   cpsTriple_consequence _ _ _ _ _ _
     (fun h hp => by xperm_hyp hp)
@@ -127,11 +127,13 @@ theorem dup1_pair_spec (sp : Addr)
     (off_src off_dst : BitVec 12) (src_val dst_old v7 : Word) (base : Addr)
     (hvalid_src : isValidDwordAccess (sp + signExtend12 off_src) = true)
     (hvalid_dst : isValidDwordAccess (sp + signExtend12 off_dst) = true) :
+    let code :=
+      (base ↦ᵢ .LD .x7 .x12 off_src) ** ((base + 4) ↦ᵢ .SD .x12 .x7 off_dst)
     cpsTriple base (base + 8)
-      ((base ↦ᵢ .LD .x7 .x12 off_src) ** ((base + 4) ↦ᵢ .SD .x12 .x7 off_dst) **
+      (code **
        (.x12 ↦ᵣ sp) ** (.x7 ↦ᵣ v7) **
        ((sp + signExtend12 off_src) ↦ₘ src_val) ** ((sp + signExtend12 off_dst) ↦ₘ dst_old))
-      ((base ↦ᵢ .LD .x7 .x12 off_src) ** ((base + 4) ↦ᵢ .SD .x12 .x7 off_dst) **
+      (code **
        (.x12 ↦ᵣ sp) ** (.x7 ↦ᵣ src_val) **
        ((sp + signExtend12 off_src) ↦ₘ src_val) ** ((sp + signExtend12 off_dst) ↦ₘ src_val)) := by
   runBlock
@@ -144,20 +146,18 @@ set_option maxHeartbeats 6400000 in
 theorem evm_dup1_spec (nsp base : Addr)
     (a0 a1 a2 a3 d0 d1 d2 d3 : Word) (v7 : Word)
     (hvalid : ValidMemRange nsp 8) :
+    let code :=
+      (base ↦ᵢ .ADDI .x12 .x12 (-32)) **
+      ((base + 4) ↦ᵢ .LD .x7 .x12 32) ** ((base + 8) ↦ᵢ .SD .x12 .x7 0) **
+      ((base + 12) ↦ᵢ .LD .x7 .x12 40) ** ((base + 16) ↦ᵢ .SD .x12 .x7 8) **
+      ((base + 20) ↦ᵢ .LD .x7 .x12 48) ** ((base + 24) ↦ᵢ .SD .x12 .x7 16) **
+      ((base + 28) ↦ᵢ .LD .x7 .x12 56) ** ((base + 32) ↦ᵢ .SD .x12 .x7 24)
     cpsTriple base (base + 36)
-      ((base ↦ᵢ .ADDI .x12 .x12 (-32)) **
-       ((base + 4) ↦ᵢ .LD .x7 .x12 32) ** ((base + 8) ↦ᵢ .SD .x12 .x7 0) **
-       ((base + 12) ↦ᵢ .LD .x7 .x12 40) ** ((base + 16) ↦ᵢ .SD .x12 .x7 8) **
-       ((base + 20) ↦ᵢ .LD .x7 .x12 48) ** ((base + 24) ↦ᵢ .SD .x12 .x7 16) **
-       ((base + 28) ↦ᵢ .LD .x7 .x12 56) ** ((base + 32) ↦ᵢ .SD .x12 .x7 24) **
+      (code **
        (.x12 ↦ᵣ (nsp + 32)) ** (.x7 ↦ᵣ v7) **
        (nsp ↦ₘ d0) ** ((nsp + 8) ↦ₘ d1) ** ((nsp + 16) ↦ₘ d2) ** ((nsp + 24) ↦ₘ d3) **
        ((nsp + 32) ↦ₘ a0) ** ((nsp + 40) ↦ₘ a1) ** ((nsp + 48) ↦ₘ a2) ** ((nsp + 56) ↦ₘ a3))
-      ((base ↦ᵢ .ADDI .x12 .x12 (-32)) **
-       ((base + 4) ↦ᵢ .LD .x7 .x12 32) ** ((base + 8) ↦ᵢ .SD .x12 .x7 0) **
-       ((base + 12) ↦ᵢ .LD .x7 .x12 40) ** ((base + 16) ↦ᵢ .SD .x12 .x7 8) **
-       ((base + 20) ↦ᵢ .LD .x7 .x12 48) ** ((base + 24) ↦ᵢ .SD .x12 .x7 16) **
-       ((base + 28) ↦ᵢ .LD .x7 .x12 56) ** ((base + 32) ↦ᵢ .SD .x12 .x7 24) **
+      (code **
        (.x12 ↦ᵣ nsp) ** (.x7 ↦ᵣ a3) **
        (nsp ↦ₘ a0) ** ((nsp + 8) ↦ₘ a1) ** ((nsp + 16) ↦ₘ a2) ** ((nsp + 24) ↦ₘ a3) **
        ((nsp + 32) ↦ₘ a0) ** ((nsp + 40) ↦ₘ a1) ** ((nsp + 48) ↦ₘ a2) ** ((nsp + 56) ↦ₘ a3)) := by
@@ -174,20 +174,18 @@ set_option maxHeartbeats 6400000 in
 theorem evm_dup1_stack_spec (nsp base : Addr)
     (a : EvmWord) (d0 d1 d2 d3 : Word) (v7 : Word)
     (hvalid : ValidMemRange nsp 8) :
+    let code :=
+      (base ↦ᵢ .ADDI .x12 .x12 (-32)) **
+      ((base + 4) ↦ᵢ .LD .x7 .x12 32) ** ((base + 8) ↦ᵢ .SD .x12 .x7 0) **
+      ((base + 12) ↦ᵢ .LD .x7 .x12 40) ** ((base + 16) ↦ᵢ .SD .x12 .x7 8) **
+      ((base + 20) ↦ᵢ .LD .x7 .x12 48) ** ((base + 24) ↦ᵢ .SD .x12 .x7 16) **
+      ((base + 28) ↦ᵢ .LD .x7 .x12 56) ** ((base + 32) ↦ᵢ .SD .x12 .x7 24)
     cpsTriple base (base + 36)
-      ((base ↦ᵢ .ADDI .x12 .x12 (-32)) **
-       ((base + 4) ↦ᵢ .LD .x7 .x12 32) ** ((base + 8) ↦ᵢ .SD .x12 .x7 0) **
-       ((base + 12) ↦ᵢ .LD .x7 .x12 40) ** ((base + 16) ↦ᵢ .SD .x12 .x7 8) **
-       ((base + 20) ↦ᵢ .LD .x7 .x12 48) ** ((base + 24) ↦ᵢ .SD .x12 .x7 16) **
-       ((base + 28) ↦ᵢ .LD .x7 .x12 56) ** ((base + 32) ↦ᵢ .SD .x12 .x7 24) **
+      (code **
        (.x12 ↦ᵣ (nsp + 32)) ** (.x7 ↦ᵣ v7) **
        (nsp ↦ₘ d0) ** ((nsp + 8) ↦ₘ d1) ** ((nsp + 16) ↦ₘ d2) ** ((nsp + 24) ↦ₘ d3) **
        evmWordIs (nsp + 32) a)
-      ((base ↦ᵢ .ADDI .x12 .x12 (-32)) **
-       ((base + 4) ↦ᵢ .LD .x7 .x12 32) ** ((base + 8) ↦ᵢ .SD .x12 .x7 0) **
-       ((base + 12) ↦ᵢ .LD .x7 .x12 40) ** ((base + 16) ↦ᵢ .SD .x12 .x7 8) **
-       ((base + 20) ↦ᵢ .LD .x7 .x12 48) ** ((base + 24) ↦ᵢ .SD .x12 .x7 16) **
-       ((base + 28) ↦ᵢ .LD .x7 .x12 56) ** ((base + 32) ↦ᵢ .SD .x12 .x7 24) **
+      (code **
        (.x12 ↦ᵣ nsp) ** (.x7 ↦ᵣ a.getLimb 3) **
        evmWordIs nsp a ** evmWordIs (nsp + 32) a) := by
   have h_main := evm_dup1_spec nsp base
@@ -219,13 +217,14 @@ theorem swap1_limb_spec (sp : Addr)
     (off_a off_b : BitVec 12) (a_val b_val v7 v6 : Word) (base : Addr)
     (hvalid_a : isValidDwordAccess (sp + signExtend12 off_a) = true)
     (hvalid_b : isValidDwordAccess (sp + signExtend12 off_b) = true) :
+    let code :=
+      (base ↦ᵢ .LD .x7 .x12 off_a) ** ((base + 4) ↦ᵢ .LD .x6 .x12 off_b) **
+      ((base + 8) ↦ᵢ .SD .x12 .x6 off_a) ** ((base + 12) ↦ᵢ .SD .x12 .x7 off_b)
     cpsTriple base (base + 16)
-      ((base ↦ᵢ .LD .x7 .x12 off_a) ** ((base + 4) ↦ᵢ .LD .x6 .x12 off_b) **
-       ((base + 8) ↦ᵢ .SD .x12 .x6 off_a) ** ((base + 12) ↦ᵢ .SD .x12 .x7 off_b) **
+      (code **
        (.x12 ↦ᵣ sp) ** (.x7 ↦ᵣ v7) ** (.x6 ↦ᵣ v6) **
        ((sp + signExtend12 off_a) ↦ₘ a_val) ** ((sp + signExtend12 off_b) ↦ₘ b_val))
-      ((base ↦ᵢ .LD .x7 .x12 off_a) ** ((base + 4) ↦ᵢ .LD .x6 .x12 off_b) **
-       ((base + 8) ↦ᵢ .SD .x12 .x6 off_a) ** ((base + 12) ↦ᵢ .SD .x12 .x7 off_b) **
+      (code **
        (.x12 ↦ᵣ sp) ** (.x7 ↦ᵣ a_val) ** (.x6 ↦ᵣ b_val) **
        ((sp + signExtend12 off_a) ↦ₘ b_val) ** ((sp + signExtend12 off_b) ↦ₘ a_val)) := by
   runBlock
@@ -238,26 +237,21 @@ set_option maxHeartbeats 6400000 in
 theorem evm_swap1_spec (sp base : Addr)
     (a0 a1 a2 a3 b0 b1 b2 b3 v7 v6 : Word)
     (hvalid : ValidMemRange sp 8) :
+    let code :=
+      (base ↦ᵢ .LD .x7 .x12 0) ** ((base + 4) ↦ᵢ .LD .x6 .x12 32) **
+      ((base + 8) ↦ᵢ .SD .x12 .x6 0) ** ((base + 12) ↦ᵢ .SD .x12 .x7 32) **
+      ((base + 16) ↦ᵢ .LD .x7 .x12 8) ** ((base + 20) ↦ᵢ .LD .x6 .x12 40) **
+      ((base + 24) ↦ᵢ .SD .x12 .x6 8) ** ((base + 28) ↦ᵢ .SD .x12 .x7 40) **
+      ((base + 32) ↦ᵢ .LD .x7 .x12 16) ** ((base + 36) ↦ᵢ .LD .x6 .x12 48) **
+      ((base + 40) ↦ᵢ .SD .x12 .x6 16) ** ((base + 44) ↦ᵢ .SD .x12 .x7 48) **
+      ((base + 48) ↦ᵢ .LD .x7 .x12 24) ** ((base + 52) ↦ᵢ .LD .x6 .x12 56) **
+      ((base + 56) ↦ᵢ .SD .x12 .x6 24) ** ((base + 60) ↦ᵢ .SD .x12 .x7 56)
     cpsTriple base (base + 64)
-      ((base ↦ᵢ .LD .x7 .x12 0) ** ((base + 4) ↦ᵢ .LD .x6 .x12 32) **
-       ((base + 8) ↦ᵢ .SD .x12 .x6 0) ** ((base + 12) ↦ᵢ .SD .x12 .x7 32) **
-       ((base + 16) ↦ᵢ .LD .x7 .x12 8) ** ((base + 20) ↦ᵢ .LD .x6 .x12 40) **
-       ((base + 24) ↦ᵢ .SD .x12 .x6 8) ** ((base + 28) ↦ᵢ .SD .x12 .x7 40) **
-       ((base + 32) ↦ᵢ .LD .x7 .x12 16) ** ((base + 36) ↦ᵢ .LD .x6 .x12 48) **
-       ((base + 40) ↦ᵢ .SD .x12 .x6 16) ** ((base + 44) ↦ᵢ .SD .x12 .x7 48) **
-       ((base + 48) ↦ᵢ .LD .x7 .x12 24) ** ((base + 52) ↦ᵢ .LD .x6 .x12 56) **
-       ((base + 56) ↦ᵢ .SD .x12 .x6 24) ** ((base + 60) ↦ᵢ .SD .x12 .x7 56) **
+      (code **
        (.x12 ↦ᵣ sp) ** (.x7 ↦ᵣ v7) ** (.x6 ↦ᵣ v6) **
        (sp ↦ₘ a0) ** ((sp + 8) ↦ₘ a1) ** ((sp + 16) ↦ₘ a2) ** ((sp + 24) ↦ₘ a3) **
        ((sp + 32) ↦ₘ b0) ** ((sp + 40) ↦ₘ b1) ** ((sp + 48) ↦ₘ b2) ** ((sp + 56) ↦ₘ b3))
-      ((base ↦ᵢ .LD .x7 .x12 0) ** ((base + 4) ↦ᵢ .LD .x6 .x12 32) **
-       ((base + 8) ↦ᵢ .SD .x12 .x6 0) ** ((base + 12) ↦ᵢ .SD .x12 .x7 32) **
-       ((base + 16) ↦ᵢ .LD .x7 .x12 8) ** ((base + 20) ↦ᵢ .LD .x6 .x12 40) **
-       ((base + 24) ↦ᵢ .SD .x12 .x6 8) ** ((base + 28) ↦ᵢ .SD .x12 .x7 40) **
-       ((base + 32) ↦ᵢ .LD .x7 .x12 16) ** ((base + 36) ↦ᵢ .LD .x6 .x12 48) **
-       ((base + 40) ↦ᵢ .SD .x12 .x6 16) ** ((base + 44) ↦ᵢ .SD .x12 .x7 48) **
-       ((base + 48) ↦ᵢ .LD .x7 .x12 24) ** ((base + 52) ↦ᵢ .LD .x6 .x12 56) **
-       ((base + 56) ↦ᵢ .SD .x12 .x6 24) ** ((base + 60) ↦ᵢ .SD .x12 .x7 56) **
+      (code **
        (.x12 ↦ᵣ sp) ** (.x7 ↦ᵣ a3) ** (.x6 ↦ᵣ b3) **
        (sp ↦ₘ b0) ** ((sp + 8) ↦ₘ b1) ** ((sp + 16) ↦ₘ b2) ** ((sp + 24) ↦ₘ b3) **
        ((sp + 32) ↦ₘ a0) ** ((sp + 40) ↦ₘ a1) ** ((sp + 48) ↦ₘ a2) ** ((sp + 56) ↦ₘ a3)) := by
@@ -271,25 +265,20 @@ set_option maxHeartbeats 6400000 in
 theorem evm_swap1_stack_spec (sp base : Addr)
     (a b : EvmWord) (v7 v6 : Word)
     (hvalid : ValidMemRange sp 8) :
+    let code :=
+      (base ↦ᵢ .LD .x7 .x12 0) ** ((base + 4) ↦ᵢ .LD .x6 .x12 32) **
+      ((base + 8) ↦ᵢ .SD .x12 .x6 0) ** ((base + 12) ↦ᵢ .SD .x12 .x7 32) **
+      ((base + 16) ↦ᵢ .LD .x7 .x12 8) ** ((base + 20) ↦ᵢ .LD .x6 .x12 40) **
+      ((base + 24) ↦ᵢ .SD .x12 .x6 8) ** ((base + 28) ↦ᵢ .SD .x12 .x7 40) **
+      ((base + 32) ↦ᵢ .LD .x7 .x12 16) ** ((base + 36) ↦ᵢ .LD .x6 .x12 48) **
+      ((base + 40) ↦ᵢ .SD .x12 .x6 16) ** ((base + 44) ↦ᵢ .SD .x12 .x7 48) **
+      ((base + 48) ↦ᵢ .LD .x7 .x12 24) ** ((base + 52) ↦ᵢ .LD .x6 .x12 56) **
+      ((base + 56) ↦ᵢ .SD .x12 .x6 24) ** ((base + 60) ↦ᵢ .SD .x12 .x7 56)
     cpsTriple base (base + 64)
-      ((base ↦ᵢ .LD .x7 .x12 0) ** ((base + 4) ↦ᵢ .LD .x6 .x12 32) **
-       ((base + 8) ↦ᵢ .SD .x12 .x6 0) ** ((base + 12) ↦ᵢ .SD .x12 .x7 32) **
-       ((base + 16) ↦ᵢ .LD .x7 .x12 8) ** ((base + 20) ↦ᵢ .LD .x6 .x12 40) **
-       ((base + 24) ↦ᵢ .SD .x12 .x6 8) ** ((base + 28) ↦ᵢ .SD .x12 .x7 40) **
-       ((base + 32) ↦ᵢ .LD .x7 .x12 16) ** ((base + 36) ↦ᵢ .LD .x6 .x12 48) **
-       ((base + 40) ↦ᵢ .SD .x12 .x6 16) ** ((base + 44) ↦ᵢ .SD .x12 .x7 48) **
-       ((base + 48) ↦ᵢ .LD .x7 .x12 24) ** ((base + 52) ↦ᵢ .LD .x6 .x12 56) **
-       ((base + 56) ↦ᵢ .SD .x12 .x6 24) ** ((base + 60) ↦ᵢ .SD .x12 .x7 56) **
+      (code **
        (.x12 ↦ᵣ sp) ** (.x7 ↦ᵣ v7) ** (.x6 ↦ᵣ v6) **
        evmWordIs sp a ** evmWordIs (sp + 32) b)
-      ((base ↦ᵢ .LD .x7 .x12 0) ** ((base + 4) ↦ᵢ .LD .x6 .x12 32) **
-       ((base + 8) ↦ᵢ .SD .x12 .x6 0) ** ((base + 12) ↦ᵢ .SD .x12 .x7 32) **
-       ((base + 16) ↦ᵢ .LD .x7 .x12 8) ** ((base + 20) ↦ᵢ .LD .x6 .x12 40) **
-       ((base + 24) ↦ᵢ .SD .x12 .x6 8) ** ((base + 28) ↦ᵢ .SD .x12 .x7 40) **
-       ((base + 32) ↦ᵢ .LD .x7 .x12 16) ** ((base + 36) ↦ᵢ .LD .x6 .x12 48) **
-       ((base + 40) ↦ᵢ .SD .x12 .x6 16) ** ((base + 44) ↦ᵢ .SD .x12 .x7 48) **
-       ((base + 48) ↦ᵢ .LD .x7 .x12 24) ** ((base + 52) ↦ᵢ .LD .x6 .x12 56) **
-       ((base + 56) ↦ᵢ .SD .x12 .x6 24) ** ((base + 60) ↦ᵢ .SD .x12 .x7 56) **
+      (code **
        (.x12 ↦ᵣ sp) ** (.x7 ↦ᵣ a.getLimb 3) ** (.x6 ↦ᵣ b.getLimb 3) **
        evmWordIs sp b ** evmWordIs (sp + 32) a) := by
   have h_main := evm_swap1_spec sp base

@@ -22,23 +22,17 @@ theorem evm_not_spec (sp base : Addr)
     (v7 : Word)
     (hvalid : ValidMemRange sp 4) :
     let c := signExtend12 (-1 : BitVec 12)
+    let code :=
+      (base ↦ᵢ .LD .x7 .x12 0) ** ((base + 4) ↦ᵢ .XORI .x7 .x7 (-1)) ** ((base + 8) ↦ᵢ .SD .x12 .x7 0) **
+      ((base + 12) ↦ᵢ .LD .x7 .x12 8) ** ((base + 16) ↦ᵢ .XORI .x7 .x7 (-1)) ** ((base + 20) ↦ᵢ .SD .x12 .x7 8) **
+      ((base + 24) ↦ᵢ .LD .x7 .x12 16) ** ((base + 28) ↦ᵢ .XORI .x7 .x7 (-1)) ** ((base + 32) ↦ᵢ .SD .x12 .x7 16) **
+      ((base + 36) ↦ᵢ .LD .x7 .x12 24) ** ((base + 40) ↦ᵢ .XORI .x7 .x7 (-1)) ** ((base + 44) ↦ᵢ .SD .x12 .x7 24)
     cpsTriple base (base + 48)
-      (-- Limb 0 code
-       (base ↦ᵢ .LD .x7 .x12 0) ** ((base + 4) ↦ᵢ .XORI .x7 .x7 (-1)) ** ((base + 8) ↦ᵢ .SD .x12 .x7 0) **
-       -- Limb 1 code
-       ((base + 12) ↦ᵢ .LD .x7 .x12 8) ** ((base + 16) ↦ᵢ .XORI .x7 .x7 (-1)) ** ((base + 20) ↦ᵢ .SD .x12 .x7 8) **
-       -- Limb 2 code
-       ((base + 24) ↦ᵢ .LD .x7 .x12 16) ** ((base + 28) ↦ᵢ .XORI .x7 .x7 (-1)) ** ((base + 32) ↦ᵢ .SD .x12 .x7 16) **
-       -- Limb 3 code
-       ((base + 36) ↦ᵢ .LD .x7 .x12 24) ** ((base + 40) ↦ᵢ .XORI .x7 .x7 (-1)) ** ((base + 44) ↦ᵢ .SD .x12 .x7 24) **
+      (code **
        -- Registers + memory
        (.x12 ↦ᵣ sp) ** (.x7 ↦ᵣ v7) **
        (sp ↦ₘ a0) ** ((sp + 8) ↦ₘ a1) ** ((sp + 16) ↦ₘ a2) ** ((sp + 24) ↦ₘ a3))
-      (-- Same code (preserved)
-       (base ↦ᵢ .LD .x7 .x12 0) ** ((base + 4) ↦ᵢ .XORI .x7 .x7 (-1)) ** ((base + 8) ↦ᵢ .SD .x12 .x7 0) **
-       ((base + 12) ↦ᵢ .LD .x7 .x12 8) ** ((base + 16) ↦ᵢ .XORI .x7 .x7 (-1)) ** ((base + 20) ↦ᵢ .SD .x12 .x7 8) **
-       ((base + 24) ↦ᵢ .LD .x7 .x12 16) ** ((base + 28) ↦ᵢ .XORI .x7 .x7 (-1)) ** ((base + 32) ↦ᵢ .SD .x12 .x7 16) **
-       ((base + 36) ↦ᵢ .LD .x7 .x12 24) ** ((base + 40) ↦ᵢ .XORI .x7 .x7 (-1)) ** ((base + 44) ↦ᵢ .SD .x12 .x7 24) **
+      (code **
        -- Registers + memory (updated)
        (.x12 ↦ᵣ sp) ** (.x7 ↦ᵣ (a3 ^^^ c)) **
        (sp ↦ₘ (a0 ^^^ c)) ** ((sp + 8) ↦ₘ (a1 ^^^ c)) ** ((sp + 16) ↦ₘ (a2 ^^^ c)) ** ((sp + 24) ↦ₘ (a3 ^^^ c))) := by
@@ -62,19 +56,16 @@ theorem evm_not_stack_spec (sp base : Addr)
     (a : EvmWord) (v7 : Word)
     (hvalid : ValidMemRange sp 4) :
     let c := signExtend12 (-1 : BitVec 12)
+    let code :=
+      (base ↦ᵢ .LD .x7 .x12 0) ** ((base + 4) ↦ᵢ .XORI .x7 .x7 (-1)) ** ((base + 8) ↦ᵢ .SD .x12 .x7 0) **
+      ((base + 12) ↦ᵢ .LD .x7 .x12 8) ** ((base + 16) ↦ᵢ .XORI .x7 .x7 (-1)) ** ((base + 20) ↦ᵢ .SD .x12 .x7 8) **
+      ((base + 24) ↦ᵢ .LD .x7 .x12 16) ** ((base + 28) ↦ᵢ .XORI .x7 .x7 (-1)) ** ((base + 32) ↦ᵢ .SD .x12 .x7 16) **
+      ((base + 36) ↦ᵢ .LD .x7 .x12 24) ** ((base + 40) ↦ᵢ .XORI .x7 .x7 (-1)) ** ((base + 44) ↦ᵢ .SD .x12 .x7 24)
     cpsTriple base (base + 48)
-      (-- Code
-       (base ↦ᵢ .LD .x7 .x12 0) ** ((base + 4) ↦ᵢ .XORI .x7 .x7 (-1)) ** ((base + 8) ↦ᵢ .SD .x12 .x7 0) **
-       ((base + 12) ↦ᵢ .LD .x7 .x12 8) ** ((base + 16) ↦ᵢ .XORI .x7 .x7 (-1)) ** ((base + 20) ↦ᵢ .SD .x12 .x7 8) **
-       ((base + 24) ↦ᵢ .LD .x7 .x12 16) ** ((base + 28) ↦ᵢ .XORI .x7 .x7 (-1)) ** ((base + 32) ↦ᵢ .SD .x12 .x7 16) **
-       ((base + 36) ↦ᵢ .LD .x7 .x12 24) ** ((base + 40) ↦ᵢ .XORI .x7 .x7 (-1)) ** ((base + 44) ↦ᵢ .SD .x12 .x7 24) **
+      (code **
        -- Registers + memory
        (.x12 ↦ᵣ sp) ** (.x7 ↦ᵣ v7) ** evmWordIs sp a)
-      (-- Same code (preserved)
-       (base ↦ᵢ .LD .x7 .x12 0) ** ((base + 4) ↦ᵢ .XORI .x7 .x7 (-1)) ** ((base + 8) ↦ᵢ .SD .x12 .x7 0) **
-       ((base + 12) ↦ᵢ .LD .x7 .x12 8) ** ((base + 16) ↦ᵢ .XORI .x7 .x7 (-1)) ** ((base + 20) ↦ᵢ .SD .x12 .x7 8) **
-       ((base + 24) ↦ᵢ .LD .x7 .x12 16) ** ((base + 28) ↦ᵢ .XORI .x7 .x7 (-1)) ** ((base + 32) ↦ᵢ .SD .x12 .x7 16) **
-       ((base + 36) ↦ᵢ .LD .x7 .x12 24) ** ((base + 40) ↦ᵢ .XORI .x7 .x7 (-1)) ** ((base + 44) ↦ᵢ .SD .x12 .x7 24) **
+      (code **
        -- Registers + memory (updated)
        (.x12 ↦ᵣ sp) ** (.x7 ↦ᵣ (a.getLimb 3 ^^^ c)) ** evmWordIs sp (~~~a)) := by
   -- Helper: (~~~a).getLimb i = a.getLimb i ^^^ signExtend12 (-1)

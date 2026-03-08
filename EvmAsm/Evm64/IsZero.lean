@@ -20,32 +20,22 @@ theorem evm_iszero_spec (sp : Addr) (base : Addr)
     (hvalid : ValidMemRange sp 4) :
     let or_all := a0 ||| a1 ||| a2 ||| a3
     let result := if BitVec.ult or_all (1 : Word) then (1 : Word) else 0
+    let code :=
+      (base ↦ᵢ .LD .x7 .x12 0) **
+      ((base + 4) ↦ᵢ .LD .x6 .x12 8) ** ((base + 8) ↦ᵢ .OR .x7 .x7 .x6) **
+      ((base + 12) ↦ᵢ .LD .x6 .x12 16) ** ((base + 16) ↦ᵢ .OR .x7 .x7 .x6) **
+      ((base + 20) ↦ᵢ .LD .x6 .x12 24) ** ((base + 24) ↦ᵢ .OR .x7 .x7 .x6) **
+      ((base + 28) ↦ᵢ .SLTIU .x7 .x7 1) **
+      ((base + 32) ↦ᵢ .SD .x12 .x7 0) **
+      ((base + 36) ↦ᵢ .SD .x12 .x0 8) **
+      ((base + 40) ↦ᵢ .SD .x12 .x0 16) **
+      ((base + 44) ↦ᵢ .SD .x12 .x0 24)
     cpsTriple base (base + 48)
-      (-- OR reduction code (7 instructions: base+0..base+24)
-       (base ↦ᵢ .LD .x7 .x12 0) **
-       ((base + 4) ↦ᵢ .LD .x6 .x12 8) ** ((base + 8) ↦ᵢ .OR .x7 .x7 .x6) **
-       ((base + 12) ↦ᵢ .LD .x6 .x12 16) ** ((base + 16) ↦ᵢ .OR .x7 .x7 .x6) **
-       ((base + 20) ↦ᵢ .LD .x6 .x12 24) ** ((base + 24) ↦ᵢ .OR .x7 .x7 .x6) **
-       -- SLTIU (1 instruction)
-       ((base + 28) ↦ᵢ .SLTIU .x7 .x7 1) **
-       -- Store phase (4 instructions: base+32..base+44)
-       ((base + 32) ↦ᵢ .SD .x12 .x7 0) **
-       ((base + 36) ↦ᵢ .SD .x12 .x0 8) **
-       ((base + 40) ↦ᵢ .SD .x12 .x0 16) **
-       ((base + 44) ↦ᵢ .SD .x12 .x0 24) **
+      (code **
        -- Registers + memory
        (.x12 ↦ᵣ sp) ** (.x7 ↦ᵣ v7) ** (.x6 ↦ᵣ v6) **
        (sp ↦ₘ a0) ** ((sp + 8) ↦ₘ a1) ** ((sp + 16) ↦ₘ a2) ** ((sp + 24) ↦ₘ a3))
-      (-- Same code (preserved)
-       (base ↦ᵢ .LD .x7 .x12 0) **
-       ((base + 4) ↦ᵢ .LD .x6 .x12 8) ** ((base + 8) ↦ᵢ .OR .x7 .x7 .x6) **
-       ((base + 12) ↦ᵢ .LD .x6 .x12 16) ** ((base + 16) ↦ᵢ .OR .x7 .x7 .x6) **
-       ((base + 20) ↦ᵢ .LD .x6 .x12 24) ** ((base + 24) ↦ᵢ .OR .x7 .x7 .x6) **
-       ((base + 28) ↦ᵢ .SLTIU .x7 .x7 1) **
-       ((base + 32) ↦ᵢ .SD .x12 .x7 0) **
-       ((base + 36) ↦ᵢ .SD .x12 .x0 8) **
-       ((base + 40) ↦ᵢ .SD .x12 .x0 16) **
-       ((base + 44) ↦ᵢ .SD .x12 .x0 24) **
+      (code **
        -- Registers + memory (updated)
        (.x12 ↦ᵣ sp) ** (.x7 ↦ᵣ result) ** (.x6 ↦ᵣ a3) **
        (sp ↦ₘ result) ** ((sp + 8) ↦ₘ 0) ** ((sp + 16) ↦ₘ 0) ** ((sp + 24) ↦ₘ 0)) := by

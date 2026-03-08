@@ -27,39 +27,25 @@ theorem evm_eq_spec (sp : Addr) (base : Addr)
     let acc2 := acc1 ||| (a2 ^^^ b2)
     let acc3 := acc2 ||| (a3 ^^^ b3)
     let eq_result := if BitVec.ult acc3 (1 : Word) then (1 : Word) else 0
+    let code :=
+      (base ↦ᵢ .LD .x7 .x12 0) ** ((base + 4) ↦ᵢ .LD .x6 .x12 32) **
+      ((base + 8) ↦ᵢ .XOR .x7 .x7 .x6) **
+      ((base + 12) ↦ᵢ .LD .x6 .x12 8) ** ((base + 16) ↦ᵢ .LD .x5 .x12 40) **
+      ((base + 20) ↦ᵢ .XOR .x6 .x6 .x5) ** ((base + 24) ↦ᵢ .OR .x7 .x7 .x6) **
+      ((base + 28) ↦ᵢ .LD .x6 .x12 16) ** ((base + 32) ↦ᵢ .LD .x5 .x12 48) **
+      ((base + 36) ↦ᵢ .XOR .x6 .x6 .x5) ** ((base + 40) ↦ᵢ .OR .x7 .x7 .x6) **
+      ((base + 44) ↦ᵢ .LD .x6 .x12 24) ** ((base + 48) ↦ᵢ .LD .x5 .x12 56) **
+      ((base + 52) ↦ᵢ .XOR .x6 .x6 .x5) ** ((base + 56) ↦ᵢ .OR .x7 .x7 .x6) **
+      ((base + 60) ↦ᵢ .SLTIU .x7 .x7 1) ** ((base + 64) ↦ᵢ .ADDI .x12 .x12 32) **
+      ((base + 68) ↦ᵢ .SD .x12 .x7 0) ** ((base + 72) ↦ᵢ .SD .x12 .x0 8) **
+      ((base + 76) ↦ᵢ .SD .x12 .x0 16) ** ((base + 80) ↦ᵢ .SD .x12 .x0 24)
     cpsTriple base (base + 84)
-      (-- Limb 0 code (3 instrs)
-       (base ↦ᵢ .LD .x7 .x12 0) ** ((base + 4) ↦ᵢ .LD .x6 .x12 32) **
-       ((base + 8) ↦ᵢ .XOR .x7 .x7 .x6) **
-       -- Limb 1 code (4 instrs)
-       ((base + 12) ↦ᵢ .LD .x6 .x12 8) ** ((base + 16) ↦ᵢ .LD .x5 .x12 40) **
-       ((base + 20) ↦ᵢ .XOR .x6 .x6 .x5) ** ((base + 24) ↦ᵢ .OR .x7 .x7 .x6) **
-       -- Limb 2 code (4 instrs)
-       ((base + 28) ↦ᵢ .LD .x6 .x12 16) ** ((base + 32) ↦ᵢ .LD .x5 .x12 48) **
-       ((base + 36) ↦ᵢ .XOR .x6 .x6 .x5) ** ((base + 40) ↦ᵢ .OR .x7 .x7 .x6) **
-       -- Limb 3 code (4 instrs)
-       ((base + 44) ↦ᵢ .LD .x6 .x12 24) ** ((base + 48) ↦ᵢ .LD .x5 .x12 56) **
-       ((base + 52) ↦ᵢ .XOR .x6 .x6 .x5) ** ((base + 56) ↦ᵢ .OR .x7 .x7 .x6) **
-       -- Store phase (6 instrs)
-       ((base + 60) ↦ᵢ .SLTIU .x7 .x7 1) ** ((base + 64) ↦ᵢ .ADDI .x12 .x12 32) **
-       ((base + 68) ↦ᵢ .SD .x12 .x7 0) ** ((base + 72) ↦ᵢ .SD .x12 .x0 8) **
-       ((base + 76) ↦ᵢ .SD .x12 .x0 16) ** ((base + 80) ↦ᵢ .SD .x12 .x0 24) **
+      (code **
        -- Registers + memory
        (.x12 ↦ᵣ sp) ** (.x7 ↦ᵣ v7) ** (.x6 ↦ᵣ v6) ** (.x5 ↦ᵣ v5) ** (.x11 ↦ᵣ v11) **
        (sp ↦ₘ a0) ** ((sp + 8) ↦ₘ a1) ** ((sp + 16) ↦ₘ a2) ** ((sp + 24) ↦ₘ a3) **
        ((sp + 32) ↦ₘ b0) ** ((sp + 40) ↦ₘ b1) ** ((sp + 48) ↦ₘ b2) ** ((sp + 56) ↦ₘ b3))
-      (-- Same code (preserved)
-       (base ↦ᵢ .LD .x7 .x12 0) ** ((base + 4) ↦ᵢ .LD .x6 .x12 32) **
-       ((base + 8) ↦ᵢ .XOR .x7 .x7 .x6) **
-       ((base + 12) ↦ᵢ .LD .x6 .x12 8) ** ((base + 16) ↦ᵢ .LD .x5 .x12 40) **
-       ((base + 20) ↦ᵢ .XOR .x6 .x6 .x5) ** ((base + 24) ↦ᵢ .OR .x7 .x7 .x6) **
-       ((base + 28) ↦ᵢ .LD .x6 .x12 16) ** ((base + 32) ↦ᵢ .LD .x5 .x12 48) **
-       ((base + 36) ↦ᵢ .XOR .x6 .x6 .x5) ** ((base + 40) ↦ᵢ .OR .x7 .x7 .x6) **
-       ((base + 44) ↦ᵢ .LD .x6 .x12 24) ** ((base + 48) ↦ᵢ .LD .x5 .x12 56) **
-       ((base + 52) ↦ᵢ .XOR .x6 .x6 .x5) ** ((base + 56) ↦ᵢ .OR .x7 .x7 .x6) **
-       ((base + 60) ↦ᵢ .SLTIU .x7 .x7 1) ** ((base + 64) ↦ᵢ .ADDI .x12 .x12 32) **
-       ((base + 68) ↦ᵢ .SD .x12 .x7 0) ** ((base + 72) ↦ᵢ .SD .x12 .x0 8) **
-       ((base + 76) ↦ᵢ .SD .x12 .x0 16) ** ((base + 80) ↦ᵢ .SD .x12 .x0 24) **
+      (code **
        -- Registers + memory (updated)
        (.x12 ↦ᵣ (sp + 32)) **
        (.x7 ↦ᵣ eq_result) ** (.x6 ↦ᵣ (a3 ^^^ b3)) ** (.x5 ↦ᵣ b3) ** (.x11 ↦ᵣ v11) **
