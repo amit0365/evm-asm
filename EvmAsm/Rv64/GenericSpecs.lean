@@ -473,4 +473,38 @@ theorem generic_sd_spec (rs1 rs2 : Reg) (v_addr v_data mem_old : Word)
     have h7 := holdsFor_sepConj_pull_second.mpr h6
     exact holdsFor_pcFree_setPC (pcFree_sepConj (by pcFree) hR) _ _ h7
 
+-- ============================================================================
+-- Group 8: SD with x0 (stores 0, no x0 register in pre/post)
+-- ============================================================================
+
+/-- Generic spec for SD with rs2 = x0: store 0 to memory.
+    Pre:  (base ↦ᵢ .SD rs1 .x0 offset) ** (rs1 ↦ᵣ v_addr) ** (addr ↦ₘ mem_old)
+    Post: (base ↦ᵢ .SD rs1 .x0 offset) ** (rs1 ↦ᵣ v_addr) ** (addr ↦ₘ 0) -/
+theorem generic_sd_x0_spec (rs1 : Reg) (v_addr mem_old : Word)
+    (offset : BitVec 12) (base : Addr)
+    (hvalid : isValidDwordAccess (v_addr + signExtend12 offset) = true) :
+    cpsTriple base (base + 4)
+      ((base ↦ᵢ .SD rs1 .x0 offset) ** (rs1 ↦ᵣ v_addr) ** ((v_addr + signExtend12 offset) ↦ₘ mem_old))
+      ((base ↦ᵢ .SD rs1 .x0 offset) ** (rs1 ↦ᵣ v_addr) ** ((v_addr + signExtend12 offset) ↦ₘ (0 : Word))) := by
+  intro R hR s hPR hpc; subst hpc
+  have hfetch : s.code s.pc = some (.SD rs1 .x0 offset) :=
+    (holdsFor_instrAt _ _ s).mp (holdsFor_sepConj_elim_left (holdsFor_sepConj_elim_left hPR))
+  have hrs1 : s.getReg rs1 = v_addr :=
+    (holdsFor_regIs _ _ s).mp (holdsFor_sepConj_elim_left
+      (holdsFor_sepConj_elim_right (holdsFor_sepConj_elim_left hPR)))
+  have hstep' : step s = some (execInstrBr s (.SD rs1 .x0 offset)) :=
+    step_sd s rs1 .x0 offset hfetch (hrs1 ▸ hvalid)
+  have hexec' : execInstrBr s (.SD rs1 .x0 offset) =
+      (s.setMem (v_addr + signExtend12 offset) 0).setPC (s.pc + 4) := by
+    simp only [execInstrBr, hrs1]; rfl
+  refine ⟨1, (s.setMem (v_addr + signExtend12 offset) 0).setPC (s.pc + 4), ?_, rfl, ?_⟩
+  · show (step s).bind (stepN 0) = some _
+    rw [hstep', hexec']; rfl
+  · have h1 := holdsFor_sepConj_pull_second.mp hPR
+    have h2 := holdsFor_sepConj_pull_second.mp h1
+    have h3 := holdsFor_sepConj_memIs_setMem (v' := (0 : Word)) h2
+    have h4 := holdsFor_sepConj_pull_second.mpr h3
+    have h5 := holdsFor_sepConj_pull_second.mpr h4
+    exact holdsFor_pcFree_setPC (pcFree_sepConj (by pcFree) hR) _ _ h5
+
 end EvmAsm.Rv64

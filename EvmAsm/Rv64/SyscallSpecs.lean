@@ -306,4 +306,15 @@ namespace EvmAsm.Rv64
     (by intro s _ hrs1 _; simp [execInstrBr, hrs1])
     (by intro s hfetch; exact step_non_ecall_non_mem s _ hfetch (by nofun) (by nofun) (by rfl))
 
+/-- SD rs1 x0 offset: mem[rs1 + sext(offset)] := 0.
+    Specialized version of sd_spec_gen for x0 (always reads as 0).
+    Does not require (x0 ↦ᵣ 0) in pre/post. -/
+@[spec_gen_rv64] theorem sd_x0_spec_gen (rs1 : Reg) (v_addr mem_old : Word)
+    (offset : BitVec 12) (addr : Addr)
+    (hvalid : isValidDwordAccess (v_addr + signExtend12 offset) = true) :
+    cpsTriple addr (addr + 4)
+      ((addr ↦ᵢ .SD rs1 .x0 offset) ** (rs1 ↦ᵣ v_addr) ** ((v_addr + signExtend12 offset) ↦ₘ mem_old))
+      ((addr ↦ᵢ .SD rs1 .x0 offset) ** (rs1 ↦ᵣ v_addr) ** ((v_addr + signExtend12 offset) ↦ₘ (0 : Word))) :=
+  generic_sd_x0_spec rs1 v_addr mem_old offset addr hvalid
+
 end EvmAsm.Rv64
