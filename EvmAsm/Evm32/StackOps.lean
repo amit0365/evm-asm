@@ -104,178 +104,37 @@ theorem evm_push0_spec (nsp base : Addr)
        (.x12 ↦ᵣ nsp) **
        (nsp ↦ₘ 0) ** ((nsp + 4) ↦ₘ 0) ** ((nsp + 8) ↦ₘ 0) ** ((nsp + 12) ↦ₘ 0) **
        ((nsp + 16) ↦ₘ 0) ** ((nsp + 20) ↦ₘ 0) ** ((nsp + 24) ↦ₘ 0) ** ((nsp + 28) ↦ₘ 0)) := by
-  -- Address arithmetic for instruction chaining
-  have ha1 : (base + 4 : Addr) + 4 = base + 8 := by bv_omega
-  have ha2 : (base + 8 : Addr) + 4 = base + 12 := by bv_omega
-  have ha3 : (base + 12 : Addr) + 4 = base + 16 := by bv_omega
-  have ha4 : (base + 16 : Addr) + 4 = base + 20 := by bv_omega
-  have ha5 : (base + 20 : Addr) + 4 = base + 24 := by bv_omega
-  have ha6 : (base + 24 : Addr) + 4 = base + 28 := by bv_omega
-  have ha7 : (base + 28 : Addr) + 4 = base + 32 := by bv_omega
-  have ha8 : (base + 32 : Addr) + 4 = base + 36 := by bv_omega
-  -- ADDI result normalization
-  have h_addi : (nsp + 32 : Word) + (-32 : Word) = nsp := by bv_omega
-  -- Memory address normalization: nsp + signExtend12 N = nsp + N
-  have hm0 : nsp + signExtend12 (0 : BitVec 12) = nsp := by
-    simp only [signExtend12_0]; bv_omega
-  have hm4 : nsp + signExtend12 (4 : BitVec 12) = nsp + 4 := by
-    simp only [signExtend12_4]
-  have hm8 : nsp + signExtend12 (8 : BitVec 12) = nsp + 8 := by
-    simp only [signExtend12_8]
-  have hm12 : nsp + signExtend12 (12 : BitVec 12) = nsp + 12 := by
-    simp only [signExtend12_12]
-  have hm16 : nsp + signExtend12 (16 : BitVec 12) = nsp + 16 := by
-    simp only [signExtend12_16]
-  have hm20 : nsp + signExtend12 (20 : BitVec 12) = nsp + 20 := by
-    simp only [signExtend12_20]
-  have hm24 : nsp + signExtend12 (24 : BitVec 12) = nsp + 24 := by
-    simp only [signExtend12_24]
-  have hm28 : nsp + signExtend12 (28 : BitVec 12) = nsp + 28 := by
-    simp only [signExtend12_28]
   -- Memory validity from ValidMemRange nsp 8
-  have hv0 : isValidMemAccess nsp = true := by
+  have hvm0 : isValidMemAccess (nsp + signExtend12 (0 : BitVec 12)) = true := by
+    simp only [signExtend12_0]; rw [show nsp + (0 : Word) = nsp from by bv_addr]
     have := hvalid.get (i := 0) (by omega); simpa using this
-  have hv4 : isValidMemAccess (nsp + 4) = true := by
-    have := hvalid.get (i := 1) (by omega); simpa using this
-  have hv8 : isValidMemAccess (nsp + 8) = true := by
-    have := hvalid.get (i := 2) (by omega); simpa using this
-  have hv12 : isValidMemAccess (nsp + 12) = true := by
-    have := hvalid.get (i := 3) (by omega); simpa using this
-  have hv16 : isValidMemAccess (nsp + 16) = true := by
-    have := hvalid.get (i := 4) (by omega); simpa using this
-  have hv20 : isValidMemAccess (nsp + 20) = true := by
-    have := hvalid.get (i := 5) (by omega); simpa using this
-  have hv24 : isValidMemAccess (nsp + 24) = true := by
-    have := hvalid.get (i := 6) (by omega); simpa using this
-  have hv28 : isValidMemAccess (nsp + 28) = true := by
-    have := hvalid.get (i := 7) (by omega); simpa using this
-  -- Step 1: ADDI x12 x12 (-32) at base
-  have s1_raw := addi_spec_gen_same .x12 (nsp + 32) (-32) base (by nofun)
-  simp only [signExtend12_neg32] at s1_raw
-  rw [h_addi] at s1_raw
-  have s1 := cpsTriple_frame_left _ _ _ _
-    (((base + 4) ↦ᵢ .SW .x12 .x0 0) **
-     ((base + 8) ↦ᵢ .SW .x12 .x0 4) ** ((base + 12) ↦ᵢ .SW .x12 .x0 8) **
-     ((base + 16) ↦ᵢ .SW .x12 .x0 12) ** ((base + 20) ↦ᵢ .SW .x12 .x0 16) **
-     ((base + 24) ↦ᵢ .SW .x12 .x0 20) ** ((base + 28) ↦ᵢ .SW .x12 .x0 24) **
-     ((base + 32) ↦ᵢ .SW .x12 .x0 28) **
-     (nsp ↦ₘ d0) ** ((nsp + 4) ↦ₘ d1) ** ((nsp + 8) ↦ₘ d2) ** ((nsp + 12) ↦ₘ d3) **
-     ((nsp + 16) ↦ₘ d4) ** ((nsp + 20) ↦ₘ d5) ** ((nsp + 24) ↦ₘ d6) ** ((nsp + 28) ↦ₘ d7))
-    (by pcFree) s1_raw
-  -- Step 2: SW x12 x0 0 at base+4 (store 0 at nsp)
-  have s2_raw := sw_x0_spec_gen .x12 nsp d0 0 (base + 4) (by rw [hm0]; exact hv0)
-  rw [ha1, hm0] at s2_raw
-  have s2 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .ADDI .x12 .x12 (-32)) **
-     ((base + 8) ↦ᵢ .SW .x12 .x0 4) ** ((base + 12) ↦ᵢ .SW .x12 .x0 8) **
-     ((base + 16) ↦ᵢ .SW .x12 .x0 12) ** ((base + 20) ↦ᵢ .SW .x12 .x0 16) **
-     ((base + 24) ↦ᵢ .SW .x12 .x0 20) ** ((base + 28) ↦ᵢ .SW .x12 .x0 24) **
-     ((base + 32) ↦ᵢ .SW .x12 .x0 28) **
-     ((nsp + 4) ↦ₘ d1) ** ((nsp + 8) ↦ₘ d2) ** ((nsp + 12) ↦ₘ d3) **
-     ((nsp + 16) ↦ₘ d4) ** ((nsp + 20) ↦ₘ d5) ** ((nsp + 24) ↦ₘ d6) ** ((nsp + 28) ↦ₘ d7))
-    (by pcFree) s2_raw
-  have s12 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) s1 s2
-  clear s1 s2 s1_raw s2_raw
-  -- Step 3: SW x12 x0 4 at base+8 (store 0 at nsp+4)
-  have s3_raw := sw_x0_spec_gen .x12 nsp d1 4 (base + 8) (by rw [hm4]; exact hv4)
-  rw [ha2, hm4] at s3_raw
-  have s3 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .ADDI .x12 .x12 (-32)) ** ((base + 4) ↦ᵢ .SW .x12 .x0 0) **
-     ((base + 12) ↦ᵢ .SW .x12 .x0 8) ** ((base + 16) ↦ᵢ .SW .x12 .x0 12) **
-     ((base + 20) ↦ᵢ .SW .x12 .x0 16) ** ((base + 24) ↦ᵢ .SW .x12 .x0 20) **
-     ((base + 28) ↦ᵢ .SW .x12 .x0 24) ** ((base + 32) ↦ᵢ .SW .x12 .x0 28) **
-     (nsp ↦ₘ 0) ** ((nsp + 8) ↦ₘ d2) ** ((nsp + 12) ↦ₘ d3) **
-     ((nsp + 16) ↦ₘ d4) ** ((nsp + 20) ↦ₘ d5) ** ((nsp + 24) ↦ₘ d6) ** ((nsp + 28) ↦ₘ d7))
-    (by pcFree) s3_raw
-  have s123 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) s12 s3
-  clear s12 s3 s3_raw
-  -- Step 4: SW x12 x0 8 at base+12 (store 0 at nsp+8)
-  have s4_raw := sw_x0_spec_gen .x12 nsp d2 8 (base + 12) (by rw [hm8]; exact hv8)
-  rw [ha3, hm8] at s4_raw
-  have s4 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .ADDI .x12 .x12 (-32)) ** ((base + 4) ↦ᵢ .SW .x12 .x0 0) **
-     ((base + 8) ↦ᵢ .SW .x12 .x0 4) ** ((base + 16) ↦ᵢ .SW .x12 .x0 12) **
-     ((base + 20) ↦ᵢ .SW .x12 .x0 16) ** ((base + 24) ↦ᵢ .SW .x12 .x0 20) **
-     ((base + 28) ↦ᵢ .SW .x12 .x0 24) ** ((base + 32) ↦ᵢ .SW .x12 .x0 28) **
-     (nsp ↦ₘ 0) ** ((nsp + 4) ↦ₘ 0) ** ((nsp + 12) ↦ₘ d3) **
-     ((nsp + 16) ↦ₘ d4) ** ((nsp + 20) ↦ₘ d5) ** ((nsp + 24) ↦ₘ d6) ** ((nsp + 28) ↦ₘ d7))
-    (by pcFree) s4_raw
-  have s1234 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) s123 s4
-  clear s123 s4 s4_raw
-  -- Step 5: SW x12 x0 12 at base+16 (store 0 at nsp+12)
-  have s5_raw := sw_x0_spec_gen .x12 nsp d3 12 (base + 16) (by rw [hm12]; exact hv12)
-  rw [ha4, hm12] at s5_raw
-  have s5 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .ADDI .x12 .x12 (-32)) ** ((base + 4) ↦ᵢ .SW .x12 .x0 0) **
-     ((base + 8) ↦ᵢ .SW .x12 .x0 4) ** ((base + 12) ↦ᵢ .SW .x12 .x0 8) **
-     ((base + 20) ↦ᵢ .SW .x12 .x0 16) ** ((base + 24) ↦ᵢ .SW .x12 .x0 20) **
-     ((base + 28) ↦ᵢ .SW .x12 .x0 24) ** ((base + 32) ↦ᵢ .SW .x12 .x0 28) **
-     (nsp ↦ₘ 0) ** ((nsp + 4) ↦ₘ 0) ** ((nsp + 8) ↦ₘ 0) **
-     ((nsp + 16) ↦ₘ d4) ** ((nsp + 20) ↦ₘ d5) ** ((nsp + 24) ↦ₘ d6) ** ((nsp + 28) ↦ₘ d7))
-    (by pcFree) s5_raw
-  have s12345 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) s1234 s5
-  clear s1234 s5 s5_raw
-  -- Step 6: SW x12 x0 16 at base+20 (store 0 at nsp+16)
-  have s6_raw := sw_x0_spec_gen .x12 nsp d4 16 (base + 20) (by rw [hm16]; exact hv16)
-  rw [ha5, hm16] at s6_raw
-  have s6 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .ADDI .x12 .x12 (-32)) ** ((base + 4) ↦ᵢ .SW .x12 .x0 0) **
-     ((base + 8) ↦ᵢ .SW .x12 .x0 4) ** ((base + 12) ↦ᵢ .SW .x12 .x0 8) **
-     ((base + 16) ↦ᵢ .SW .x12 .x0 12) ** ((base + 24) ↦ᵢ .SW .x12 .x0 20) **
-     ((base + 28) ↦ᵢ .SW .x12 .x0 24) ** ((base + 32) ↦ᵢ .SW .x12 .x0 28) **
-     (nsp ↦ₘ 0) ** ((nsp + 4) ↦ₘ 0) ** ((nsp + 8) ↦ₘ 0) ** ((nsp + 12) ↦ₘ 0) **
-     ((nsp + 20) ↦ₘ d5) ** ((nsp + 24) ↦ₘ d6) ** ((nsp + 28) ↦ₘ d7))
-    (by pcFree) s6_raw
-  have s123456 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) s12345 s6
-  clear s12345 s6 s6_raw
-  -- Step 7: SW x12 x0 20 at base+24 (store 0 at nsp+20)
-  have s7_raw := sw_x0_spec_gen .x12 nsp d5 20 (base + 24) (by rw [hm20]; exact hv20)
-  rw [ha6, hm20] at s7_raw
-  have s7 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .ADDI .x12 .x12 (-32)) ** ((base + 4) ↦ᵢ .SW .x12 .x0 0) **
-     ((base + 8) ↦ᵢ .SW .x12 .x0 4) ** ((base + 12) ↦ᵢ .SW .x12 .x0 8) **
-     ((base + 16) ↦ᵢ .SW .x12 .x0 12) ** ((base + 20) ↦ᵢ .SW .x12 .x0 16) **
-     ((base + 28) ↦ᵢ .SW .x12 .x0 24) ** ((base + 32) ↦ᵢ .SW .x12 .x0 28) **
-     (nsp ↦ₘ 0) ** ((nsp + 4) ↦ₘ 0) ** ((nsp + 8) ↦ₘ 0) ** ((nsp + 12) ↦ₘ 0) **
-     ((nsp + 16) ↦ₘ 0) ** ((nsp + 24) ↦ₘ d6) ** ((nsp + 28) ↦ₘ d7))
-    (by pcFree) s7_raw
-  have s1234567 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) s123456 s7
-  clear s123456 s7 s7_raw
-  -- Step 8: SW x12 x0 24 at base+28 (store 0 at nsp+24)
-  have s8_raw := sw_x0_spec_gen .x12 nsp d6 24 (base + 28) (by rw [hm24]; exact hv24)
-  rw [ha7, hm24] at s8_raw
-  have s8 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .ADDI .x12 .x12 (-32)) ** ((base + 4) ↦ᵢ .SW .x12 .x0 0) **
-     ((base + 8) ↦ᵢ .SW .x12 .x0 4) ** ((base + 12) ↦ᵢ .SW .x12 .x0 8) **
-     ((base + 16) ↦ᵢ .SW .x12 .x0 12) ** ((base + 20) ↦ᵢ .SW .x12 .x0 16) **
-     ((base + 24) ↦ᵢ .SW .x12 .x0 20) ** ((base + 32) ↦ᵢ .SW .x12 .x0 28) **
-     (nsp ↦ₘ 0) ** ((nsp + 4) ↦ₘ 0) ** ((nsp + 8) ↦ₘ 0) ** ((nsp + 12) ↦ₘ 0) **
-     ((nsp + 16) ↦ₘ 0) ** ((nsp + 20) ↦ₘ 0) ** ((nsp + 28) ↦ₘ d7))
-    (by pcFree) s8_raw
-  have s12345678 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) s1234567 s8
-  clear s1234567 s8 s8_raw
-  -- Step 9: SW x12 x0 28 at base+32 (store 0 at nsp+28)
-  have s9_raw := sw_x0_spec_gen .x12 nsp d7 28 (base + 32) (by rw [hm28]; exact hv28)
-  rw [ha8, hm28] at s9_raw
-  have s9 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .ADDI .x12 .x12 (-32)) ** ((base + 4) ↦ᵢ .SW .x12 .x0 0) **
-     ((base + 8) ↦ᵢ .SW .x12 .x0 4) ** ((base + 12) ↦ᵢ .SW .x12 .x0 8) **
-     ((base + 16) ↦ᵢ .SW .x12 .x0 12) ** ((base + 20) ↦ᵢ .SW .x12 .x0 16) **
-     ((base + 24) ↦ᵢ .SW .x12 .x0 20) ** ((base + 28) ↦ᵢ .SW .x12 .x0 24) **
-     (nsp ↦ₘ 0) ** ((nsp + 4) ↦ₘ 0) ** ((nsp + 8) ↦ₘ 0) ** ((nsp + 12) ↦ₘ 0) **
-     ((nsp + 16) ↦ₘ 0) ** ((nsp + 20) ↦ₘ 0) ** ((nsp + 24) ↦ₘ 0))
-    (by pcFree) s9_raw
-  exact cpsTriple_consequence _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) (fun h hq => by xperm_hyp hq)
-    (cpsTriple_seq_with_perm _ _ _ _ _ _ _
-      (fun h hp => by xperm_hyp hp) s12345678 s9)
+  have hvm4 : isValidMemAccess (nsp + signExtend12 (4 : BitVec 12)) = true := by
+    simp only [signExtend12_4]; have := hvalid.get (i := 1) (by omega); simpa using this
+  have hvm8 : isValidMemAccess (nsp + signExtend12 (8 : BitVec 12)) = true := by
+    simp only [signExtend12_8]; have := hvalid.get (i := 2) (by omega); simpa using this
+  have hvm12 : isValidMemAccess (nsp + signExtend12 (12 : BitVec 12)) = true := by
+    simp only [signExtend12_12]; have := hvalid.get (i := 3) (by omega); simpa using this
+  have hvm16 : isValidMemAccess (nsp + signExtend12 (16 : BitVec 12)) = true := by
+    simp only [signExtend12_16]; have := hvalid.get (i := 4) (by omega); simpa using this
+  have hvm20 : isValidMemAccess (nsp + signExtend12 (20 : BitVec 12)) = true := by
+    simp only [signExtend12_20]; have := hvalid.get (i := 5) (by omega); simpa using this
+  have hvm24 : isValidMemAccess (nsp + signExtend12 (24 : BitVec 12)) = true := by
+    simp only [signExtend12_24]; have := hvalid.get (i := 6) (by omega); simpa using this
+  have hvm28 : isValidMemAccess (nsp + signExtend12 (28 : BitVec 12)) = true := by
+    simp only [signExtend12_28]; have := hvalid.get (i := 7) (by omega); simpa using this
+  -- Compose ADDI + 8 SW x0 specs via runBlock
+  have S0 := addi_spec_gen_same .x12 (nsp + 32) (-32) base (by nofun)
+  simp only [signExtend12_neg32] at S0
+  rw [show (nsp + 32 : Word) + (-32 : Word) = nsp from by bv_omega] at S0
+  have S1 := sw_x0_spec_gen .x12 nsp d0 0 (base + 4) hvm0
+  have S2 := sw_x0_spec_gen .x12 nsp d1 4 (base + 8) hvm4
+  have S3 := sw_x0_spec_gen .x12 nsp d2 8 (base + 12) hvm8
+  have S4 := sw_x0_spec_gen .x12 nsp d3 12 (base + 16) hvm12
+  have S5 := sw_x0_spec_gen .x12 nsp d4 16 (base + 20) hvm16
+  have S6 := sw_x0_spec_gen .x12 nsp d5 20 (base + 24) hvm20
+  have S7 := sw_x0_spec_gen .x12 nsp d6 24 (base + 28) hvm24
+  have S8 := sw_x0_spec_gen .x12 nsp d7 28 (base + 32) hvm28
+  runBlock S0 S1 S2 S3 S4 S5 S6 S7 S8
 
 theorem evm_push0_stack_spec (nsp base : Addr)
     (d0 d1 d2 d3 d4 d5 d6 d7 : Word) (rest : List EvmWord)
@@ -365,297 +224,53 @@ theorem evm_dup1_spec (nsp base : Addr)
        ((nsp + 16) ↦ₘ a4) ** ((nsp + 20) ↦ₘ a5) ** ((nsp + 24) ↦ₘ a6) ** ((nsp + 28) ↦ₘ a7) **
        ((nsp + 32) ↦ₘ a0) ** ((nsp + 36) ↦ₘ a1) ** ((nsp + 40) ↦ₘ a2) ** ((nsp + 44) ↦ₘ a3) **
        ((nsp + 48) ↦ₘ a4) ** ((nsp + 52) ↦ₘ a5) ** ((nsp + 56) ↦ₘ a6) ** ((nsp + 60) ↦ₘ a7)) := by
-  -- ADDI result normalization
-  have h_addi : (nsp + 32 : Word) + signExtend12 (-32 : BitVec 12) = nsp := by
-    simp only [signExtend12_neg32]; bv_omega
-  -- Memory address normalization: nsp + signExtend12 N = nsp + N
-  have hm0 : nsp + signExtend12 (0 : BitVec 12) = nsp := by
-    simp only [signExtend12_0]; bv_omega
-  have hm4 : nsp + signExtend12 (4 : BitVec 12) = nsp + 4 := by
-    simp only [signExtend12_4]
-  have hm8 : nsp + signExtend12 (8 : BitVec 12) = nsp + 8 := by
-    simp only [signExtend12_8]
-  have hm12 : nsp + signExtend12 (12 : BitVec 12) = nsp + 12 := by
-    simp only [signExtend12_12]
-  have hm16 : nsp + signExtend12 (16 : BitVec 12) = nsp + 16 := by
-    simp only [signExtend12_16]
-  have hm20 : nsp + signExtend12 (20 : BitVec 12) = nsp + 20 := by
-    simp only [signExtend12_20]
-  have hm24 : nsp + signExtend12 (24 : BitVec 12) = nsp + 24 := by
-    simp only [signExtend12_24]
-  have hm28 : nsp + signExtend12 (28 : BitVec 12) = nsp + 28 := by
-    simp only [signExtend12_28]
-  have hm32 : nsp + signExtend12 (32 : BitVec 12) = nsp + 32 := by
-    simp only [signExtend12_32]
-  have hm36 : nsp + signExtend12 (36 : BitVec 12) = nsp + 36 := by
-    simp only [signExtend12_36]
-  have hm40 : nsp + signExtend12 (40 : BitVec 12) = nsp + 40 := by
-    simp only [signExtend12_40]
-  have hm44 : nsp + signExtend12 (44 : BitVec 12) = nsp + 44 := by
-    simp only [signExtend12_44]
-  have hm48 : nsp + signExtend12 (48 : BitVec 12) = nsp + 48 := by
-    simp only [signExtend12_48]
-  have hm52 : nsp + signExtend12 (52 : BitVec 12) = nsp + 52 := by
-    simp only [signExtend12_52]
-  have hm56 : nsp + signExtend12 (56 : BitVec 12) = nsp + 56 := by
-    simp only [signExtend12_56]
-  have hm60 : nsp + signExtend12 (60 : BitVec 12) = nsp + 60 := by
-    simp only [signExtend12_60]
   -- Memory validity from ValidMemRange nsp 16
-  have hv0 : isValidMemAccess nsp = true := by
+  have hvm0 : isValidMemAccess (nsp + signExtend12 (0 : BitVec 12)) = true := by
+    simp only [signExtend12_0]; rw [show nsp + (0 : Word) = nsp from by bv_addr]
     have := hvalid.get (i := 0) (by omega); simpa using this
-  have hv4 : isValidMemAccess (nsp + 4) = true := by
-    have := hvalid.get (i := 1) (by omega); simpa using this
-  have hv8 : isValidMemAccess (nsp + 8) = true := by
-    have := hvalid.get (i := 2) (by omega); simpa using this
-  have hv12 : isValidMemAccess (nsp + 12) = true := by
-    have := hvalid.get (i := 3) (by omega); simpa using this
-  have hv16 : isValidMemAccess (nsp + 16) = true := by
-    have := hvalid.get (i := 4) (by omega); simpa using this
-  have hv20 : isValidMemAccess (nsp + 20) = true := by
-    have := hvalid.get (i := 5) (by omega); simpa using this
-  have hv24 : isValidMemAccess (nsp + 24) = true := by
-    have := hvalid.get (i := 6) (by omega); simpa using this
-  have hv28 : isValidMemAccess (nsp + 28) = true := by
-    have := hvalid.get (i := 7) (by omega); simpa using this
-  have hv32 : isValidMemAccess (nsp + 32) = true := by
-    have := hvalid.get (i := 8) (by omega); simpa using this
-  have hv36 : isValidMemAccess (nsp + 36) = true := by
-    have := hvalid.get (i := 9) (by omega); simpa using this
-  have hv40 : isValidMemAccess (nsp + 40) = true := by
-    have := hvalid.get (i := 10) (by omega); simpa using this
-  have hv44 : isValidMemAccess (nsp + 44) = true := by
-    have := hvalid.get (i := 11) (by omega); simpa using this
-  have hv48 : isValidMemAccess (nsp + 48) = true := by
-    have := hvalid.get (i := 12) (by omega); simpa using this
-  have hv52 : isValidMemAccess (nsp + 52) = true := by
-    have := hvalid.get (i := 13) (by omega); simpa using this
-  have hv56 : isValidMemAccess (nsp + 56) = true := by
-    have := hvalid.get (i := 14) (by omega); simpa using this
-  have hv60 : isValidMemAccess (nsp + 60) = true := by
-    have := hvalid.get (i := 15) (by omega); simpa using this
-  -- Step 1: ADDI x12 x12 (-32) at base
-  have s1_raw := addi_spec_gen_same .x12 (nsp + 32) (-32) base (by nofun)
-  rw [h_addi] at s1_raw
-  have s1 := cpsTriple_frame_left _ _ _ _
-    (((base + 4) ↦ᵢ .LW .x7 .x12 32) ** ((base + 8) ↦ᵢ .SW .x12 .x7 0) **
-     ((base + 12) ↦ᵢ .LW .x7 .x12 36) ** ((base + 16) ↦ᵢ .SW .x12 .x7 4) **
-     ((base + 20) ↦ᵢ .LW .x7 .x12 40) ** ((base + 24) ↦ᵢ .SW .x12 .x7 8) **
-     ((base + 28) ↦ᵢ .LW .x7 .x12 44) ** ((base + 32) ↦ᵢ .SW .x12 .x7 12) **
-     ((base + 36) ↦ᵢ .LW .x7 .x12 48) ** ((base + 40) ↦ᵢ .SW .x12 .x7 16) **
-     ((base + 44) ↦ᵢ .LW .x7 .x12 52) ** ((base + 48) ↦ᵢ .SW .x12 .x7 20) **
-     ((base + 52) ↦ᵢ .LW .x7 .x12 56) ** ((base + 56) ↦ᵢ .SW .x12 .x7 24) **
-     ((base + 60) ↦ᵢ .LW .x7 .x12 60) ** ((base + 64) ↦ᵢ .SW .x12 .x7 28) **
-     (.x7 ↦ᵣ v7) **
-     (nsp ↦ₘ d0) ** ((nsp + 4) ↦ₘ d1) ** ((nsp + 8) ↦ₘ d2) ** ((nsp + 12) ↦ₘ d3) **
-     ((nsp + 16) ↦ₘ d4) ** ((nsp + 20) ↦ₘ d5) ** ((nsp + 24) ↦ₘ d6) ** ((nsp + 28) ↦ₘ d7) **
-     ((nsp + 32) ↦ₘ a0) ** ((nsp + 36) ↦ₘ a1) ** ((nsp + 40) ↦ₘ a2) ** ((nsp + 44) ↦ₘ a3) **
-     ((nsp + 48) ↦ₘ a4) ** ((nsp + 52) ↦ₘ a5) ** ((nsp + 56) ↦ₘ a6) ** ((nsp + 60) ↦ₘ a7))
-    (by pcFree) s1_raw
-  clear s1_raw
-  -- Step 2: dup1_pair_spec at base+4, offsets 32 (src) and 0 (dst)
-  -- After ADDI, x12 = nsp. Pair reads from nsp+32, writes to nsp+0.
-  have P0_raw := dup1_pair_spec nsp 32 0 a0 d0 v7 (base + 4)
-    (by rw [hm32]; exact hv32) (by rw [hm0]; exact hv0)
-  simp only [signExtend12_32, signExtend12_0] at P0_raw
-  rw [show nsp + (0 : Word) = nsp from by bv_addr] at P0_raw
-  rw [show (base + 4 : Addr) + 4 = base + 8 from by bv_addr,
-      show (base + 4 : Addr) + 8 = base + 12 from by bv_addr] at P0_raw
-  have P0 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .ADDI .x12 .x12 (-32)) **
-     ((base + 12) ↦ᵢ .LW .x7 .x12 36) ** ((base + 16) ↦ᵢ .SW .x12 .x7 4) **
-     ((base + 20) ↦ᵢ .LW .x7 .x12 40) ** ((base + 24) ↦ᵢ .SW .x12 .x7 8) **
-     ((base + 28) ↦ᵢ .LW .x7 .x12 44) ** ((base + 32) ↦ᵢ .SW .x12 .x7 12) **
-     ((base + 36) ↦ᵢ .LW .x7 .x12 48) ** ((base + 40) ↦ᵢ .SW .x12 .x7 16) **
-     ((base + 44) ↦ᵢ .LW .x7 .x12 52) ** ((base + 48) ↦ᵢ .SW .x12 .x7 20) **
-     ((base + 52) ↦ᵢ .LW .x7 .x12 56) ** ((base + 56) ↦ᵢ .SW .x12 .x7 24) **
-     ((base + 60) ↦ᵢ .LW .x7 .x12 60) ** ((base + 64) ↦ᵢ .SW .x12 .x7 28) **
-     ((nsp + 4) ↦ₘ d1) ** ((nsp + 8) ↦ₘ d2) ** ((nsp + 12) ↦ₘ d3) **
-     ((nsp + 16) ↦ₘ d4) ** ((nsp + 20) ↦ₘ d5) ** ((nsp + 24) ↦ₘ d6) ** ((nsp + 28) ↦ₘ d7) **
-     ((nsp + 36) ↦ₘ a1) ** ((nsp + 40) ↦ₘ a2) ** ((nsp + 44) ↦ₘ a3) **
-     ((nsp + 48) ↦ₘ a4) ** ((nsp + 52) ↦ₘ a5) ** ((nsp + 56) ↦ₘ a6) ** ((nsp + 60) ↦ₘ a7))
-    (by pcFree) P0_raw
-  clear P0_raw
-  have s1P0 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) s1 P0
-  clear s1 P0
-  -- Step 3: dup1_pair_spec at base+12, offsets 36 (src) and 4 (dst)
-  have P1_raw := dup1_pair_spec nsp 36 4 a1 d1 a0 (base + 12)
-    (by rw [hm36]; exact hv36) (by rw [hm4]; exact hv4)
-  simp only [signExtend12_36, signExtend12_4] at P1_raw
-  rw [show (base + 12 : Addr) + 4 = base + 16 from by bv_addr,
-      show (base + 12 : Addr) + 8 = base + 20 from by bv_addr] at P1_raw
-  have P1 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .ADDI .x12 .x12 (-32)) **
-     ((base + 4) ↦ᵢ .LW .x7 .x12 32) ** ((base + 8) ↦ᵢ .SW .x12 .x7 0) **
-     ((base + 20) ↦ᵢ .LW .x7 .x12 40) ** ((base + 24) ↦ᵢ .SW .x12 .x7 8) **
-     ((base + 28) ↦ᵢ .LW .x7 .x12 44) ** ((base + 32) ↦ᵢ .SW .x12 .x7 12) **
-     ((base + 36) ↦ᵢ .LW .x7 .x12 48) ** ((base + 40) ↦ᵢ .SW .x12 .x7 16) **
-     ((base + 44) ↦ᵢ .LW .x7 .x12 52) ** ((base + 48) ↦ᵢ .SW .x12 .x7 20) **
-     ((base + 52) ↦ᵢ .LW .x7 .x12 56) ** ((base + 56) ↦ᵢ .SW .x12 .x7 24) **
-     ((base + 60) ↦ᵢ .LW .x7 .x12 60) ** ((base + 64) ↦ᵢ .SW .x12 .x7 28) **
-     (nsp ↦ₘ a0) **
-     ((nsp + 8) ↦ₘ d2) ** ((nsp + 12) ↦ₘ d3) **
-     ((nsp + 16) ↦ₘ d4) ** ((nsp + 20) ↦ₘ d5) ** ((nsp + 24) ↦ₘ d6) ** ((nsp + 28) ↦ₘ d7) **
-     ((nsp + 32) ↦ₘ a0) **
-     ((nsp + 40) ↦ₘ a2) ** ((nsp + 44) ↦ₘ a3) **
-     ((nsp + 48) ↦ₘ a4) ** ((nsp + 52) ↦ₘ a5) ** ((nsp + 56) ↦ₘ a6) ** ((nsp + 60) ↦ₘ a7))
-    (by pcFree) P1_raw
-  clear P1_raw
-  have s1P01 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) s1P0 P1
-  clear s1P0 P1
-  -- Step 4: dup1_pair_spec at base+20, offsets 40 (src) and 8 (dst)
-  have P2_raw := dup1_pair_spec nsp 40 8 a2 d2 a1 (base + 20)
-    (by rw [hm40]; exact hv40) (by rw [hm8]; exact hv8)
-  simp only [signExtend12_40, signExtend12_8] at P2_raw
-  rw [show (base + 20 : Addr) + 4 = base + 24 from by bv_addr,
-      show (base + 20 : Addr) + 8 = base + 28 from by bv_addr] at P2_raw
-  have P2 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .ADDI .x12 .x12 (-32)) **
-     ((base + 4) ↦ᵢ .LW .x7 .x12 32) ** ((base + 8) ↦ᵢ .SW .x12 .x7 0) **
-     ((base + 12) ↦ᵢ .LW .x7 .x12 36) ** ((base + 16) ↦ᵢ .SW .x12 .x7 4) **
-     ((base + 28) ↦ᵢ .LW .x7 .x12 44) ** ((base + 32) ↦ᵢ .SW .x12 .x7 12) **
-     ((base + 36) ↦ᵢ .LW .x7 .x12 48) ** ((base + 40) ↦ᵢ .SW .x12 .x7 16) **
-     ((base + 44) ↦ᵢ .LW .x7 .x12 52) ** ((base + 48) ↦ᵢ .SW .x12 .x7 20) **
-     ((base + 52) ↦ᵢ .LW .x7 .x12 56) ** ((base + 56) ↦ᵢ .SW .x12 .x7 24) **
-     ((base + 60) ↦ᵢ .LW .x7 .x12 60) ** ((base + 64) ↦ᵢ .SW .x12 .x7 28) **
-     (nsp ↦ₘ a0) ** ((nsp + 4) ↦ₘ a1) **
-     ((nsp + 12) ↦ₘ d3) **
-     ((nsp + 16) ↦ₘ d4) ** ((nsp + 20) ↦ₘ d5) ** ((nsp + 24) ↦ₘ d6) ** ((nsp + 28) ↦ₘ d7) **
-     ((nsp + 32) ↦ₘ a0) ** ((nsp + 36) ↦ₘ a1) **
-     ((nsp + 44) ↦ₘ a3) **
-     ((nsp + 48) ↦ₘ a4) ** ((nsp + 52) ↦ₘ a5) ** ((nsp + 56) ↦ₘ a6) ** ((nsp + 60) ↦ₘ a7))
-    (by pcFree) P2_raw
-  clear P2_raw
-  have s1P012 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) s1P01 P2
-  clear s1P01 P2
-  -- Step 5: dup1_pair_spec at base+28, offsets 44 (src) and 12 (dst)
-  have P3_raw := dup1_pair_spec nsp 44 12 a3 d3 a2 (base + 28)
-    (by rw [hm44]; exact hv44) (by rw [hm12]; exact hv12)
-  simp only [signExtend12_44, signExtend12_12] at P3_raw
-  rw [show (base + 28 : Addr) + 4 = base + 32 from by bv_addr,
-      show (base + 28 : Addr) + 8 = base + 36 from by bv_addr] at P3_raw
-  have P3 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .ADDI .x12 .x12 (-32)) **
-     ((base + 4) ↦ᵢ .LW .x7 .x12 32) ** ((base + 8) ↦ᵢ .SW .x12 .x7 0) **
-     ((base + 12) ↦ᵢ .LW .x7 .x12 36) ** ((base + 16) ↦ᵢ .SW .x12 .x7 4) **
-     ((base + 20) ↦ᵢ .LW .x7 .x12 40) ** ((base + 24) ↦ᵢ .SW .x12 .x7 8) **
-     ((base + 36) ↦ᵢ .LW .x7 .x12 48) ** ((base + 40) ↦ᵢ .SW .x12 .x7 16) **
-     ((base + 44) ↦ᵢ .LW .x7 .x12 52) ** ((base + 48) ↦ᵢ .SW .x12 .x7 20) **
-     ((base + 52) ↦ᵢ .LW .x7 .x12 56) ** ((base + 56) ↦ᵢ .SW .x12 .x7 24) **
-     ((base + 60) ↦ᵢ .LW .x7 .x12 60) ** ((base + 64) ↦ᵢ .SW .x12 .x7 28) **
-     (nsp ↦ₘ a0) ** ((nsp + 4) ↦ₘ a1) ** ((nsp + 8) ↦ₘ a2) **
-     ((nsp + 16) ↦ₘ d4) ** ((nsp + 20) ↦ₘ d5) ** ((nsp + 24) ↦ₘ d6) ** ((nsp + 28) ↦ₘ d7) **
-     ((nsp + 32) ↦ₘ a0) ** ((nsp + 36) ↦ₘ a1) ** ((nsp + 40) ↦ₘ a2) **
-     ((nsp + 48) ↦ₘ a4) ** ((nsp + 52) ↦ₘ a5) ** ((nsp + 56) ↦ₘ a6) ** ((nsp + 60) ↦ₘ a7))
-    (by pcFree) P3_raw
-  clear P3_raw
-  have s1P0123 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) s1P012 P3
-  clear s1P012 P3
-  -- Step 6: dup1_pair_spec at base+36, offsets 48 (src) and 16 (dst)
-  have P4_raw := dup1_pair_spec nsp 48 16 a4 d4 a3 (base + 36)
-    (by rw [hm48]; exact hv48) (by rw [hm16]; exact hv16)
-  simp only [signExtend12_48, signExtend12_16] at P4_raw
-  rw [show (base + 36 : Addr) + 4 = base + 40 from by bv_addr,
-      show (base + 36 : Addr) + 8 = base + 44 from by bv_addr] at P4_raw
-  have P4 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .ADDI .x12 .x12 (-32)) **
-     ((base + 4) ↦ᵢ .LW .x7 .x12 32) ** ((base + 8) ↦ᵢ .SW .x12 .x7 0) **
-     ((base + 12) ↦ᵢ .LW .x7 .x12 36) ** ((base + 16) ↦ᵢ .SW .x12 .x7 4) **
-     ((base + 20) ↦ᵢ .LW .x7 .x12 40) ** ((base + 24) ↦ᵢ .SW .x12 .x7 8) **
-     ((base + 28) ↦ᵢ .LW .x7 .x12 44) ** ((base + 32) ↦ᵢ .SW .x12 .x7 12) **
-     ((base + 44) ↦ᵢ .LW .x7 .x12 52) ** ((base + 48) ↦ᵢ .SW .x12 .x7 20) **
-     ((base + 52) ↦ᵢ .LW .x7 .x12 56) ** ((base + 56) ↦ᵢ .SW .x12 .x7 24) **
-     ((base + 60) ↦ᵢ .LW .x7 .x12 60) ** ((base + 64) ↦ᵢ .SW .x12 .x7 28) **
-     (nsp ↦ₘ a0) ** ((nsp + 4) ↦ₘ a1) ** ((nsp + 8) ↦ₘ a2) ** ((nsp + 12) ↦ₘ a3) **
-     ((nsp + 20) ↦ₘ d5) ** ((nsp + 24) ↦ₘ d6) ** ((nsp + 28) ↦ₘ d7) **
-     ((nsp + 32) ↦ₘ a0) ** ((nsp + 36) ↦ₘ a1) ** ((nsp + 40) ↦ₘ a2) ** ((nsp + 44) ↦ₘ a3) **
-     ((nsp + 52) ↦ₘ a5) ** ((nsp + 56) ↦ₘ a6) ** ((nsp + 60) ↦ₘ a7))
-    (by pcFree) P4_raw
-  clear P4_raw
-  have s1P01234 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) s1P0123 P4
-  clear s1P0123 P4
-  -- Step 7: dup1_pair_spec at base+44, offsets 52 (src) and 20 (dst)
-  have P5_raw := dup1_pair_spec nsp 52 20 a5 d5 a4 (base + 44)
-    (by rw [hm52]; exact hv52) (by rw [hm20]; exact hv20)
-  simp only [signExtend12_52, signExtend12_20] at P5_raw
-  rw [show (base + 44 : Addr) + 4 = base + 48 from by bv_addr,
-      show (base + 44 : Addr) + 8 = base + 52 from by bv_addr] at P5_raw
-  have P5 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .ADDI .x12 .x12 (-32)) **
-     ((base + 4) ↦ᵢ .LW .x7 .x12 32) ** ((base + 8) ↦ᵢ .SW .x12 .x7 0) **
-     ((base + 12) ↦ᵢ .LW .x7 .x12 36) ** ((base + 16) ↦ᵢ .SW .x12 .x7 4) **
-     ((base + 20) ↦ᵢ .LW .x7 .x12 40) ** ((base + 24) ↦ᵢ .SW .x12 .x7 8) **
-     ((base + 28) ↦ᵢ .LW .x7 .x12 44) ** ((base + 32) ↦ᵢ .SW .x12 .x7 12) **
-     ((base + 36) ↦ᵢ .LW .x7 .x12 48) ** ((base + 40) ↦ᵢ .SW .x12 .x7 16) **
-     ((base + 52) ↦ᵢ .LW .x7 .x12 56) ** ((base + 56) ↦ᵢ .SW .x12 .x7 24) **
-     ((base + 60) ↦ᵢ .LW .x7 .x12 60) ** ((base + 64) ↦ᵢ .SW .x12 .x7 28) **
-     (nsp ↦ₘ a0) ** ((nsp + 4) ↦ₘ a1) ** ((nsp + 8) ↦ₘ a2) ** ((nsp + 12) ↦ₘ a3) **
-     ((nsp + 16) ↦ₘ a4) **
-     ((nsp + 24) ↦ₘ d6) ** ((nsp + 28) ↦ₘ d7) **
-     ((nsp + 32) ↦ₘ a0) ** ((nsp + 36) ↦ₘ a1) ** ((nsp + 40) ↦ₘ a2) ** ((nsp + 44) ↦ₘ a3) **
-     ((nsp + 48) ↦ₘ a4) **
-     ((nsp + 56) ↦ₘ a6) ** ((nsp + 60) ↦ₘ a7))
-    (by pcFree) P5_raw
-  clear P5_raw
-  have s1P012345 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) s1P01234 P5
-  clear s1P01234 P5
-  -- Step 8: dup1_pair_spec at base+52, offsets 56 (src) and 24 (dst)
-  have P6_raw := dup1_pair_spec nsp 56 24 a6 d6 a5 (base + 52)
-    (by rw [hm56]; exact hv56) (by rw [hm24]; exact hv24)
-  simp only [signExtend12_56, signExtend12_24] at P6_raw
-  rw [show (base + 52 : Addr) + 4 = base + 56 from by bv_addr,
-      show (base + 52 : Addr) + 8 = base + 60 from by bv_addr] at P6_raw
-  have P6 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .ADDI .x12 .x12 (-32)) **
-     ((base + 4) ↦ᵢ .LW .x7 .x12 32) ** ((base + 8) ↦ᵢ .SW .x12 .x7 0) **
-     ((base + 12) ↦ᵢ .LW .x7 .x12 36) ** ((base + 16) ↦ᵢ .SW .x12 .x7 4) **
-     ((base + 20) ↦ᵢ .LW .x7 .x12 40) ** ((base + 24) ↦ᵢ .SW .x12 .x7 8) **
-     ((base + 28) ↦ᵢ .LW .x7 .x12 44) ** ((base + 32) ↦ᵢ .SW .x12 .x7 12) **
-     ((base + 36) ↦ᵢ .LW .x7 .x12 48) ** ((base + 40) ↦ᵢ .SW .x12 .x7 16) **
-     ((base + 44) ↦ᵢ .LW .x7 .x12 52) ** ((base + 48) ↦ᵢ .SW .x12 .x7 20) **
-     ((base + 60) ↦ᵢ .LW .x7 .x12 60) ** ((base + 64) ↦ᵢ .SW .x12 .x7 28) **
-     (nsp ↦ₘ a0) ** ((nsp + 4) ↦ₘ a1) ** ((nsp + 8) ↦ₘ a2) ** ((nsp + 12) ↦ₘ a3) **
-     ((nsp + 16) ↦ₘ a4) ** ((nsp + 20) ↦ₘ a5) **
-     ((nsp + 28) ↦ₘ d7) **
-     ((nsp + 32) ↦ₘ a0) ** ((nsp + 36) ↦ₘ a1) ** ((nsp + 40) ↦ₘ a2) ** ((nsp + 44) ↦ₘ a3) **
-     ((nsp + 48) ↦ₘ a4) ** ((nsp + 52) ↦ₘ a5) **
-     ((nsp + 60) ↦ₘ a7))
-    (by pcFree) P6_raw
-  clear P6_raw
-  have s1P0123456 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) s1P012345 P6
-  clear s1P012345 P6
-  -- Step 9: dup1_pair_spec at base+60, offsets 60 (src) and 28 (dst)
-  have P7_raw := dup1_pair_spec nsp 60 28 a7 d7 a6 (base + 60)
-    (by rw [hm60]; exact hv60) (by rw [hm28]; exact hv28)
-  simp only [signExtend12_60, signExtend12_28] at P7_raw
-  rw [show (base + 60 : Addr) + 4 = base + 64 from by bv_addr,
-      show (base + 60 : Addr) + 8 = base + 68 from by bv_addr] at P7_raw
-  have P7 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .ADDI .x12 .x12 (-32)) **
-     ((base + 4) ↦ᵢ .LW .x7 .x12 32) ** ((base + 8) ↦ᵢ .SW .x12 .x7 0) **
-     ((base + 12) ↦ᵢ .LW .x7 .x12 36) ** ((base + 16) ↦ᵢ .SW .x12 .x7 4) **
-     ((base + 20) ↦ᵢ .LW .x7 .x12 40) ** ((base + 24) ↦ᵢ .SW .x12 .x7 8) **
-     ((base + 28) ↦ᵢ .LW .x7 .x12 44) ** ((base + 32) ↦ᵢ .SW .x12 .x7 12) **
-     ((base + 36) ↦ᵢ .LW .x7 .x12 48) ** ((base + 40) ↦ᵢ .SW .x12 .x7 16) **
-     ((base + 44) ↦ᵢ .LW .x7 .x12 52) ** ((base + 48) ↦ᵢ .SW .x12 .x7 20) **
-     ((base + 52) ↦ᵢ .LW .x7 .x12 56) ** ((base + 56) ↦ᵢ .SW .x12 .x7 24) **
-     (nsp ↦ₘ a0) ** ((nsp + 4) ↦ₘ a1) ** ((nsp + 8) ↦ₘ a2) ** ((nsp + 12) ↦ₘ a3) **
-     ((nsp + 16) ↦ₘ a4) ** ((nsp + 20) ↦ₘ a5) ** ((nsp + 24) ↦ₘ a6) **
-     ((nsp + 32) ↦ₘ a0) ** ((nsp + 36) ↦ₘ a1) ** ((nsp + 40) ↦ₘ a2) ** ((nsp + 44) ↦ₘ a3) **
-     ((nsp + 48) ↦ₘ a4) ** ((nsp + 52) ↦ₘ a5) ** ((nsp + 56) ↦ₘ a6))
-    (by pcFree) P7_raw
-  clear P7_raw
-  exact cpsTriple_consequence _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) (fun h hq => by xperm_hyp hq)
-    (cpsTriple_seq_with_perm _ _ _ _ _ _ _
-      (fun h hp => by xperm_hyp hp) s1P0123456 P7)
+  have hvm4 : isValidMemAccess (nsp + signExtend12 (4 : BitVec 12)) = true := by
+    simp only [signExtend12_4]; have := hvalid.get (i := 1) (by omega); simpa using this
+  have hvm8 : isValidMemAccess (nsp + signExtend12 (8 : BitVec 12)) = true := by
+    simp only [signExtend12_8]; have := hvalid.get (i := 2) (by omega); simpa using this
+  have hvm12 : isValidMemAccess (nsp + signExtend12 (12 : BitVec 12)) = true := by
+    simp only [signExtend12_12]; have := hvalid.get (i := 3) (by omega); simpa using this
+  have hvm16 : isValidMemAccess (nsp + signExtend12 (16 : BitVec 12)) = true := by
+    simp only [signExtend12_16]; have := hvalid.get (i := 4) (by omega); simpa using this
+  have hvm20 : isValidMemAccess (nsp + signExtend12 (20 : BitVec 12)) = true := by
+    simp only [signExtend12_20]; have := hvalid.get (i := 5) (by omega); simpa using this
+  have hvm24 : isValidMemAccess (nsp + signExtend12 (24 : BitVec 12)) = true := by
+    simp only [signExtend12_24]; have := hvalid.get (i := 6) (by omega); simpa using this
+  have hvm28 : isValidMemAccess (nsp + signExtend12 (28 : BitVec 12)) = true := by
+    simp only [signExtend12_28]; have := hvalid.get (i := 7) (by omega); simpa using this
+  have hvm32 : isValidMemAccess (nsp + signExtend12 (32 : BitVec 12)) = true := by
+    simp only [signExtend12_32]; have := hvalid.get (i := 8) (by omega); simpa using this
+  have hvm36 : isValidMemAccess (nsp + signExtend12 (36 : BitVec 12)) = true := by
+    simp only [signExtend12_36]; have := hvalid.get (i := 9) (by omega); simpa using this
+  have hvm40 : isValidMemAccess (nsp + signExtend12 (40 : BitVec 12)) = true := by
+    simp only [signExtend12_40]; have := hvalid.get (i := 10) (by omega); simpa using this
+  have hvm44 : isValidMemAccess (nsp + signExtend12 (44 : BitVec 12)) = true := by
+    simp only [signExtend12_44]; have := hvalid.get (i := 11) (by omega); simpa using this
+  have hvm48 : isValidMemAccess (nsp + signExtend12 (48 : BitVec 12)) = true := by
+    simp only [signExtend12_48]; have := hvalid.get (i := 12) (by omega); simpa using this
+  have hvm52 : isValidMemAccess (nsp + signExtend12 (52 : BitVec 12)) = true := by
+    simp only [signExtend12_52]; have := hvalid.get (i := 13) (by omega); simpa using this
+  have hvm56 : isValidMemAccess (nsp + signExtend12 (56 : BitVec 12)) = true := by
+    simp only [signExtend12_56]; have := hvalid.get (i := 14) (by omega); simpa using this
+  have hvm60 : isValidMemAccess (nsp + signExtend12 (60 : BitVec 12)) = true := by
+    simp only [signExtend12_60]; have := hvalid.get (i := 15) (by omega); simpa using this
+  -- Compose ADDI + 8 dup1_pair_specs via runBlock
+  have S0 := addi_spec_gen_same .x12 (nsp + 32) (-32) base (by nofun)
+  simp only [signExtend12_neg32] at S0
+  rw [show (nsp + 32 : Word) + (-32 : Word) = nsp from by bv_omega] at S0
+  have P0 := dup1_pair_spec nsp 32 0 a0 d0 v7 (base + 4) hvm32 hvm0
+  have P1 := dup1_pair_spec nsp 36 4 a1 d1 a0 (base + 12) hvm36 hvm4
+  have P2 := dup1_pair_spec nsp 40 8 a2 d2 a1 (base + 20) hvm40 hvm8
+  have P3 := dup1_pair_spec nsp 44 12 a3 d3 a2 (base + 28) hvm44 hvm12
+  have P4 := dup1_pair_spec nsp 48 16 a4 d4 a3 (base + 36) hvm48 hvm16
+  have P5 := dup1_pair_spec nsp 52 20 a5 d5 a4 (base + 44) hvm52 hvm20
+  have P6 := dup1_pair_spec nsp 56 24 a6 d6 a5 (base + 52) hvm56 hvm24
+  have P7 := dup1_pair_spec nsp 60 28 a7 d7 a6 (base + 60) hvm60 hvm28
+  runBlock S0 P0 P1 P2 P3 P4 P5 P6 P7
 
 theorem evm_dup1_stack_spec (nsp base : Addr)
     (a : EvmWord) (d0 d1 d2 d3 d4 d5 d6 d7 : Word) (v7 : Word) (rest : List EvmWord)
@@ -834,254 +449,16 @@ theorem evm_swap1_spec (sp base : Addr)
     simp only [signExtend12_56]; have := hvalid.get (i := 14) (by omega); simpa using this
   have hvm60 : isValidMemAccess (sp + signExtend12 (60 : BitVec 12)) = true := by
     simp only [signExtend12_60]; have := hvalid.get (i := 15) (by omega); simpa using this
-  -- Limb 0: swap1_limb_spec at base, offsets 0 and 32
-  have L0_raw := swap1_limb_spec sp 0 32 a0 b0 v7 v6 base hvm0 hvm32
-  simp only [signExtend12_0] at L0_raw
-  rw [show sp + (0 : Word) = sp from by bv_addr] at L0_raw
-  simp only [signExtend12_32] at L0_raw
-  have L0 := cpsTriple_frame_left _ _ _ _
-    (((base + 16) ↦ᵢ .LW .x7 .x12 4) ** ((base + 20) ↦ᵢ .LW .x6 .x12 36) **
-     ((base + 24) ↦ᵢ .SW .x12 .x6 4) ** ((base + 28) ↦ᵢ .SW .x12 .x7 36) **
-     ((base + 32) ↦ᵢ .LW .x7 .x12 8) ** ((base + 36) ↦ᵢ .LW .x6 .x12 40) **
-     ((base + 40) ↦ᵢ .SW .x12 .x6 8) ** ((base + 44) ↦ᵢ .SW .x12 .x7 40) **
-     ((base + 48) ↦ᵢ .LW .x7 .x12 12) ** ((base + 52) ↦ᵢ .LW .x6 .x12 44) **
-     ((base + 56) ↦ᵢ .SW .x12 .x6 12) ** ((base + 60) ↦ᵢ .SW .x12 .x7 44) **
-     ((base + 64) ↦ᵢ .LW .x7 .x12 16) ** ((base + 68) ↦ᵢ .LW .x6 .x12 48) **
-     ((base + 72) ↦ᵢ .SW .x12 .x6 16) ** ((base + 76) ↦ᵢ .SW .x12 .x7 48) **
-     ((base + 80) ↦ᵢ .LW .x7 .x12 20) ** ((base + 84) ↦ᵢ .LW .x6 .x12 52) **
-     ((base + 88) ↦ᵢ .SW .x12 .x6 20) ** ((base + 92) ↦ᵢ .SW .x12 .x7 52) **
-     ((base + 96) ↦ᵢ .LW .x7 .x12 24) ** ((base + 100) ↦ᵢ .LW .x6 .x12 56) **
-     ((base + 104) ↦ᵢ .SW .x12 .x6 24) ** ((base + 108) ↦ᵢ .SW .x12 .x7 56) **
-     ((base + 112) ↦ᵢ .LW .x7 .x12 28) ** ((base + 116) ↦ᵢ .LW .x6 .x12 60) **
-     ((base + 120) ↦ᵢ .SW .x12 .x6 28) ** ((base + 124) ↦ᵢ .SW .x12 .x7 60) **
-     ((sp + 4) ↦ₘ a1) ** ((sp + 8) ↦ₘ a2) ** ((sp + 12) ↦ₘ a3) **
-     ((sp + 16) ↦ₘ a4) ** ((sp + 20) ↦ₘ a5) ** ((sp + 24) ↦ₘ a6) ** ((sp + 28) ↦ₘ a7) **
-     ((sp + 36) ↦ₘ b1) ** ((sp + 40) ↦ₘ b2) ** ((sp + 44) ↦ₘ b3) **
-     ((sp + 48) ↦ₘ b4) ** ((sp + 52) ↦ₘ b5) ** ((sp + 56) ↦ₘ b6) ** ((sp + 60) ↦ₘ b7))
-    (by pcFree) L0_raw
-  clear L0_raw
-  -- Limb 1: swap1_limb_spec at base+16, offsets 4 and 36
-  have L1_raw := swap1_limb_spec sp 4 36 a1 b1 a0 b0 (base + 16) hvm4 hvm36
-  simp only [signExtend12_4, signExtend12_36] at L1_raw
-  rw [show (base + 16 : Addr) + 4 = base + 20 from by bv_omega,
-      show (base + 16 : Addr) + 8 = base + 24 from by bv_omega,
-      show (base + 16 : Addr) + 12 = base + 28 from by bv_omega,
-      show (base + 16 : Addr) + 16 = base + 32 from by bv_omega] at L1_raw
-  have L1 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .LW .x7 .x12 0) ** ((base + 4) ↦ᵢ .LW .x6 .x12 32) **
-     ((base + 8) ↦ᵢ .SW .x12 .x6 0) ** ((base + 12) ↦ᵢ .SW .x12 .x7 32) **
-     ((base + 32) ↦ᵢ .LW .x7 .x12 8) ** ((base + 36) ↦ᵢ .LW .x6 .x12 40) **
-     ((base + 40) ↦ᵢ .SW .x12 .x6 8) ** ((base + 44) ↦ᵢ .SW .x12 .x7 40) **
-     ((base + 48) ↦ᵢ .LW .x7 .x12 12) ** ((base + 52) ↦ᵢ .LW .x6 .x12 44) **
-     ((base + 56) ↦ᵢ .SW .x12 .x6 12) ** ((base + 60) ↦ᵢ .SW .x12 .x7 44) **
-     ((base + 64) ↦ᵢ .LW .x7 .x12 16) ** ((base + 68) ↦ᵢ .LW .x6 .x12 48) **
-     ((base + 72) ↦ᵢ .SW .x12 .x6 16) ** ((base + 76) ↦ᵢ .SW .x12 .x7 48) **
-     ((base + 80) ↦ᵢ .LW .x7 .x12 20) ** ((base + 84) ↦ᵢ .LW .x6 .x12 52) **
-     ((base + 88) ↦ᵢ .SW .x12 .x6 20) ** ((base + 92) ↦ᵢ .SW .x12 .x7 52) **
-     ((base + 96) ↦ᵢ .LW .x7 .x12 24) ** ((base + 100) ↦ᵢ .LW .x6 .x12 56) **
-     ((base + 104) ↦ᵢ .SW .x12 .x6 24) ** ((base + 108) ↦ᵢ .SW .x12 .x7 56) **
-     ((base + 112) ↦ᵢ .LW .x7 .x12 28) ** ((base + 116) ↦ᵢ .LW .x6 .x12 60) **
-     ((base + 120) ↦ᵢ .SW .x12 .x6 28) ** ((base + 124) ↦ᵢ .SW .x12 .x7 60) **
-     (sp ↦ₘ b0) ** ((sp + 32) ↦ₘ a0) **
-     ((sp + 8) ↦ₘ a2) ** ((sp + 12) ↦ₘ a3) **
-     ((sp + 16) ↦ₘ a4) ** ((sp + 20) ↦ₘ a5) ** ((sp + 24) ↦ₘ a6) ** ((sp + 28) ↦ₘ a7) **
-     ((sp + 40) ↦ₘ b2) ** ((sp + 44) ↦ₘ b3) **
-     ((sp + 48) ↦ₘ b4) ** ((sp + 52) ↦ₘ b5) ** ((sp + 56) ↦ₘ b6) ** ((sp + 60) ↦ₘ b7))
-    (by pcFree) L1_raw
-  clear L1_raw
-  have L01 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) L0 L1
-  clear L0 L1
-  -- Limb 2: swap1_limb_spec at base+32, offsets 8 and 40
-  have L2_raw := swap1_limb_spec sp 8 40 a2 b2 a1 b1 (base + 32) hvm8 hvm40
-  simp only [signExtend12_8, signExtend12_40] at L2_raw
-  rw [show (base + 32 : Addr) + 4 = base + 36 from by bv_omega,
-      show (base + 32 : Addr) + 8 = base + 40 from by bv_omega,
-      show (base + 32 : Addr) + 12 = base + 44 from by bv_omega,
-      show (base + 32 : Addr) + 16 = base + 48 from by bv_omega] at L2_raw
-  have L2 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .LW .x7 .x12 0) ** ((base + 4) ↦ᵢ .LW .x6 .x12 32) **
-     ((base + 8) ↦ᵢ .SW .x12 .x6 0) ** ((base + 12) ↦ᵢ .SW .x12 .x7 32) **
-     ((base + 16) ↦ᵢ .LW .x7 .x12 4) ** ((base + 20) ↦ᵢ .LW .x6 .x12 36) **
-     ((base + 24) ↦ᵢ .SW .x12 .x6 4) ** ((base + 28) ↦ᵢ .SW .x12 .x7 36) **
-     ((base + 48) ↦ᵢ .LW .x7 .x12 12) ** ((base + 52) ↦ᵢ .LW .x6 .x12 44) **
-     ((base + 56) ↦ᵢ .SW .x12 .x6 12) ** ((base + 60) ↦ᵢ .SW .x12 .x7 44) **
-     ((base + 64) ↦ᵢ .LW .x7 .x12 16) ** ((base + 68) ↦ᵢ .LW .x6 .x12 48) **
-     ((base + 72) ↦ᵢ .SW .x12 .x6 16) ** ((base + 76) ↦ᵢ .SW .x12 .x7 48) **
-     ((base + 80) ↦ᵢ .LW .x7 .x12 20) ** ((base + 84) ↦ᵢ .LW .x6 .x12 52) **
-     ((base + 88) ↦ᵢ .SW .x12 .x6 20) ** ((base + 92) ↦ᵢ .SW .x12 .x7 52) **
-     ((base + 96) ↦ᵢ .LW .x7 .x12 24) ** ((base + 100) ↦ᵢ .LW .x6 .x12 56) **
-     ((base + 104) ↦ᵢ .SW .x12 .x6 24) ** ((base + 108) ↦ᵢ .SW .x12 .x7 56) **
-     ((base + 112) ↦ᵢ .LW .x7 .x12 28) ** ((base + 116) ↦ᵢ .LW .x6 .x12 60) **
-     ((base + 120) ↦ᵢ .SW .x12 .x6 28) ** ((base + 124) ↦ᵢ .SW .x12 .x7 60) **
-     (sp ↦ₘ b0) ** ((sp + 4) ↦ₘ b1) ** ((sp + 32) ↦ₘ a0) ** ((sp + 36) ↦ₘ a1) **
-     ((sp + 12) ↦ₘ a3) **
-     ((sp + 16) ↦ₘ a4) ** ((sp + 20) ↦ₘ a5) ** ((sp + 24) ↦ₘ a6) ** ((sp + 28) ↦ₘ a7) **
-     ((sp + 44) ↦ₘ b3) **
-     ((sp + 48) ↦ₘ b4) ** ((sp + 52) ↦ₘ b5) ** ((sp + 56) ↦ₘ b6) ** ((sp + 60) ↦ₘ b7))
-    (by pcFree) L2_raw
-  clear L2_raw
-  have L012 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) L01 L2
-  clear L01 L2
-  -- Limb 3: swap1_limb_spec at base+48, offsets 12 and 44
-  have L3_raw := swap1_limb_spec sp 12 44 a3 b3 a2 b2 (base + 48) hvm12 hvm44
-  simp only [signExtend12_12, signExtend12_44] at L3_raw
-  rw [show (base + 48 : Addr) + 4 = base + 52 from by bv_omega,
-      show (base + 48 : Addr) + 8 = base + 56 from by bv_omega,
-      show (base + 48 : Addr) + 12 = base + 60 from by bv_omega,
-      show (base + 48 : Addr) + 16 = base + 64 from by bv_omega] at L3_raw
-  have L3 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .LW .x7 .x12 0) ** ((base + 4) ↦ᵢ .LW .x6 .x12 32) **
-     ((base + 8) ↦ᵢ .SW .x12 .x6 0) ** ((base + 12) ↦ᵢ .SW .x12 .x7 32) **
-     ((base + 16) ↦ᵢ .LW .x7 .x12 4) ** ((base + 20) ↦ᵢ .LW .x6 .x12 36) **
-     ((base + 24) ↦ᵢ .SW .x12 .x6 4) ** ((base + 28) ↦ᵢ .SW .x12 .x7 36) **
-     ((base + 32) ↦ᵢ .LW .x7 .x12 8) ** ((base + 36) ↦ᵢ .LW .x6 .x12 40) **
-     ((base + 40) ↦ᵢ .SW .x12 .x6 8) ** ((base + 44) ↦ᵢ .SW .x12 .x7 40) **
-     ((base + 64) ↦ᵢ .LW .x7 .x12 16) ** ((base + 68) ↦ᵢ .LW .x6 .x12 48) **
-     ((base + 72) ↦ᵢ .SW .x12 .x6 16) ** ((base + 76) ↦ᵢ .SW .x12 .x7 48) **
-     ((base + 80) ↦ᵢ .LW .x7 .x12 20) ** ((base + 84) ↦ᵢ .LW .x6 .x12 52) **
-     ((base + 88) ↦ᵢ .SW .x12 .x6 20) ** ((base + 92) ↦ᵢ .SW .x12 .x7 52) **
-     ((base + 96) ↦ᵢ .LW .x7 .x12 24) ** ((base + 100) ↦ᵢ .LW .x6 .x12 56) **
-     ((base + 104) ↦ᵢ .SW .x12 .x6 24) ** ((base + 108) ↦ᵢ .SW .x12 .x7 56) **
-     ((base + 112) ↦ᵢ .LW .x7 .x12 28) ** ((base + 116) ↦ᵢ .LW .x6 .x12 60) **
-     ((base + 120) ↦ᵢ .SW .x12 .x6 28) ** ((base + 124) ↦ᵢ .SW .x12 .x7 60) **
-     (sp ↦ₘ b0) ** ((sp + 4) ↦ₘ b1) ** ((sp + 8) ↦ₘ b2) **
-     ((sp + 32) ↦ₘ a0) ** ((sp + 36) ↦ₘ a1) ** ((sp + 40) ↦ₘ a2) **
-     ((sp + 16) ↦ₘ a4) ** ((sp + 20) ↦ₘ a5) ** ((sp + 24) ↦ₘ a6) ** ((sp + 28) ↦ₘ a7) **
-     ((sp + 48) ↦ₘ b4) ** ((sp + 52) ↦ₘ b5) ** ((sp + 56) ↦ₘ b6) ** ((sp + 60) ↦ₘ b7))
-    (by pcFree) L3_raw
-  clear L3_raw
-  have L0123 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) L012 L3
-  clear L012 L3
-  -- Limb 4: swap1_limb_spec at base+64, offsets 16 and 48
-  have L4_raw := swap1_limb_spec sp 16 48 a4 b4 a3 b3 (base + 64) hvm16 hvm48
-  simp only [signExtend12_16, signExtend12_48] at L4_raw
-  rw [show (base + 64 : Addr) + 4 = base + 68 from by bv_omega,
-      show (base + 64 : Addr) + 8 = base + 72 from by bv_omega,
-      show (base + 64 : Addr) + 12 = base + 76 from by bv_omega,
-      show (base + 64 : Addr) + 16 = base + 80 from by bv_omega] at L4_raw
-  have L4 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .LW .x7 .x12 0) ** ((base + 4) ↦ᵢ .LW .x6 .x12 32) **
-     ((base + 8) ↦ᵢ .SW .x12 .x6 0) ** ((base + 12) ↦ᵢ .SW .x12 .x7 32) **
-     ((base + 16) ↦ᵢ .LW .x7 .x12 4) ** ((base + 20) ↦ᵢ .LW .x6 .x12 36) **
-     ((base + 24) ↦ᵢ .SW .x12 .x6 4) ** ((base + 28) ↦ᵢ .SW .x12 .x7 36) **
-     ((base + 32) ↦ᵢ .LW .x7 .x12 8) ** ((base + 36) ↦ᵢ .LW .x6 .x12 40) **
-     ((base + 40) ↦ᵢ .SW .x12 .x6 8) ** ((base + 44) ↦ᵢ .SW .x12 .x7 40) **
-     ((base + 48) ↦ᵢ .LW .x7 .x12 12) ** ((base + 52) ↦ᵢ .LW .x6 .x12 44) **
-     ((base + 56) ↦ᵢ .SW .x12 .x6 12) ** ((base + 60) ↦ᵢ .SW .x12 .x7 44) **
-     ((base + 80) ↦ᵢ .LW .x7 .x12 20) ** ((base + 84) ↦ᵢ .LW .x6 .x12 52) **
-     ((base + 88) ↦ᵢ .SW .x12 .x6 20) ** ((base + 92) ↦ᵢ .SW .x12 .x7 52) **
-     ((base + 96) ↦ᵢ .LW .x7 .x12 24) ** ((base + 100) ↦ᵢ .LW .x6 .x12 56) **
-     ((base + 104) ↦ᵢ .SW .x12 .x6 24) ** ((base + 108) ↦ᵢ .SW .x12 .x7 56) **
-     ((base + 112) ↦ᵢ .LW .x7 .x12 28) ** ((base + 116) ↦ᵢ .LW .x6 .x12 60) **
-     ((base + 120) ↦ᵢ .SW .x12 .x6 28) ** ((base + 124) ↦ᵢ .SW .x12 .x7 60) **
-     (sp ↦ₘ b0) ** ((sp + 4) ↦ₘ b1) ** ((sp + 8) ↦ₘ b2) ** ((sp + 12) ↦ₘ b3) **
-     ((sp + 32) ↦ₘ a0) ** ((sp + 36) ↦ₘ a1) ** ((sp + 40) ↦ₘ a2) ** ((sp + 44) ↦ₘ a3) **
-     ((sp + 20) ↦ₘ a5) ** ((sp + 24) ↦ₘ a6) ** ((sp + 28) ↦ₘ a7) **
-     ((sp + 52) ↦ₘ b5) ** ((sp + 56) ↦ₘ b6) ** ((sp + 60) ↦ₘ b7))
-    (by pcFree) L4_raw
-  clear L4_raw
-  have L01234 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) L0123 L4
-  clear L0123 L4
-  -- Limb 5: swap1_limb_spec at base+80, offsets 20 and 52
-  have L5_raw := swap1_limb_spec sp 20 52 a5 b5 a4 b4 (base + 80) hvm20 hvm52
-  simp only [signExtend12_20, signExtend12_52] at L5_raw
-  rw [show (base + 80 : Addr) + 4 = base + 84 from by bv_omega,
-      show (base + 80 : Addr) + 8 = base + 88 from by bv_omega,
-      show (base + 80 : Addr) + 12 = base + 92 from by bv_omega,
-      show (base + 80 : Addr) + 16 = base + 96 from by bv_omega] at L5_raw
-  have L5 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .LW .x7 .x12 0) ** ((base + 4) ↦ᵢ .LW .x6 .x12 32) **
-     ((base + 8) ↦ᵢ .SW .x12 .x6 0) ** ((base + 12) ↦ᵢ .SW .x12 .x7 32) **
-     ((base + 16) ↦ᵢ .LW .x7 .x12 4) ** ((base + 20) ↦ᵢ .LW .x6 .x12 36) **
-     ((base + 24) ↦ᵢ .SW .x12 .x6 4) ** ((base + 28) ↦ᵢ .SW .x12 .x7 36) **
-     ((base + 32) ↦ᵢ .LW .x7 .x12 8) ** ((base + 36) ↦ᵢ .LW .x6 .x12 40) **
-     ((base + 40) ↦ᵢ .SW .x12 .x6 8) ** ((base + 44) ↦ᵢ .SW .x12 .x7 40) **
-     ((base + 48) ↦ᵢ .LW .x7 .x12 12) ** ((base + 52) ↦ᵢ .LW .x6 .x12 44) **
-     ((base + 56) ↦ᵢ .SW .x12 .x6 12) ** ((base + 60) ↦ᵢ .SW .x12 .x7 44) **
-     ((base + 64) ↦ᵢ .LW .x7 .x12 16) ** ((base + 68) ↦ᵢ .LW .x6 .x12 48) **
-     ((base + 72) ↦ᵢ .SW .x12 .x6 16) ** ((base + 76) ↦ᵢ .SW .x12 .x7 48) **
-     ((base + 96) ↦ᵢ .LW .x7 .x12 24) ** ((base + 100) ↦ᵢ .LW .x6 .x12 56) **
-     ((base + 104) ↦ᵢ .SW .x12 .x6 24) ** ((base + 108) ↦ᵢ .SW .x12 .x7 56) **
-     ((base + 112) ↦ᵢ .LW .x7 .x12 28) ** ((base + 116) ↦ᵢ .LW .x6 .x12 60) **
-     ((base + 120) ↦ᵢ .SW .x12 .x6 28) ** ((base + 124) ↦ᵢ .SW .x12 .x7 60) **
-     (sp ↦ₘ b0) ** ((sp + 4) ↦ₘ b1) ** ((sp + 8) ↦ₘ b2) ** ((sp + 12) ↦ₘ b3) ** ((sp + 16) ↦ₘ b4) **
-     ((sp + 32) ↦ₘ a0) ** ((sp + 36) ↦ₘ a1) ** ((sp + 40) ↦ₘ a2) ** ((sp + 44) ↦ₘ a3) ** ((sp + 48) ↦ₘ a4) **
-     ((sp + 24) ↦ₘ a6) ** ((sp + 28) ↦ₘ a7) **
-     ((sp + 56) ↦ₘ b6) ** ((sp + 60) ↦ₘ b7))
-    (by pcFree) L5_raw
-  clear L5_raw
-  have L012345 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) L01234 L5
-  clear L01234 L5
-  -- Limb 6: swap1_limb_spec at base+96, offsets 24 and 56
-  have L6_raw := swap1_limb_spec sp 24 56 a6 b6 a5 b5 (base + 96) hvm24 hvm56
-  simp only [signExtend12_24, signExtend12_56] at L6_raw
-  rw [show (base + 96 : Addr) + 4 = base + 100 from by bv_omega,
-      show (base + 96 : Addr) + 8 = base + 104 from by bv_omega,
-      show (base + 96 : Addr) + 12 = base + 108 from by bv_omega,
-      show (base + 96 : Addr) + 16 = base + 112 from by bv_omega] at L6_raw
-  have L6 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .LW .x7 .x12 0) ** ((base + 4) ↦ᵢ .LW .x6 .x12 32) **
-     ((base + 8) ↦ᵢ .SW .x12 .x6 0) ** ((base + 12) ↦ᵢ .SW .x12 .x7 32) **
-     ((base + 16) ↦ᵢ .LW .x7 .x12 4) ** ((base + 20) ↦ᵢ .LW .x6 .x12 36) **
-     ((base + 24) ↦ᵢ .SW .x12 .x6 4) ** ((base + 28) ↦ᵢ .SW .x12 .x7 36) **
-     ((base + 32) ↦ᵢ .LW .x7 .x12 8) ** ((base + 36) ↦ᵢ .LW .x6 .x12 40) **
-     ((base + 40) ↦ᵢ .SW .x12 .x6 8) ** ((base + 44) ↦ᵢ .SW .x12 .x7 40) **
-     ((base + 48) ↦ᵢ .LW .x7 .x12 12) ** ((base + 52) ↦ᵢ .LW .x6 .x12 44) **
-     ((base + 56) ↦ᵢ .SW .x12 .x6 12) ** ((base + 60) ↦ᵢ .SW .x12 .x7 44) **
-     ((base + 64) ↦ᵢ .LW .x7 .x12 16) ** ((base + 68) ↦ᵢ .LW .x6 .x12 48) **
-     ((base + 72) ↦ᵢ .SW .x12 .x6 16) ** ((base + 76) ↦ᵢ .SW .x12 .x7 48) **
-     ((base + 80) ↦ᵢ .LW .x7 .x12 20) ** ((base + 84) ↦ᵢ .LW .x6 .x12 52) **
-     ((base + 88) ↦ᵢ .SW .x12 .x6 20) ** ((base + 92) ↦ᵢ .SW .x12 .x7 52) **
-     ((base + 112) ↦ᵢ .LW .x7 .x12 28) ** ((base + 116) ↦ᵢ .LW .x6 .x12 60) **
-     ((base + 120) ↦ᵢ .SW .x12 .x6 28) ** ((base + 124) ↦ᵢ .SW .x12 .x7 60) **
-     (sp ↦ₘ b0) ** ((sp + 4) ↦ₘ b1) ** ((sp + 8) ↦ₘ b2) ** ((sp + 12) ↦ₘ b3) **
-     ((sp + 16) ↦ₘ b4) ** ((sp + 20) ↦ₘ b5) **
-     ((sp + 32) ↦ₘ a0) ** ((sp + 36) ↦ₘ a1) ** ((sp + 40) ↦ₘ a2) ** ((sp + 44) ↦ₘ a3) **
-     ((sp + 48) ↦ₘ a4) ** ((sp + 52) ↦ₘ a5) **
-     ((sp + 28) ↦ₘ a7) ** ((sp + 60) ↦ₘ b7))
-    (by pcFree) L6_raw
-  clear L6_raw
-  have L0123456 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) L012345 L6
-  clear L012345 L6
-  -- Limb 7: swap1_limb_spec at base+112, offsets 28 and 60
-  have L7_raw := swap1_limb_spec sp 28 60 a7 b7 a6 b6 (base + 112) hvm28 hvm60
-  simp only [signExtend12_28, signExtend12_60] at L7_raw
-  rw [show (base + 112 : Addr) + 4 = base + 116 from by bv_omega,
-      show (base + 112 : Addr) + 8 = base + 120 from by bv_omega,
-      show (base + 112 : Addr) + 12 = base + 124 from by bv_omega,
-      show (base + 112 : Addr) + 16 = base + 128 from by bv_omega] at L7_raw
-  have L7 := cpsTriple_frame_left _ _ _ _
-    ((base ↦ᵢ .LW .x7 .x12 0) ** ((base + 4) ↦ᵢ .LW .x6 .x12 32) **
-     ((base + 8) ↦ᵢ .SW .x12 .x6 0) ** ((base + 12) ↦ᵢ .SW .x12 .x7 32) **
-     ((base + 16) ↦ᵢ .LW .x7 .x12 4) ** ((base + 20) ↦ᵢ .LW .x6 .x12 36) **
-     ((base + 24) ↦ᵢ .SW .x12 .x6 4) ** ((base + 28) ↦ᵢ .SW .x12 .x7 36) **
-     ((base + 32) ↦ᵢ .LW .x7 .x12 8) ** ((base + 36) ↦ᵢ .LW .x6 .x12 40) **
-     ((base + 40) ↦ᵢ .SW .x12 .x6 8) ** ((base + 44) ↦ᵢ .SW .x12 .x7 40) **
-     ((base + 48) ↦ᵢ .LW .x7 .x12 12) ** ((base + 52) ↦ᵢ .LW .x6 .x12 44) **
-     ((base + 56) ↦ᵢ .SW .x12 .x6 12) ** ((base + 60) ↦ᵢ .SW .x12 .x7 44) **
-     ((base + 64) ↦ᵢ .LW .x7 .x12 16) ** ((base + 68) ↦ᵢ .LW .x6 .x12 48) **
-     ((base + 72) ↦ᵢ .SW .x12 .x6 16) ** ((base + 76) ↦ᵢ .SW .x12 .x7 48) **
-     ((base + 80) ↦ᵢ .LW .x7 .x12 20) ** ((base + 84) ↦ᵢ .LW .x6 .x12 52) **
-     ((base + 88) ↦ᵢ .SW .x12 .x6 20) ** ((base + 92) ↦ᵢ .SW .x12 .x7 52) **
-     ((base + 96) ↦ᵢ .LW .x7 .x12 24) ** ((base + 100) ↦ᵢ .LW .x6 .x12 56) **
-     ((base + 104) ↦ᵢ .SW .x12 .x6 24) ** ((base + 108) ↦ᵢ .SW .x12 .x7 56) **
-     (sp ↦ₘ b0) ** ((sp + 4) ↦ₘ b1) ** ((sp + 8) ↦ₘ b2) ** ((sp + 12) ↦ₘ b3) **
-     ((sp + 16) ↦ₘ b4) ** ((sp + 20) ↦ₘ b5) ** ((sp + 24) ↦ₘ b6) **
-     ((sp + 32) ↦ₘ a0) ** ((sp + 36) ↦ₘ a1) ** ((sp + 40) ↦ₘ a2) ** ((sp + 44) ↦ₘ a3) **
-     ((sp + 48) ↦ₘ a4) ** ((sp + 52) ↦ₘ a5) ** ((sp + 56) ↦ₘ a6))
-    (by pcFree) L7_raw
-  clear L7_raw
-  -- Final composition and permutation to match goal
-  exact cpsTriple_consequence _ _ _ _ _ _
-    (fun h hp => by xperm_hyp hp) (fun h hq => by xperm_hyp hq)
-    (cpsTriple_seq_with_perm _ _ _ _ _ _ _
-      (fun h hp => by xperm_hyp hp) L0123456 L7)
+  -- Compose 8 swap1_limb_specs via runBlock
+  have L0 := swap1_limb_spec sp 0 32 a0 b0 v7 v6 base hvm0 hvm32
+  have L1 := swap1_limb_spec sp 4 36 a1 b1 a0 b0 (base + 16) hvm4 hvm36
+  have L2 := swap1_limb_spec sp 8 40 a2 b2 a1 b1 (base + 32) hvm8 hvm40
+  have L3 := swap1_limb_spec sp 12 44 a3 b3 a2 b2 (base + 48) hvm12 hvm44
+  have L4 := swap1_limb_spec sp 16 48 a4 b4 a3 b3 (base + 64) hvm16 hvm48
+  have L5 := swap1_limb_spec sp 20 52 a5 b5 a4 b4 (base + 80) hvm20 hvm52
+  have L6 := swap1_limb_spec sp 24 56 a6 b6 a5 b5 (base + 96) hvm24 hvm56
+  have L7 := swap1_limb_spec sp 28 60 a7 b7 a6 b6 (base + 112) hvm28 hvm60
+  runBlock L0 L1 L2 L3 L4 L5 L6 L7
 
 set_option maxHeartbeats 3200000 in
 theorem evm_swap1_stack_spec (sp base : Addr)
