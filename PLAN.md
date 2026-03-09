@@ -78,7 +78,7 @@ EVM stack: x12 is EVM stack pointer, stack grows upward, 32 bytes per element.
 
 ## Current Status
 
-### Evm64 (PRIMARY) — 20 opcodes, all proofs complete (0 sorry)
+### Evm64 (PRIMARY) — 50 opcodes, all proofs complete (0 sorry)
 
 | Category | Opcodes | Instructions (per op) | Status |
 |----------|---------|----------------------|--------|
@@ -87,6 +87,7 @@ EVM stack: x12 is EVM stack pointer, stack grows upward, 32 bytes per element.
 | Shift | SHR, SHL, SAR | 90 / 90 / 95 | ✅ Fully proved |
 | Comparison | ISZERO, LT, GT, EQ, SLT, SGT | 12 / 26 / 26 / 21 / 25 / 25 | ✅ Fully proved |
 | Stack | POP, PUSH0, DUP1, SWAP1 | 1 / 5 / 9 / 16 | ✅ Fully proved |
+| Stack (generic) | DUP1-16, SWAP1-16 | 9 / 16 each | ✅ Fully proved |
 
 ### Evm32 (secondary) — 15 opcodes, 1 sorry
 
@@ -153,12 +154,13 @@ All phases below target **Evm64** primarily. Files are under `EvmAsm/Evm64/`.
 
 ### Phase 3: Stack Extensions
 
-#### 3.1 DUP1-16 and SWAP1-16 (Generic)
+#### ~~3.1 DUP1-16 and SWAP1-16 (Generic)~~ ✅
 - **File**: `Evm64/StackOps.lean`
-- **Approach**: Write `evm_dup (n : Nat)` and `evm_swap (n : Nat)` as
-  Lean functions producing `Program`. Prove generic specs parameterized by n.
-  Covers 32 opcodes with one proof each.
-- **Note**: Already done for Evm32. Port pattern to Evm64.
+- **Approach**: `evm_dup (n : Nat)` and `evm_swap (n : Nat)` as generic
+  Lean functions producing `Program`. 9 instructions for DUP, 16 for SWAP.
+  Full spec hierarchy: low-level (explicit limbs) → evmWordIs → evmStackIs.
+  Added `signExtend12_ofNat_small` and `evmStackIs_split_at` for Evm64.
+- Covers 32 opcodes with one proof each. All proved, 0 sorry.
 
 #### 3.2 PUSH1-32
 - **File**: `Evm64/StackOps.lean`
