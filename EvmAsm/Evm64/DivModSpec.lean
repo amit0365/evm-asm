@@ -2828,4 +2828,155 @@ theorem divK_div128_end_spec
     (fun h hp => by xperm_hyp hp)
     h12
 
+-- ============================================================================
+-- Composed per-limb specs: mulsub_limb, addback_limb.
+-- These compose partA+partB into single per-limb operations.
+-- ============================================================================
+
+set_option maxRecDepth 2048 in
+/-- Mul-sub full limb: partA (6 instrs) + partB (5 instrs) = 11 instructions.
+    Input: q_hat (x11), carry_in (x10), v[i] and u[j+i] in memory.
+    Output: carry_out (x10), u_new stored. -/
+theorem divK_mulsub_limb_spec
+    (sp u_base q_hat carry_in v5_old v7_old v2_old v_i u_i : Word)
+    (v_off u_off : BitVec 12) (base : Addr)
+    (hv_v : isValidDwordAccess (sp + signExtend12 v_off) = true)
+    (hv_u : isValidDwordAccess (u_base + signExtend12 u_off) = true) :
+    let prod_lo := q_hat * v_i
+    let prod_hi := rv64_mulhu q_hat v_i
+    let full_sub := prod_lo + carry_in
+    let borrow_add := if BitVec.ult full_sub carry_in then (1 : Word) else 0
+    let partial_carry := borrow_add + prod_hi
+    let borrow_sub := if BitVec.ult u_i full_sub then (1 : Word) else 0
+    let u_new := u_i - full_sub
+    let carry_out := partial_carry + borrow_sub
+    let code :=
+      (base ↦ᵢ .LD .x5 .x12 v_off) **
+      ((base + 4) ↦ᵢ .MUL .x7 .x11 .x5) **
+      ((base + 8) ↦ᵢ .MULHU .x5 .x11 .x5) **
+      ((base + 12) ↦ᵢ .ADD .x7 .x7 .x10) **
+      ((base + 16) ↦ᵢ .SLTU .x10 .x7 .x10) **
+      ((base + 20) ↦ᵢ .ADD .x10 .x10 .x5) **
+      ((base + 24) ↦ᵢ .LD .x2 .x6 u_off) **
+      ((base + 28) ↦ᵢ .SLTU .x5 .x2 .x7) **
+      ((base + 32) ↦ᵢ .SUB .x2 .x2 .x7) **
+      ((base + 36) ↦ᵢ .ADD .x10 .x10 .x5) **
+      ((base + 40) ↦ᵢ .SD .x6 .x2 u_off)
+    cpsTriple base (base + 44)
+      (code ** (.x12 ↦ᵣ sp) ** (.x11 ↦ᵣ q_hat) ** (.x10 ↦ᵣ carry_in) **
+       (.x6 ↦ᵣ u_base) ** (.x5 ↦ᵣ v5_old) ** (.x7 ↦ᵣ v7_old) **
+       (.x2 ↦ᵣ v2_old) **
+       ((sp + signExtend12 v_off) ↦ₘ v_i) **
+       ((u_base + signExtend12 u_off) ↦ₘ u_i))
+      (code ** (.x12 ↦ᵣ sp) ** (.x11 ↦ᵣ q_hat) ** (.x10 ↦ᵣ carry_out) **
+       (.x6 ↦ᵣ u_base) ** (.x5 ↦ᵣ borrow_sub) ** (.x7 ↦ᵣ full_sub) **
+       (.x2 ↦ᵣ u_new) **
+       ((sp + signExtend12 v_off) ↦ₘ v_i) **
+       ((u_base + signExtend12 u_off) ↦ₘ u_new)) := by
+  intro prod_lo; intro prod_hi; intro full_sub; intro borrow_add; intro partial_carry
+  intro borrow_sub; intro u_new; intro carry_out; intro code
+  -- Block 1: partA [0]-[5]
+  have h1_raw := divK_mulsub_partA_spec sp q_hat carry_in v5_old v7_old v_i v_off base hv_v
+  have h1 := cpsTriple_frame_left _ _ _ _
+    (((base + 24) ↦ᵢ .LD .x2 .x6 u_off) **
+     ((base + 28) ↦ᵢ .SLTU .x5 .x2 .x7) **
+     ((base + 32) ↦ᵢ .SUB .x2 .x2 .x7) **
+     ((base + 36) ↦ᵢ .ADD .x10 .x10 .x5) **
+     ((base + 40) ↦ᵢ .SD .x6 .x2 u_off) **
+     (.x6 ↦ᵣ u_base) ** (.x2 ↦ᵣ v2_old) **
+     ((u_base + signExtend12 u_off) ↦ₘ u_i))
+    (by pcFree) h1_raw
+  -- Block 2: partB [6]-[10] — normalize addresses
+  have h2_raw := divK_mulsub_partB_spec u_base partial_carry prod_hi full_sub v2_old u_i
+    u_off (base + 24) hv_u
+  have : (base + 24 : Addr) + 4 = base + 28 := by bv_omega
+  have : (base + 24 : Addr) + 8 = base + 32 := by bv_omega
+  have : (base + 24 : Addr) + 12 = base + 36 := by bv_omega
+  have : (base + 24 : Addr) + 16 = base + 40 := by bv_omega
+  have : (base + 24 : Addr) + 20 = base + 44 := by bv_omega
+  simp only [*] at h2_raw
+  have h2 := cpsTriple_frame_left _ _ _ _
+    ((base ↦ᵢ .LD .x5 .x12 v_off) **
+     ((base + 4) ↦ᵢ .MUL .x7 .x11 .x5) **
+     ((base + 8) ↦ᵢ .MULHU .x5 .x11 .x5) **
+     ((base + 12) ↦ᵢ .ADD .x7 .x7 .x10) **
+     ((base + 16) ↦ᵢ .SLTU .x10 .x7 .x10) **
+     ((base + 20) ↦ᵢ .ADD .x10 .x10 .x5) **
+     (.x12 ↦ᵣ sp) ** (.x11 ↦ᵣ q_hat) **
+     ((sp + signExtend12 v_off) ↦ₘ v_i))
+    (by pcFree) h2_raw
+  -- Compose 1 → 2
+  have h12 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
+    (fun h hp => by xperm_hyp hp) h1 h2
+  -- Final rearrange
+  exact cpsTriple_consequence _ _ _ _ _ _
+    (fun h hp => by xperm_hyp hp)
+    (fun h hp => by xperm_hyp hp)
+    h12
+
+set_option maxRecDepth 2048 in
+/-- Add-back full limb: partA (5 instrs) + partB (3 instrs) = 8 instructions.
+    Input: carry_in (x7), v[i] and u[j+i] in memory.
+    Output: carry_out (x7), u_new stored. -/
+theorem divK_addback_limb_spec
+    (sp u_base carry_in v5_old v2_old v_i u_i : Word)
+    (v_off u_off : BitVec 12) (base : Addr)
+    (hv_v : isValidDwordAccess (sp + signExtend12 v_off) = true)
+    (hv_u : isValidDwordAccess (u_base + signExtend12 u_off) = true) :
+    let u_plus_carry := u_i + carry_in
+    let carry1 := if BitVec.ult u_plus_carry carry_in then (1 : Word) else 0
+    let u_new := u_plus_carry + v_i
+    let carry2 := if BitVec.ult u_new v_i then (1 : Word) else 0
+    let carry_out := carry1 ||| carry2
+    let code :=
+      (base ↦ᵢ .LD .x5 .x12 v_off) **
+      ((base + 4) ↦ᵢ .LD .x2 .x6 u_off) **
+      ((base + 8) ↦ᵢ .ADD .x2 .x2 .x7) **
+      ((base + 12) ↦ᵢ .SLTU .x7 .x2 .x7) **
+      ((base + 16) ↦ᵢ .ADD .x2 .x2 .x5) **
+      ((base + 20) ↦ᵢ .SLTU .x5 .x2 .x5) **
+      ((base + 24) ↦ᵢ .OR .x7 .x7 .x5) **
+      ((base + 28) ↦ᵢ .SD .x6 .x2 u_off)
+    cpsTriple base (base + 32)
+      (code ** (.x12 ↦ᵣ sp) ** (.x6 ↦ᵣ u_base) ** (.x7 ↦ᵣ carry_in) **
+       (.x5 ↦ᵣ v5_old) ** (.x2 ↦ᵣ v2_old) **
+       ((sp + signExtend12 v_off) ↦ₘ v_i) **
+       ((u_base + signExtend12 u_off) ↦ₘ u_i))
+      (code ** (.x12 ↦ᵣ sp) ** (.x6 ↦ᵣ u_base) ** (.x7 ↦ᵣ carry_out) **
+       (.x5 ↦ᵣ carry2) ** (.x2 ↦ᵣ u_new) **
+       ((sp + signExtend12 v_off) ↦ₘ v_i) **
+       ((u_base + signExtend12 u_off) ↦ₘ u_new)) := by
+  intro u_plus_carry; intro carry1; intro u_new; intro carry2; intro carry_out; intro code
+  -- Block 1: partA [0]-[4]
+  have h1_raw := divK_addback_partA_spec sp u_base carry_in v5_old v2_old v_i u_i
+    v_off u_off base hv_v hv_u
+  have h1 := cpsTriple_frame_left _ _ _ _
+    (((base + 20) ↦ᵢ .SLTU .x5 .x2 .x5) **
+     ((base + 24) ↦ᵢ .OR .x7 .x7 .x5) **
+     ((base + 28) ↦ᵢ .SD .x6 .x2 u_off))
+    (by pcFree) h1_raw
+  -- Block 2: partB [5]-[7] — normalize addresses
+  have h2_raw := divK_addback_partB_spec u_base carry1 v_i u_new u_i u_off (base + 20) hv_u
+  have : (base + 20 : Addr) + 4 = base + 24 := by bv_omega
+  have : (base + 20 : Addr) + 8 = base + 28 := by bv_omega
+  have : (base + 20 : Addr) + 12 = base + 32 := by bv_omega
+  simp only [*] at h2_raw
+  have h2 := cpsTriple_frame_left _ _ _ _
+    ((base ↦ᵢ .LD .x5 .x12 v_off) **
+     ((base + 4) ↦ᵢ .LD .x2 .x6 u_off) **
+     ((base + 8) ↦ᵢ .ADD .x2 .x2 .x7) **
+     ((base + 12) ↦ᵢ .SLTU .x7 .x2 .x7) **
+     ((base + 16) ↦ᵢ .ADD .x2 .x2 .x5) **
+     (.x12 ↦ᵣ sp) **
+     ((sp + signExtend12 v_off) ↦ₘ v_i))
+    (by pcFree) h2_raw
+  -- Compose 1 → 2
+  have h12 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
+    (fun h hp => by xperm_hyp hp) h1 h2
+  -- Final rearrange
+  exact cpsTriple_consequence _ _ _ _ _ _
+    (fun h hp => by xperm_hyp hp)
+    (fun h hp => by xperm_hyp hp)
+    h12
+
 end EvmAsm.Rv64
