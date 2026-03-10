@@ -64,6 +64,8 @@ def computeFrame (q1 p2 : Expr) : MetaM (List Expr) := do
           found := true
           break
     -- Slow path: remaining atoms (handles hash mismatch + definitional equality)
+    -- Uses reducible transparency to avoid deep recursion from unfolding
+    -- assertion defs (memIs → singletonMem → BEq → BitVec operations).
     unless found do
       for i in [:q1Atoms.size] do
         if available[i]! && q1Atoms[i]!.hash != h then

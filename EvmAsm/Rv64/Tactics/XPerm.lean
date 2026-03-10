@@ -69,9 +69,11 @@ def findAtomIdx (target : Expr) (atoms : Array Expr) : MetaM (Option Nat) := do
     if atoms[i]!.hash == h then
       if ← isDefEq target atoms[i]! then return some i
   -- Slow path: remaining atoms (handles hash mismatch + definitional equality)
+  -- Uses reducible transparency to avoid deep recursion from unfolding
+  -- assertion defs (memIs → singletonMem → BEq → BitVec operations).
   for i in [:atoms.size] do
     if atoms[i]!.hash != h then
-      if ← isDefEq target atoms[i]! then return some i
+      if ← withReducible (isDefEq target atoms[i]!) then return some i
   return none
 
 /-- Remove element at `idx` from array, preserving order of remaining elements. -/

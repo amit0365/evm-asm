@@ -328,6 +328,177 @@ theorem generic_beq_spec (rs1 rs2 : Reg) (offset : BitVec 13) (v1 v2 : Word) (ba
          (sepConj_pure_right _ _ h1bb).mpr ⟨hRs2, heq⟩⟩, hR2⟩
 
 -- ============================================================================
+-- Group 9b: Branch (BLTU) — cpsBranch (unsigned less than)
+-- ============================================================================
+
+/-- Generic spec for BLTU: branch if unsigned less than.
+    Taken (ult v1 v2): PC = base + signExtend13 offset
+    Not taken (¬ult v1 v2): PC = base + 4 -/
+theorem generic_bltu_spec (rs1 rs2 : Reg) (offset : BitVec 13) (v1 v2 : Word) (base : Addr) :
+    cpsBranch base
+      ((base ↦ᵢ .BLTU rs1 rs2 offset) ** (rs1 ↦ᵣ v1) ** (rs2 ↦ᵣ v2))
+      (base + signExtend13 offset)
+        ((base ↦ᵢ .BLTU rs1 rs2 offset) ** (rs1 ↦ᵣ v1) ** (rs2 ↦ᵣ v2) ** ⌜BitVec.ult v1 v2⌝)
+      (base + 4)
+        ((base ↦ᵢ .BLTU rs1 rs2 offset) ** (rs1 ↦ᵣ v1) ** (rs2 ↦ᵣ v2) ** ⌜¬BitVec.ult v1 v2⌝) := by
+  intro R hR s hPR hpc; subst hpc
+  have hfetch : s.code s.pc = some (.BLTU rs1 rs2 offset) :=
+    (holdsFor_instrAt _ _ s).mp (holdsFor_sepConj_elim_left (holdsFor_sepConj_elim_left hPR))
+  have hrs1 : s.getReg rs1 = v1 :=
+    (holdsFor_regIs _ _ s).mp (holdsFor_sepConj_elim_left
+      (holdsFor_sepConj_elim_right (holdsFor_sepConj_elim_left hPR)))
+  have hrs2 : s.getReg rs2 = v2 :=
+    (holdsFor_regIs _ _ s).mp (holdsFor_sepConj_elim_right
+      (holdsFor_sepConj_elim_right (holdsFor_sepConj_elim_left hPR)))
+  have hstep' : step s = some (execInstrBr s (.BLTU rs1 rs2 offset)) :=
+    step_non_ecall_non_mem s _ hfetch (by nofun) (by nofun) (by rfl)
+  by_cases hlt : BitVec.ult v1 v2
+  · -- Taken: v1 <u v2
+    have hexec' : execInstrBr s (.BLTU rs1 rs2 offset) = s.setPC (s.pc + signExtend13 offset) := by
+      simp [execInstrBr, hrs1, hrs2, hlt]
+    refine ⟨1, s.setPC (s.pc + signExtend13 offset), ?_, Or.inl ⟨rfl, ?_⟩⟩
+    · show (step s).bind (stepN 0) = some _
+      rw [hstep', hexec']; rfl
+    · have hpc_free : (((s.pc ↦ᵢ .BLTU rs1 rs2 offset) ** (rs1 ↦ᵣ v1) ** (rs2 ↦ᵣ v2)) ** R).pcFree :=
+        pcFree_sepConj (by pcFree) hR
+      have hPR' := holdsFor_pcFree_setPC hpc_free s (s.pc + signExtend13 offset) hPR
+      obtain ⟨hp, hcompat, h1, h2, hd, hu, hP1, hR2⟩ := hPR'
+      obtain ⟨h1a, h1b, hd1, hu1, hInstr, hRest⟩ := hP1
+      obtain ⟨h1ba, h1bb, hd2, hu2, hRs1, hRs2⟩ := hRest
+      exact ⟨hp, hcompat, h1, h2, hd, hu,
+        ⟨h1a, h1b, hd1, hu1, hInstr, h1ba, h1bb, hd2, hu2, hRs1,
+         (sepConj_pure_right _ _ h1bb).mpr ⟨hRs2, hlt⟩⟩, hR2⟩
+  · -- Not taken: ¬(v1 <u v2)
+    have hexec' : execInstrBr s (.BLTU rs1 rs2 offset) = s.setPC (s.pc + 4) := by
+      simp [execInstrBr, hrs1, hrs2, hlt]
+    refine ⟨1, s.setPC (s.pc + 4), ?_, Or.inr ⟨rfl, ?_⟩⟩
+    · show (step s).bind (stepN 0) = some _
+      rw [hstep', hexec']; rfl
+    · have hpc_free : (((s.pc ↦ᵢ .BLTU rs1 rs2 offset) ** (rs1 ↦ᵣ v1) ** (rs2 ↦ᵣ v2)) ** R).pcFree :=
+        pcFree_sepConj (by pcFree) hR
+      have hPR' := holdsFor_pcFree_setPC hpc_free s (s.pc + 4) hPR
+      obtain ⟨hp, hcompat, h1, h2, hd, hu, hP1, hR2⟩ := hPR'
+      obtain ⟨h1a, h1b, hd1, hu1, hInstr, hRest⟩ := hP1
+      obtain ⟨h1ba, h1bb, hd2, hu2, hRs1, hRs2⟩ := hRest
+      exact ⟨hp, hcompat, h1, h2, hd, hu,
+        ⟨h1a, h1b, hd1, hu1, hInstr, h1ba, h1bb, hd2, hu2, hRs1,
+         (sepConj_pure_right _ _ h1bb).mpr ⟨hRs2, hlt⟩⟩, hR2⟩
+
+-- ============================================================================
+-- Group 9c: Branch (BGE) — cpsBranch (signed greater or equal)
+-- ============================================================================
+
+/-- Generic spec for BGE: branch if signed greater or equal.
+    Taken (¬slt v1 v2): PC = base + signExtend13 offset
+    Not taken (slt v1 v2): PC = base + 4 -/
+theorem generic_bge_spec (rs1 rs2 : Reg) (offset : BitVec 13) (v1 v2 : Word) (base : Addr) :
+    cpsBranch base
+      ((base ↦ᵢ .BGE rs1 rs2 offset) ** (rs1 ↦ᵣ v1) ** (rs2 ↦ᵣ v2))
+      (base + signExtend13 offset)
+        ((base ↦ᵢ .BGE rs1 rs2 offset) ** (rs1 ↦ᵣ v1) ** (rs2 ↦ᵣ v2) ** ⌜¬BitVec.slt v1 v2⌝)
+      (base + 4)
+        ((base ↦ᵢ .BGE rs1 rs2 offset) ** (rs1 ↦ᵣ v1) ** (rs2 ↦ᵣ v2) ** ⌜BitVec.slt v1 v2⌝) := by
+  intro R hR s hPR hpc; subst hpc
+  have hfetch : s.code s.pc = some (.BGE rs1 rs2 offset) :=
+    (holdsFor_instrAt _ _ s).mp (holdsFor_sepConj_elim_left (holdsFor_sepConj_elim_left hPR))
+  have hrs1 : s.getReg rs1 = v1 :=
+    (holdsFor_regIs _ _ s).mp (holdsFor_sepConj_elim_left
+      (holdsFor_sepConj_elim_right (holdsFor_sepConj_elim_left hPR)))
+  have hrs2 : s.getReg rs2 = v2 :=
+    (holdsFor_regIs _ _ s).mp (holdsFor_sepConj_elim_right
+      (holdsFor_sepConj_elim_right (holdsFor_sepConj_elim_left hPR)))
+  have hstep' : step s = some (execInstrBr s (.BGE rs1 rs2 offset)) :=
+    step_non_ecall_non_mem s _ hfetch (by nofun) (by nofun) (by rfl)
+  by_cases hlt : BitVec.slt v1 v2
+  · -- Not taken: slt v1 v2 → ¬(¬slt), so BGE falls through
+    have hexec' : execInstrBr s (.BGE rs1 rs2 offset) = s.setPC (s.pc + 4) := by
+      simp [execInstrBr, hrs1, hrs2, hlt]
+    refine ⟨1, s.setPC (s.pc + 4), ?_, Or.inr ⟨rfl, ?_⟩⟩
+    · show (step s).bind (stepN 0) = some _
+      rw [hstep', hexec']; rfl
+    · have hpc_free : (((s.pc ↦ᵢ .BGE rs1 rs2 offset) ** (rs1 ↦ᵣ v1) ** (rs2 ↦ᵣ v2)) ** R).pcFree :=
+        pcFree_sepConj (by pcFree) hR
+      have hPR' := holdsFor_pcFree_setPC hpc_free s (s.pc + 4) hPR
+      obtain ⟨hp, hcompat, h1, h2, hd, hu, hP1, hR2⟩ := hPR'
+      obtain ⟨h1a, h1b, hd1, hu1, hInstr, hRest⟩ := hP1
+      obtain ⟨h1ba, h1bb, hd2, hu2, hRs1, hRs2⟩ := hRest
+      exact ⟨hp, hcompat, h1, h2, hd, hu,
+        ⟨h1a, h1b, hd1, hu1, hInstr, h1ba, h1bb, hd2, hu2, hRs1,
+         (sepConj_pure_right _ _ h1bb).mpr ⟨hRs2, hlt⟩⟩, hR2⟩
+  · -- Taken: ¬slt v1 v2 → BGE branches
+    have hexec' : execInstrBr s (.BGE rs1 rs2 offset) = s.setPC (s.pc + signExtend13 offset) := by
+      simp [execInstrBr, hrs1, hrs2, hlt]
+    refine ⟨1, s.setPC (s.pc + signExtend13 offset), ?_, Or.inl ⟨rfl, ?_⟩⟩
+    · show (step s).bind (stepN 0) = some _
+      rw [hstep', hexec']; rfl
+    · have hpc_free : (((s.pc ↦ᵢ .BGE rs1 rs2 offset) ** (rs1 ↦ᵣ v1) ** (rs2 ↦ᵣ v2)) ** R).pcFree :=
+        pcFree_sepConj (by pcFree) hR
+      have hPR' := holdsFor_pcFree_setPC hpc_free s (s.pc + signExtend13 offset) hPR
+      obtain ⟨hp, hcompat, h1, h2, hd, hu, hP1, hR2⟩ := hPR'
+      obtain ⟨h1a, h1b, hd1, hu1, hInstr, hRest⟩ := hP1
+      obtain ⟨h1ba, h1bb, hd2, hu2, hRs1, hRs2⟩ := hRest
+      exact ⟨hp, hcompat, h1, h2, hd, hu,
+        ⟨h1a, h1b, hd1, hu1, hInstr, h1ba, h1bb, hd2, hu2, hRs1,
+         (sepConj_pure_right _ _ h1bb).mpr ⟨hRs2, hlt⟩⟩, hR2⟩
+
+-- ============================================================================
+-- Group 9d: Branch (BLT) — cpsBranch (signed less than)
+-- ============================================================================
+
+/-- Generic spec for BLT: branch if signed less than.
+    Taken (slt v1 v2): PC = base + signExtend13 offset
+    Not taken (¬slt v1 v2): PC = base + 4 -/
+theorem generic_blt_spec (rs1 rs2 : Reg) (offset : BitVec 13) (v1 v2 : Word) (base : Addr) :
+    cpsBranch base
+      ((base ↦ᵢ .BLT rs1 rs2 offset) ** (rs1 ↦ᵣ v1) ** (rs2 ↦ᵣ v2))
+      (base + signExtend13 offset)
+        ((base ↦ᵢ .BLT rs1 rs2 offset) ** (rs1 ↦ᵣ v1) ** (rs2 ↦ᵣ v2) ** ⌜BitVec.slt v1 v2⌝)
+      (base + 4)
+        ((base ↦ᵢ .BLT rs1 rs2 offset) ** (rs1 ↦ᵣ v1) ** (rs2 ↦ᵣ v2) ** ⌜¬BitVec.slt v1 v2⌝) := by
+  intro R hR s hPR hpc; subst hpc
+  have hfetch : s.code s.pc = some (.BLT rs1 rs2 offset) :=
+    (holdsFor_instrAt _ _ s).mp (holdsFor_sepConj_elim_left (holdsFor_sepConj_elim_left hPR))
+  have hrs1 : s.getReg rs1 = v1 :=
+    (holdsFor_regIs _ _ s).mp (holdsFor_sepConj_elim_left
+      (holdsFor_sepConj_elim_right (holdsFor_sepConj_elim_left hPR)))
+  have hrs2 : s.getReg rs2 = v2 :=
+    (holdsFor_regIs _ _ s).mp (holdsFor_sepConj_elim_right
+      (holdsFor_sepConj_elim_right (holdsFor_sepConj_elim_left hPR)))
+  have hstep' : step s = some (execInstrBr s (.BLT rs1 rs2 offset)) :=
+    step_non_ecall_non_mem s _ hfetch (by nofun) (by nofun) (by rfl)
+  by_cases hlt : BitVec.slt v1 v2
+  · -- Taken: slt v1 v2
+    have hexec' : execInstrBr s (.BLT rs1 rs2 offset) = s.setPC (s.pc + signExtend13 offset) := by
+      simp [execInstrBr, hrs1, hrs2, hlt]
+    refine ⟨1, s.setPC (s.pc + signExtend13 offset), ?_, Or.inl ⟨rfl, ?_⟩⟩
+    · show (step s).bind (stepN 0) = some _
+      rw [hstep', hexec']; rfl
+    · have hpc_free : (((s.pc ↦ᵢ .BLT rs1 rs2 offset) ** (rs1 ↦ᵣ v1) ** (rs2 ↦ᵣ v2)) ** R).pcFree :=
+        pcFree_sepConj (by pcFree) hR
+      have hPR' := holdsFor_pcFree_setPC hpc_free s (s.pc + signExtend13 offset) hPR
+      obtain ⟨hp, hcompat, h1, h2, hd, hu, hP1, hR2⟩ := hPR'
+      obtain ⟨h1a, h1b, hd1, hu1, hInstr, hRest⟩ := hP1
+      obtain ⟨h1ba, h1bb, hd2, hu2, hRs1, hRs2⟩ := hRest
+      exact ⟨hp, hcompat, h1, h2, hd, hu,
+        ⟨h1a, h1b, hd1, hu1, hInstr, h1ba, h1bb, hd2, hu2, hRs1,
+         (sepConj_pure_right _ _ h1bb).mpr ⟨hRs2, hlt⟩⟩, hR2⟩
+  · -- Not taken: ¬slt v1 v2
+    have hexec' : execInstrBr s (.BLT rs1 rs2 offset) = s.setPC (s.pc + 4) := by
+      simp [execInstrBr, hrs1, hrs2, hlt]
+    refine ⟨1, s.setPC (s.pc + 4), ?_, Or.inr ⟨rfl, ?_⟩⟩
+    · show (step s).bind (stepN 0) = some _
+      rw [hstep', hexec']; rfl
+    · have hpc_free : (((s.pc ↦ᵢ .BLT rs1 rs2 offset) ** (rs1 ↦ᵣ v1) ** (rs2 ↦ᵣ v2)) ** R).pcFree :=
+        pcFree_sepConj (by pcFree) hR
+      have hPR' := holdsFor_pcFree_setPC hpc_free s (s.pc + 4) hPR
+      obtain ⟨hp, hcompat, h1, h2, hd, hu, hP1, hR2⟩ := hPR'
+      obtain ⟨h1a, h1b, hd1, hu1, hInstr, hRest⟩ := hP1
+      obtain ⟨h1ba, h1bb, hd2, hu2, hRs1, hRs2⟩ := hRest
+      exact ⟨hp, hcompat, h1, h2, hd, hu,
+        ⟨h1a, h1b, hd1, hu1, hInstr, h1ba, h1bb, hd2, hu2, hRs1,
+         (sepConj_pure_right _ _ h1bb).mpr ⟨hRs2, hlt⟩⟩, hR2⟩
+
+-- ============================================================================
 -- Group 10: JAL (jump and link)
 -- ============================================================================
 

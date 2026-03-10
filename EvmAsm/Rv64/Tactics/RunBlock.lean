@@ -112,7 +112,7 @@ private def proveBvEq (old new_ : Expr) : MetaM (Option Expr) := do
   -- Fallback: normalize signExtend12 then bv_omega (handles (sp + K) + signExtend12 N)
   let eqMVar2 ← mkFreshExprMVar eqType
   try
-    let stx ← `(tactic| simp only [signExtend12_0, signExtend12_8, signExtend12_16, signExtend12_24, signExtend12_32, signExtend12_40, signExtend12_48, signExtend12_56] <;> bv_omega)
+    let stx ← `(tactic| simp only [signExtend12_0, signExtend12_8, signExtend12_16, signExtend12_24, signExtend12_32, signExtend12_40, signExtend12_48, signExtend12_56, signExtend12_4095, signExtend12_4088, signExtend12_4080, signExtend12_4072, signExtend12_4064, signExtend12_4056, signExtend12_4048, signExtend12_4040, signExtend12_4032, signExtend12_4024, signExtend12_4016, signExtend12_4008, signExtend12_4000, signExtend12_3992, signExtend12_3984, signExtend12_3976, signExtend12_3968, signExtend12_3960, signExtend12_3952, signExtend12_3944] <;> bv_omega)
     let _ ← Lean.Elab.runTactic eqMVar2.mvarId! stx
     return some (← instantiateMVars eqMVar2)
   catch _ => return none
@@ -137,18 +137,20 @@ private def proveByNativeDecide (old new_ : Expr) : MetaM (Option Expr) := do
     - `e + 0` → `e`
     - `(a + lit₁) + lit₂` → `a + (lit₁ + lit₂)` -/
 private def trySimplifyTop (e : Expr) : MetaM (Expr × Option Expr) := do
-  -- signExtend12 on concrete literal
+  -- signExtend12 on concrete literal: normalize small positive offsets (< 2048).
+  -- Large negative offsets (>= 2048) produce huge 64-bit literals that cause
+  -- recursion depth issues in mkDecideProof. Leave them as signExtend12.
   if e.isAppOfArity ``EvmAsm.Rv64.signExtend12 1 then
     let arg := e.getAppArgs[0]!
     if let some argVal := getBvLitVal? arg then
       let n12 := argVal % 4096
-      let signExtVal := if n12 < 2048 then n12 else n12 + (2^64 - 4096)
-      let bv64 := mkApp (mkConst ``BitVec) (mkNatLit 64)
-      let resultExpr ← mkNumeral bv64 signExtVal
-      if let some pf ← proveByNativeDecide e resultExpr then
-        return (resultExpr, some pf)
-      if let some pf ← proveBvEq e resultExpr then
-        return (resultExpr, some pf)
+      if n12 < 2048 then
+        let bv64 := mkApp (mkConst ``BitVec) (mkNatLit 64)
+        let resultExpr ← mkNumeral bv64 n12
+        if let some pf ← proveByNativeDecide e resultExpr then
+          return (resultExpr, some pf)
+        if let some pf ← proveBvEq e resultExpr then
+          return (resultExpr, some pf)
   -- Address arithmetic at BitVec type
   if e.isAppOfArity ``HAdd.hAdd 6 then
     let args := e.getAppArgs
@@ -156,8 +158,8 @@ private def trySimplifyTop (e : Expr) : MetaM (Expr × Option Expr) := do
     let rhs := args[5]!
     let eTy ← inferType e
     if (← whnf eTy).isAppOfArity ``BitVec 1 then
-      -- e + 0 → e
-      if getBvLitVal? rhs == some 0 then
+      -- e + 0 → e (common after signExtend12 0 normalization)
+      if let some 0 := getBvLitVal? rhs then
         if let some pf ← proveBvEq e lhs then
           return (lhs, some pf)
       -- (a + lit₁) + lit₂ → a + (lit₁ + lit₂)
@@ -404,6 +406,24 @@ private def extractConcreteOffset? (validAddr target : Expr) : MetaM (Option Nat
               let n12 := argVal % 4096
               let v2 := if n12 < 2048 then n12 else n12 + (2^64 - 4096)
               return some (v1 + v2)
+    -- Case 4: target = X + B, validAddr = X + A  (offset = B - A mod 2^64)
+    -- Handles different concrete offsets from the same base register.
+    -- B can be a numeric literal or signExtend12 N.
+    if validAddr.isAppOfArity ``HAdd.hAdd 6 then
+      let addrBase := validAddr.getAppArgs[4]!
+      let addrOff := validAddr.getAppArgs[5]!
+      if ← withoutModifyingState (isDefEq addrBase lhs) then
+        if let some a := getBvLitVal? addrOff then
+          -- B is a numeric literal
+          if let some b := getBvLitVal? rhs then
+            return some ((b + 2^64 - a) % (2^64))
+          -- B is signExtend12 N
+          if rhs.isAppOfArity ``EvmAsm.Rv64.signExtend12 1 then
+            let arg := rhs.getAppArgs[0]!
+            if let some argVal := getBvLitVal? arg then
+              let n12 := argVal % 4096
+              let b := if n12 < 2048 then n12 else n12 + (2^64 - 4096)
+              return some ((b + 2^64 - a) % (2^64))
   return none
 
 /-- Build a proof of `ValidMemRange.fetch` for a given index (64-bit, stride 8). -/
@@ -484,7 +504,14 @@ elab "validMem" : tactic => do
   try
     evalTactic (← `(tactic| simp only [signExtend12_0, signExtend12_1, signExtend12_8,
       signExtend12_16, signExtend12_24, signExtend12_32, signExtend12_40,
-      signExtend12_48, signExtend12_56]))
+      signExtend12_48, signExtend12_56,
+      signExtend12_4095, signExtend12_4088, signExtend12_4080,
+      signExtend12_4072, signExtend12_4064, signExtend12_4056,
+      signExtend12_4048, signExtend12_4040, signExtend12_4032,
+      signExtend12_4024, signExtend12_4016, signExtend12_4008,
+      signExtend12_4000, signExtend12_3992, signExtend12_3984,
+      signExtend12_3976, signExtend12_3968, signExtend12_3960,
+      signExtend12_3952, signExtend12_3944]))
   catch _ =>
     (Pure.pure PUnit.unit : TacticM PUnit)
   withMainContext do
@@ -690,7 +717,18 @@ elab "runBlock" specs:ident* : tactic => withMainContext do
   let goal ← getMainGoal
   -- Strip leading let bindings and metadata from goal type
   let goalType := inlineLets (← instantiateMVars (← goal.getType))
-  let some (_, _, goalPre, _) ← parseCpsTriple? goalType
+  -- Normalize addresses in goal type (signExtend12, e+0, address flattening)
+  -- so that goal atoms are in the same normal form as normalized spec types.
+  let (normGoalType, goalNormPf?) ← normalizeTypeAddrs goalType
+  let (workingGoal, workingGoalType) ← if let some pf := goalNormPf? then do
+      -- Create new goal with normalized type
+      let newGoalMVar ← mkFreshExprMVar normGoalType
+      -- original goal = Eq.mpr pf newGoal (transport back from normalized)
+      let proof ← mkEqMP (← mkEqSymm pf) newGoalMVar
+      goal.assign proof
+      Pure.pure (newGoalMVar.mvarId!, normGoalType)
+    else Pure.pure (goal, goalType)
+  let some (_, _, goalPre, _) ← parseCpsTriple? workingGoalType
     | throwError "runBlock: goal is not a `cpsTriple`.\n\
         Expected goal of the form: `cpsTriple entry exit pre post`."
   let composed ←
@@ -701,9 +739,9 @@ elab "runBlock" specs:ident* : tactic => withMainContext do
       -- Manual mode: use provided specs
       let specExprs ← specs.mapM fun s => elabTerm s none
       runBlockCore specExprs goalPre (normalizeAddrs := true)
-  let finalResult ← normalizeToGoal composed goalType
+  let finalResult ← normalizeToGoal composed workingGoalType
   -- Always permute postcondition to match goal (goal.assign doesn't type-check)
-  let some (gEntry, gExit, gPre, goalPost) ← parseCpsTriple? goalType
+  let some (gEntry, gExit, gPre, goalPost) ← parseCpsTriple? workingGoalType
     | throwError "runBlock: internal error — goal lost cpsTriple structure during permutation"
   let resultType ← inferType finalResult
   let some (_, _, _, resultPost) ← parseCpsTriple? resultType
@@ -714,7 +752,7 @@ elab "runBlock" specs:ident* : tactic => withMainContext do
   let idPre ← mkIdLambda gPre
   let permuted := mkAppN (mkConst ``EvmAsm.Rv64.cpsTriple_consequence)
     #[gEntry, gExit, gPre, gPre, resultPost, goalPost, idPre, postPerm, finalResult]
-  goal.assign permuted
+  workingGoal.assign permuted
   replaceMainGoal []
 
 end EvmAsm.Rv64.Tactics
