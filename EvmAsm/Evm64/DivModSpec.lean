@@ -2439,4 +2439,128 @@ theorem divK_div128_prodcheck2_merged_spec
         xperm_hyp hp')
       h_composed
 
+-- ============================================================================
+-- div128 subroutine: Step 1 full [10]-[24].
+-- 15 instructions: DIVU+MUL+SUB (init) + SRLI+BEQ+ADDI+ADD (clamp q1)
+--   + LD+MUL+SLLI+OR+BLTU+JAL+ADDI+ADD (product check 1).
+-- ============================================================================
+
+set_option maxRecDepth 2048 in
+/-- div128 step 1: trial division q1, clamp, product check. Instrs [10]-[24].
+    Input: u_hi in x7, d_hi in x6, un1 in x11, dlo in memory.
+    Output: refined q1 in x10, refined rhat in x7. -/
+theorem divK_div128_step1_spec
+    (sp u_hi d_hi un1 v1_old v5_old v10_old dlo : Word) (base : Addr)
+    (hv : isValidDwordAccess (sp + signExtend12 3952) = true) :
+    let q1 := rv64_divu u_hi d_hi
+    let rhat := u_hi - q1 * d_hi
+    let hi := q1 >>> (32 : BitVec 6).toNat
+    let q1c := if hi = 0 then q1 else q1 + signExtend12 4095
+    let rhatc := if hi = 0 then rhat else rhat + d_hi
+    let q_dlo := q1c * dlo
+    let rhat_un1 := (rhatc <<< (32 : BitVec 6).toNat) ||| un1
+    let q1' := if BitVec.ult rhat_un1 q_dlo then q1c + signExtend12 4095 else q1c
+    let rhat' := if BitVec.ult rhat_un1 q_dlo then rhatc + d_hi else rhatc
+    let code :=
+      -- step1_init [10]-[12]
+      (base ↦ᵢ .DIVU .x10 .x7 .x6) **
+      ((base + 4) ↦ᵢ .MUL .x5 .x10 .x6) **
+      ((base + 8) ↦ᵢ .SUB .x7 .x7 .x5) **
+      -- clamp q1 [13]-[16]
+      ((base + 12) ↦ᵢ .SRLI .x5 .x10 32) **
+      ((base + 16) ↦ᵢ .BEQ .x5 .x0 12) **
+      ((base + 20) ↦ᵢ .ADDI .x10 .x10 4095) **
+      ((base + 24) ↦ᵢ .ADD .x7 .x7 .x6) **
+      -- product check 1 [17]-[24]
+      ((base + 28) ↦ᵢ .LD .x1 .x12 3952) **
+      ((base + 32) ↦ᵢ .MUL .x5 .x10 .x1) **
+      ((base + 36) ↦ᵢ .SLLI .x1 .x7 32) **
+      ((base + 40) ↦ᵢ .OR .x1 .x1 .x11) **
+      ((base + 44) ↦ᵢ .BLTU .x1 .x5 8) **
+      ((base + 48) ↦ᵢ .JAL .x0 12) **
+      ((base + 52) ↦ᵢ .ADDI .x10 .x10 4095) **
+      ((base + 56) ↦ᵢ .ADD .x7 .x7 .x6)
+    cpsTriple base (base + 60)
+      (code ** (.x7 ↦ᵣ u_hi) ** (.x6 ↦ᵣ d_hi) ** (.x10 ↦ᵣ v10_old) **
+       (.x5 ↦ᵣ v5_old) ** (.x11 ↦ᵣ un1) ** (.x1 ↦ᵣ v1_old) **
+       (.x12 ↦ᵣ sp) ** (.x0 ↦ᵣ 0) ** (sp + signExtend12 3952 ↦ₘ dlo))
+      (code ** (.x7 ↦ᵣ rhat') ** (.x6 ↦ᵣ d_hi) ** (.x10 ↦ᵣ q1') **
+       (.x5 ↦ᵣ q_dlo) ** (.x11 ↦ᵣ un1) ** (.x1 ↦ᵣ rhat_un1) **
+       (.x12 ↦ᵣ sp) ** (.x0 ↦ᵣ 0) ** (sp + signExtend12 3952 ↦ₘ dlo)) := by
+  intro q1; intro rhat; intro hi; intro q1c; intro rhatc
+  intro q_dlo; intro rhat_un1; intro q1'; intro rhat'; intro code
+  -- Block 1: step1_init [10]-[12]
+  have h1_raw := divK_div128_step1_init_spec u_hi d_hi v5_old v10_old base
+  have h1 := cpsTriple_frame_left _ _ _ _
+    (((base + 12) ↦ᵢ .SRLI .x5 .x10 32) **
+     ((base + 16) ↦ᵢ .BEQ .x5 .x0 12) **
+     ((base + 20) ↦ᵢ .ADDI .x10 .x10 4095) **
+     ((base + 24) ↦ᵢ .ADD .x7 .x7 .x6) **
+     ((base + 28) ↦ᵢ .LD .x1 .x12 3952) **
+     ((base + 32) ↦ᵢ .MUL .x5 .x10 .x1) **
+     ((base + 36) ↦ᵢ .SLLI .x1 .x7 32) **
+     ((base + 40) ↦ᵢ .OR .x1 .x1 .x11) **
+     ((base + 44) ↦ᵢ .BLTU .x1 .x5 8) **
+     ((base + 48) ↦ᵢ .JAL .x0 12) **
+     ((base + 52) ↦ᵢ .ADDI .x10 .x10 4095) **
+     ((base + 56) ↦ᵢ .ADD .x7 .x7 .x6) **
+     (.x11 ↦ᵣ un1) ** (.x1 ↦ᵣ v1_old) ** (.x12 ↦ᵣ sp) ** (.x0 ↦ᵣ 0) **
+     (sp + signExtend12 3952 ↦ₘ dlo))
+    (by pcFree) h1_raw
+  -- Block 2: clamp_q1_merged [13]-[16] — normalize internal addresses
+  have h2_raw := divK_div128_clamp_q1_merged_spec q1 rhat d_hi (q1 * d_hi) (base + 12)
+  have : (base + 12 : Addr) + 4 = base + 16 := by bv_omega
+  have : (base + 12 : Addr) + 8 = base + 20 := by bv_omega
+  have : (base + 12 : Addr) + 12 = base + 24 := by bv_omega
+  have : (base + 12 : Addr) + 16 = base + 28 := by bv_omega
+  simp only [*] at h2_raw
+  have h2 := cpsTriple_frame_left _ _ _ _
+    ((base ↦ᵢ .DIVU .x10 .x7 .x6) **
+     ((base + 4) ↦ᵢ .MUL .x5 .x10 .x6) **
+     ((base + 8) ↦ᵢ .SUB .x7 .x7 .x5) **
+     ((base + 28) ↦ᵢ .LD .x1 .x12 3952) **
+     ((base + 32) ↦ᵢ .MUL .x5 .x10 .x1) **
+     ((base + 36) ↦ᵢ .SLLI .x1 .x7 32) **
+     ((base + 40) ↦ᵢ .OR .x1 .x1 .x11) **
+     ((base + 44) ↦ᵢ .BLTU .x1 .x5 8) **
+     ((base + 48) ↦ᵢ .JAL .x0 12) **
+     ((base + 52) ↦ᵢ .ADDI .x10 .x10 4095) **
+     ((base + 56) ↦ᵢ .ADD .x7 .x7 .x6) **
+     (.x11 ↦ᵣ un1) ** (.x1 ↦ᵣ v1_old) ** (.x12 ↦ᵣ sp) **
+     (sp + signExtend12 3952 ↦ₘ dlo))
+    (by pcFree) h2_raw
+  -- Compose blocks 1 → 2
+  have h12 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
+    (fun h hp => by xperm_hyp hp) h1 h2
+  -- Block 3: prodcheck1_merged [17]-[24] — normalize internal addresses
+  have h3_raw := divK_div128_prodcheck1_merged_spec sp q1c rhatc d_hi un1
+    v1_old (hi) dlo (base + 28) hv
+  have : (base + 28 : Addr) + 4 = base + 32 := by bv_omega
+  have : (base + 28 : Addr) + 8 = base + 36 := by bv_omega
+  have : (base + 28 : Addr) + 12 = base + 40 := by bv_omega
+  have : (base + 28 : Addr) + 16 = base + 44 := by bv_omega
+  have : (base + 28 : Addr) + 20 = base + 48 := by bv_omega
+  have : (base + 28 : Addr) + 24 = base + 52 := by bv_omega
+  have : (base + 28 : Addr) + 28 = base + 56 := by bv_omega
+  have : (base + 28 : Addr) + 32 = base + 60 := by bv_omega
+  simp only [*] at h3_raw
+  have h3 := cpsTriple_frame_left _ _ _ _
+    ((base ↦ᵢ .DIVU .x10 .x7 .x6) **
+     ((base + 4) ↦ᵢ .MUL .x5 .x10 .x6) **
+     ((base + 8) ↦ᵢ .SUB .x7 .x7 .x5) **
+     ((base + 12) ↦ᵢ .SRLI .x5 .x10 32) **
+     ((base + 16) ↦ᵢ .BEQ .x5 .x0 12) **
+     ((base + 20) ↦ᵢ .ADDI .x10 .x10 4095) **
+     ((base + 24) ↦ᵢ .ADD .x7 .x7 .x6) **
+     (.x0 ↦ᵣ 0))
+    (by pcFree) h3_raw
+  -- Compose blocks 1→2 → 3
+  have h123 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
+    (fun h hp => by xperm_hyp hp) h12 h3
+  -- Final rearrange
+  exact cpsTriple_consequence _ _ _ _ _ _
+    (fun h hp => by xperm_hyp hp)
+    (fun h hp => by xperm_hyp hp)
+    h123
+
 end EvmAsm.Rv64
