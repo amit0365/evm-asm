@@ -51,6 +51,15 @@ def parseSepConj? (e : Expr) : MetaM (Option (Expr × Expr)) := do
   let e ← normForSepConj e
   if Expr.isAppOfArity e ``EvmAsm.Rv64.sepConj 2 then
     return some (Expr.appArg! (Expr.appFn! e), Expr.appArg! e)
+  -- Defense-in-depth: eta-reduce `fun h => f h` to `f`, then retry
+  if e.isLambda then
+    let body := e.bindingBody!
+    if body.isApp && body.appArg! == .bvar 0 then
+      let f := body.appFn!
+      if !f.hasLooseBVars then
+        let f ← normForSepConj f
+        if Expr.isAppOfArity f ``EvmAsm.Rv64.sepConj 2 then
+          return some (Expr.appArg! (Expr.appFn! f), Expr.appArg! f)
   return none
 
 /-- Flatten any-associated sepConj chain into a list of atoms.

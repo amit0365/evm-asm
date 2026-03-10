@@ -216,19 +216,11 @@ theorem evm_div_bzero_spec (sp base : Addr)
   rw [show (base + 28 : Addr) + signExtend13 1016 = base + 1044 from by
         rw [signExtend13_1016]; bv_omega,
       show (base + 28 : Addr) + 4 = base + 32 from by bv_omega] at hbeq_raw
-  have hbeq_taken := cpsBranch_elim_taken _ _ _ _ _ _ hbeq_raw (fun hp hQf => by
-    obtain ⟨_, _, _, _, _, h1⟩ := hQf
-    obtain ⟨_, _, _, _, _, h2⟩ := h1
-    exact absurd hbz ((sepConj_pure_right _ _ _).mp h2).2)
-  -- Strip ⌜bor = 0⌝ from taken postcondition (explicit type to avoid lambda-wrapped form)
-  have hbeq_clean : cpsTriple (base + 28) (base + 1044)
-      (((base + 28) ↦ᵢ .BEQ .x5 .x0 1016) ** (.x5 ↦ᵣ (b0 ||| b1 ||| b2 ||| b3)) ** (.x0 ↦ᵣ (0 : Word)))
-      (((base + 28) ↦ᵢ .BEQ .x5 .x0 1016) ** (.x5 ↦ᵣ (b0 ||| b1 ||| b2 ||| b3)) ** (.x0 ↦ᵣ (0 : Word))) :=
-    cpsTriple_consequence _ _ _ _ _ _
-      (fun _ hp => hp)
-      (fun h hp => sepConj_mono_right (sepConj_mono_right
-        (fun h' hp' => ((sepConj_pure_right _ _ h').mp hp').1)) h hp)
-      hbeq_taken
+  have hbeq_clean := cpsBranch_elim_taken_strip_pure3 _ _ _ _ _ _ _ _ _ hbeq_raw
+    (fun hp hQf => by
+      obtain ⟨_, _, _, _, _, h1⟩ := hQf
+      obtain ⟨_, _, _, _, _, h2⟩ := h1
+      exact absurd hbz ((sepConj_pure_right _ _ _).mp h2).2)
   -- Step 3: Frame BEQ with body code atoms + x12 + x10 + mem
   have hbeq_framed := cpsTriple_frame_left _ _ _ _
     ((base ↦ᵢ .LD .x5 .x12 32) **

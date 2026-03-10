@@ -1939,21 +1939,6 @@ theorem divK_div128_restore_return_spec (sp v2_old ret_addr : Word) (base : Addr
   runBlock I0 I1
 
 -- ============================================================================
--- Helper: strip pure assertion from a ** chain at depth 3.
--- A ** B ** C ** ⌜P⌝ ** D  →  A ** B ** C ** D
--- ============================================================================
-
-private theorem sepConj_strip_pure_depth3 (A B C D : Assertion) (P : Prop) :
-    ∀ h, (A ** B ** C ** ⌜P⌝ ** D) h → (A ** B ** C ** D) h :=
-  fun h hp => sepConj_mono_right (sepConj_mono_right (sepConj_mono_right
-    (fun hd hpd => ((sepConj_pure_left P D hd).1 hpd).2))) h hp
-
-private theorem sepConj_strip_pure_end3 (A B C : Assertion) (P : Prop) :
-    ∀ h, (A ** B ** C ** ⌜P⌝) h → (A ** B ** C) h :=
-  fun h hp => sepConj_mono_right (sepConj_mono_right
-    (fun h' hp' => ((sepConj_pure_right _ _ h').1 hp').1)) h hp
-
--- ============================================================================
 -- div128 subroutine: Clamp q1 section [13]-[16].
 -- 4 instructions: SRLI + BEQ + ADDI + ADD.
 -- BEQ skips correction if q1 < 2^32, else q1-- and rhat+=d_hi.

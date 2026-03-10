@@ -193,6 +193,34 @@ theorem cpsBranch_elim_ntaken (entry l_t l_f : Addr)
     exact absurd hQt (h_absurd h1)
   · exact ⟨k, s', hstep, hpc_f, hQ_fR⟩
 
+/-- Eliminate the not-taken path from a cpsBranch AND strip the trailing pure fact
+    from the taken postcondition (depth 3: A ** B ** C ** ⌜P⌝ → A ** B ** C).
+    The return type is explicitly `cpsTriple entry l_t P (A ** B ** C)`, avoiding
+    lambda-wrapped postconditions. -/
+theorem cpsBranch_elim_taken_strip_pure3
+    (entry l_t l_f : Addr) (P A B C : Assertion) (Prop_t : Prop) (Q_f : Assertion)
+    (hbr : cpsBranch entry P l_t (A ** B ** C ** ⌜Prop_t⌝) l_f Q_f)
+    (h_absurd : ∀ hp, Q_f hp → False) :
+    cpsTriple entry l_t P (A ** B ** C) :=
+  cpsTriple_consequence _ _ _ _ _ _
+    (fun _ hp => hp)
+    (sepConj_strip_pure_end3 A B C Prop_t)
+    (cpsBranch_elim_taken _ _ _ _ _ _ hbr h_absurd)
+
+/-- Eliminate the taken path from a cpsBranch AND strip the trailing pure fact
+    from the not-taken postcondition (depth 3: A ** B ** C ** ⌜P⌝ → A ** B ** C).
+    The return type is explicitly `cpsTriple entry l_f P (A ** B ** C)`, avoiding
+    lambda-wrapped postconditions. -/
+theorem cpsBranch_elim_ntaken_strip_pure3
+    (entry l_t l_f : Addr) (P A B C : Assertion) (Prop_f : Prop) (Q_t : Assertion)
+    (hbr : cpsBranch entry P l_t Q_t l_f (A ** B ** C ** ⌜Prop_f⌝))
+    (h_absurd : ∀ hp, Q_t hp → False) :
+    cpsTriple entry l_f P (A ** B ** C) :=
+  cpsTriple_consequence _ _ _ _ _ _
+    (fun _ hp => hp)
+    (sepConj_strip_pure_end3 A B C Prop_f)
+    (cpsBranch_elim_ntaken _ _ _ _ _ _ hbr h_absurd)
+
 /-- A cpsTriple with zero steps: if entry = exit and P implies Q, trivially holds. -/
 theorem cpsTriple_refl (addr : Addr) (P Q : Assertion)
     (h : ∀ hp, P hp → Q hp) :
