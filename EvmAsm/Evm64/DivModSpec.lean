@@ -7,6 +7,7 @@
 
 import EvmAsm.Evm64.DivMod
 import EvmAsm.Rv64.SyscallSpecs
+import EvmAsm.Rv64.ControlFlow
 import EvmAsm.Rv64.Tactics.XSimp
 import EvmAsm.Rv64.Tactics.RunBlock
 
@@ -271,5 +272,318 @@ theorem divK_copyAU_spec (sp : Addr) (base : Addr)
   have I7 := sd_spec_gen .x12 .x5 sp a3 u3 4032 (base + 28) hv_u3
   have I8 := sd_x0_spec_gen .x12 sp u4 4024 (base + 32) hv_u4
   runBlock I0 I1 I2 I3 I4 I5 I6 I7 I8
+
+-- ============================================================================
+-- NormB: Normalize b in-place (shift > 0). 21 instructions.
+-- Per-limb decomposition: 3 merge limbs (6 instr each) + 1 last limb (3 instr).
+-- ============================================================================
+
+/-- NormB merge limb (6 instructions): LD high, LD low, SLL, SRL, OR, SD.
+    Computes result = (high <<< shift) ||| (low >>> anti_shift) and stores to high_off.
+    x6 = shift, x2 = anti_shift (= 64 - shift as unsigned). -/
+theorem divK_normB_merge_spec (high_off low_off : BitVec 12)
+    (sp high low v5 v7 shift anti_shift : Word) (base : Addr)
+    (hvalid_high : isValidDwordAccess (sp + signExtend12 high_off) = true)
+    (hvalid_low : isValidDwordAccess (sp + signExtend12 low_off) = true) :
+    let shifted_high := high <<< (shift.toNat % 64)
+    let shifted_low := low >>> (anti_shift.toNat % 64)
+    let result := shifted_high ||| shifted_low
+    let code :=
+      (base ↦ᵢ .LD .x5 .x12 high_off) **
+      ((base + 4) ↦ᵢ .LD .x7 .x12 low_off) **
+      ((base + 8) ↦ᵢ .SLL .x5 .x5 .x6) **
+      ((base + 12) ↦ᵢ .SRL .x7 .x7 .x2) **
+      ((base + 16) ↦ᵢ .OR .x5 .x5 .x7) **
+      ((base + 20) ↦ᵢ .SD .x12 .x5 high_off)
+    cpsTriple base (base + 24)
+      (code **
+       (.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ v5) ** (.x7 ↦ᵣ v7) **
+       (.x6 ↦ᵣ shift) ** (.x2 ↦ᵣ anti_shift) **
+       ((sp + signExtend12 high_off) ↦ₘ high) **
+       ((sp + signExtend12 low_off) ↦ₘ low))
+      (code **
+       (.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ result) ** (.x7 ↦ᵣ shifted_low) **
+       (.x6 ↦ᵣ shift) ** (.x2 ↦ᵣ anti_shift) **
+       ((sp + signExtend12 high_off) ↦ₘ result) **
+       ((sp + signExtend12 low_off) ↦ₘ low)) := by
+  intro shifted_high; intro shifted_low; intro result; intro code
+  have I0 := ld_spec_gen .x5 .x12 sp v5 high high_off base (by nofun) hvalid_high
+  have I1 := ld_spec_gen .x7 .x12 sp v7 low low_off (base + 4) (by nofun) hvalid_low
+  have I2 := sll_spec_gen_rd_eq_rs1 .x5 .x6 high shift (base + 8) (by nofun) (by nofun)
+  have I3 := srl_spec_gen_rd_eq_rs1 .x7 .x2 low anti_shift (base + 12) (by nofun) (by nofun)
+  have I4 := or_spec_gen_rd_eq_rs1 .x5 .x7 shifted_high shifted_low (base + 16) (by nofun) (by nofun)
+  have I5 := sd_spec_gen .x12 .x5 sp result high high_off (base + 20) hvalid_high
+  runBlock I0 I1 I2 I3 I4 I5
+
+/-- NormB last limb (3 instructions): LD, SLL, SD.
+    Computes result = val <<< shift and stores to off. -/
+theorem divK_normB_last_spec (off : BitVec 12)
+    (sp val v5 shift : Word) (base : Addr)
+    (hvalid : isValidDwordAccess (sp + signExtend12 off) = true) :
+    let result := val <<< (shift.toNat % 64)
+    let code :=
+      (base ↦ᵢ .LD .x5 .x12 off) **
+      ((base + 4) ↦ᵢ .SLL .x5 .x5 .x6) **
+      ((base + 8) ↦ᵢ .SD .x12 .x5 off)
+    cpsTriple base (base + 12)
+      (code **
+       (.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ v5) ** (.x6 ↦ᵣ shift) **
+       ((sp + signExtend12 off) ↦ₘ val))
+      (code **
+       (.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ result) ** (.x6 ↦ᵣ shift) **
+       ((sp + signExtend12 off) ↦ₘ result)) := by
+  intro result; intro code
+  have I0 := ld_spec_gen .x5 .x12 sp v5 val off base (by nofun) hvalid
+  have I1 := sll_spec_gen_rd_eq_rs1 .x5 .x6 val shift (base + 4) (by nofun) (by nofun)
+  have I2 := sd_spec_gen .x12 .x5 sp result val off (base + 8) hvalid
+  runBlock I0 I1 I2
+
+-- ============================================================================
+-- NormA: Normalize a → u[0..4] (shift > 0). 20 instructions (excl. JAL).
+-- Per-limb decomposition: top (3 instr) + 3 merge (5 instr each) + last (2 instr).
+-- ============================================================================
+
+/-- NormA top: LD a[3], SRL to x7, SD u[4]. 3 instructions.
+    Computes u[4] = a[3] >>> anti_shift (overflow bits from top limb). -/
+theorem divK_normA_top_spec (src_off dst_off : BitVec 12)
+    (sp val v5 v7 anti_shift dst_old : Word) (base : Addr)
+    (hvalid_src : isValidDwordAccess (sp + signExtend12 src_off) = true)
+    (hvalid_dst : isValidDwordAccess (sp + signExtend12 dst_off) = true) :
+    let result := val >>> (anti_shift.toNat % 64)
+    let code :=
+      (base ↦ᵢ .LD .x5 .x12 src_off) **
+      ((base + 4) ↦ᵢ .SRL .x7 .x5 .x2) **
+      ((base + 8) ↦ᵢ .SD .x12 .x7 dst_off)
+    cpsTriple base (base + 12)
+      (code **
+       (.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ v5) ** (.x7 ↦ᵣ v7) ** (.x2 ↦ᵣ anti_shift) **
+       ((sp + signExtend12 src_off) ↦ₘ val) **
+       ((sp + signExtend12 dst_off) ↦ₘ dst_old))
+      (code **
+       (.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ val) ** (.x7 ↦ᵣ result) ** (.x2 ↦ᵣ anti_shift) **
+       ((sp + signExtend12 src_off) ↦ₘ val) **
+       ((sp + signExtend12 dst_off) ↦ₘ result)) := by
+  intro result; intro code
+  have I0 := ld_spec_gen .x5 .x12 sp v5 val src_off base (by nofun) hvalid_src
+  have I1 := srl_spec_gen .x7 .x5 .x2 v7 val anti_shift (base + 4) (by nofun)
+  have I2 := sd_spec_gen .x12 .x7 sp result dst_old dst_off (base + 8) hvalid_dst
+  runBlock I0 I1 I2
+
+/-- NormA merge type A (5 instructions): x5 holds current limb.
+    LD next into x7, SLL x5 by shift, SRL x10 from x7 by anti_shift, OR into x5, SD.
+    Used for u[3] and u[1] computation. -/
+theorem divK_normA_mergeA_spec (next_off dst_off : BitVec 12)
+    (sp current next v7 v10 shift anti_shift dst_old : Word) (base : Addr)
+    (hvalid_next : isValidDwordAccess (sp + signExtend12 next_off) = true)
+    (hvalid_dst : isValidDwordAccess (sp + signExtend12 dst_off) = true) :
+    let shifted_curr := current <<< (shift.toNat % 64)
+    let shifted_next := next >>> (anti_shift.toNat % 64)
+    let result := shifted_curr ||| shifted_next
+    let code :=
+      (base ↦ᵢ .LD .x7 .x12 next_off) **
+      ((base + 4) ↦ᵢ .SLL .x5 .x5 .x6) **
+      ((base + 8) ↦ᵢ .SRL .x10 .x7 .x2) **
+      ((base + 12) ↦ᵢ .OR .x5 .x5 .x10) **
+      ((base + 16) ↦ᵢ .SD .x12 .x5 dst_off)
+    cpsTriple base (base + 20)
+      (code **
+       (.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ current) ** (.x7 ↦ᵣ v7) ** (.x10 ↦ᵣ v10) **
+       (.x6 ↦ᵣ shift) ** (.x2 ↦ᵣ anti_shift) **
+       ((sp + signExtend12 next_off) ↦ₘ next) **
+       ((sp + signExtend12 dst_off) ↦ₘ dst_old))
+      (code **
+       (.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ result) ** (.x7 ↦ᵣ next) ** (.x10 ↦ᵣ shifted_next) **
+       (.x6 ↦ᵣ shift) ** (.x2 ↦ᵣ anti_shift) **
+       ((sp + signExtend12 next_off) ↦ₘ next) **
+       ((sp + signExtend12 dst_off) ↦ₘ result)) := by
+  intro shifted_curr; intro shifted_next; intro result; intro code
+  have I0 := ld_spec_gen .x7 .x12 sp v7 next next_off base (by nofun) hvalid_next
+  have I1 := sll_spec_gen_rd_eq_rs1 .x5 .x6 current shift (base + 4) (by nofun) (by nofun)
+  have I2 := srl_spec_gen .x10 .x7 .x2 v10 next anti_shift (base + 8) (by nofun)
+  have I3 := or_spec_gen_rd_eq_rs1 .x5 .x10 shifted_curr shifted_next (base + 12) (by nofun) (by nofun)
+  have I4 := sd_spec_gen .x12 .x5 sp result dst_old dst_off (base + 16) hvalid_dst
+  runBlock I0 I1 I2 I3 I4
+
+/-- NormA merge type B (5 instructions): x7 holds current limb.
+    LD next into x5, SLL x7 by shift, SRL x10 from x5 by anti_shift, OR into x7, SD.
+    Used for u[2] computation. -/
+theorem divK_normA_mergeB_spec (next_off dst_off : BitVec 12)
+    (sp current next v5 v10 shift anti_shift dst_old : Word) (base : Addr)
+    (hvalid_next : isValidDwordAccess (sp + signExtend12 next_off) = true)
+    (hvalid_dst : isValidDwordAccess (sp + signExtend12 dst_off) = true) :
+    let shifted_curr := current <<< (shift.toNat % 64)
+    let shifted_next := next >>> (anti_shift.toNat % 64)
+    let result := shifted_curr ||| shifted_next
+    let code :=
+      (base ↦ᵢ .LD .x5 .x12 next_off) **
+      ((base + 4) ↦ᵢ .SLL .x7 .x7 .x6) **
+      ((base + 8) ↦ᵢ .SRL .x10 .x5 .x2) **
+      ((base + 12) ↦ᵢ .OR .x7 .x7 .x10) **
+      ((base + 16) ↦ᵢ .SD .x12 .x7 dst_off)
+    cpsTriple base (base + 20)
+      (code **
+       (.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ v5) ** (.x7 ↦ᵣ current) ** (.x10 ↦ᵣ v10) **
+       (.x6 ↦ᵣ shift) ** (.x2 ↦ᵣ anti_shift) **
+       ((sp + signExtend12 next_off) ↦ₘ next) **
+       ((sp + signExtend12 dst_off) ↦ₘ dst_old))
+      (code **
+       (.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ next) ** (.x7 ↦ᵣ result) ** (.x10 ↦ᵣ shifted_next) **
+       (.x6 ↦ᵣ shift) ** (.x2 ↦ᵣ anti_shift) **
+       ((sp + signExtend12 next_off) ↦ₘ next) **
+       ((sp + signExtend12 dst_off) ↦ₘ result)) := by
+  intro shifted_curr; intro shifted_next; intro result; intro code
+  have I0 := ld_spec_gen .x5 .x12 sp v5 next next_off base (by nofun) hvalid_next
+  have I1 := sll_spec_gen_rd_eq_rs1 .x7 .x6 current shift (base + 4) (by nofun) (by nofun)
+  have I2 := srl_spec_gen .x10 .x5 .x2 v10 next anti_shift (base + 8) (by nofun)
+  have I3 := or_spec_gen_rd_eq_rs1 .x7 .x10 shifted_curr shifted_next (base + 12) (by nofun) (by nofun)
+  have I4 := sd_spec_gen .x12 .x7 sp result dst_old dst_off (base + 16) hvalid_dst
+  runBlock I0 I1 I2 I3 I4
+
+/-- NormA last limb (2 instructions): SLL x7 by shift, SD to dst_off.
+    Computes u[0] = a[0] <<< shift. -/
+theorem divK_normA_last_spec (dst_off : BitVec 12)
+    (sp val shift dst_old : Word) (base : Addr)
+    (hvalid_dst : isValidDwordAccess (sp + signExtend12 dst_off) = true) :
+    let result := val <<< (shift.toNat % 64)
+    let code :=
+      (base ↦ᵢ .SLL .x7 .x7 .x6) **
+      ((base + 4) ↦ᵢ .SD .x12 .x7 dst_off)
+    cpsTriple base (base + 8)
+      (code **
+       (.x12 ↦ᵣ sp) ** (.x7 ↦ᵣ val) ** (.x6 ↦ᵣ shift) **
+       ((sp + signExtend12 dst_off) ↦ₘ dst_old))
+      (code **
+       (.x12 ↦ᵣ sp) ** (.x7 ↦ᵣ result) ** (.x6 ↦ᵣ shift) **
+       ((sp + signExtend12 dst_off) ↦ₘ result)) := by
+  intro result; intro code
+  have I0 := sll_spec_gen_rd_eq_rs1 .x7 .x6 val shift base (by nofun) (by nofun)
+  have I1 := sd_spec_gen .x12 .x7 sp result dst_old dst_off (base + 4) hvalid_dst
+  runBlock I0 I1
+
+-- ============================================================================
+-- Denorm: De-normalize remainder. Per-limb specs for the shift body.
+-- Same structure as NormB but SRL/SLL swapped (right-shift with merge from above).
+-- ============================================================================
+
+/-- Denorm merge limb (6 instructions): LD curr, LD next, SRL, SLL, OR, SD.
+    Computes result = (curr >>> shift) ||| (next <<< anti_shift) and stores to curr_off.
+    x6 = shift, x2 = anti_shift. -/
+theorem divK_denorm_merge_spec (curr_off next_off : BitVec 12)
+    (sp curr next v5 v7 shift anti_shift : Word) (base : Addr)
+    (hvalid_curr : isValidDwordAccess (sp + signExtend12 curr_off) = true)
+    (hvalid_next : isValidDwordAccess (sp + signExtend12 next_off) = true) :
+    let shifted_curr := curr >>> (shift.toNat % 64)
+    let shifted_next := next <<< (anti_shift.toNat % 64)
+    let result := shifted_curr ||| shifted_next
+    let code :=
+      (base ↦ᵢ .LD .x5 .x12 curr_off) **
+      ((base + 4) ↦ᵢ .LD .x7 .x12 next_off) **
+      ((base + 8) ↦ᵢ .SRL .x5 .x5 .x6) **
+      ((base + 12) ↦ᵢ .SLL .x7 .x7 .x2) **
+      ((base + 16) ↦ᵢ .OR .x5 .x5 .x7) **
+      ((base + 20) ↦ᵢ .SD .x12 .x5 curr_off)
+    cpsTriple base (base + 24)
+      (code **
+       (.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ v5) ** (.x7 ↦ᵣ v7) **
+       (.x6 ↦ᵣ shift) ** (.x2 ↦ᵣ anti_shift) **
+       ((sp + signExtend12 curr_off) ↦ₘ curr) **
+       ((sp + signExtend12 next_off) ↦ₘ next))
+      (code **
+       (.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ result) ** (.x7 ↦ᵣ shifted_next) **
+       (.x6 ↦ᵣ shift) ** (.x2 ↦ᵣ anti_shift) **
+       ((sp + signExtend12 curr_off) ↦ₘ result) **
+       ((sp + signExtend12 next_off) ↦ₘ next)) := by
+  intro shifted_curr; intro shifted_next; intro result; intro code
+  have I0 := ld_spec_gen .x5 .x12 sp v5 curr curr_off base (by nofun) hvalid_curr
+  have I1 := ld_spec_gen .x7 .x12 sp v7 next next_off (base + 4) (by nofun) hvalid_next
+  have I2 := srl_spec_gen_rd_eq_rs1 .x5 .x6 curr shift (base + 8) (by nofun) (by nofun)
+  have I3 := sll_spec_gen_rd_eq_rs1 .x7 .x2 next anti_shift (base + 12) (by nofun) (by nofun)
+  have I4 := or_spec_gen_rd_eq_rs1 .x5 .x7 shifted_curr shifted_next (base + 16) (by nofun) (by nofun)
+  have I5 := sd_spec_gen .x12 .x5 sp result curr curr_off (base + 20) hvalid_curr
+  runBlock I0 I1 I2 I3 I4 I5
+
+/-- Denorm last limb (3 instructions): LD, SRL, SD.
+    Computes result = val >>> shift and stores to off. -/
+theorem divK_denorm_last_spec (off : BitVec 12)
+    (sp val v5 shift : Word) (base : Addr)
+    (hvalid : isValidDwordAccess (sp + signExtend12 off) = true) :
+    let result := val >>> (shift.toNat % 64)
+    let code :=
+      (base ↦ᵢ .LD .x5 .x12 off) **
+      ((base + 4) ↦ᵢ .SRL .x5 .x5 .x6) **
+      ((base + 8) ↦ᵢ .SD .x12 .x5 off)
+    cpsTriple base (base + 12)
+      (code **
+       (.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ v5) ** (.x6 ↦ᵣ shift) **
+       ((sp + signExtend12 off) ↦ₘ val))
+      (code **
+       (.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ result) ** (.x6 ↦ᵣ shift) **
+       ((sp + signExtend12 off) ↦ₘ result)) := by
+  intro result; intro code
+  have I0 := ld_spec_gen .x5 .x12 sp v5 val off base (by nofun) hvalid
+  have I1 := srl_spec_gen_rd_eq_rs1 .x5 .x6 val shift (base + 4) (by nofun) (by nofun)
+  have I2 := sd_spec_gen .x12 .x5 sp result val off (base + 8) hvalid
+  runBlock I0 I1 I2
+
+-- ============================================================================
+-- Epilogue: Copy q[0..3] or u[0..3] to output. 10 instructions each.
+-- Split into load phase (4 LD) + store phase (ADDI + 4 SD) + JAL.
+-- ============================================================================
+
+/-- Epilogue load phase: load 4 values from scratch space. 4 instructions.
+    Loads q[0..3] (for DIV) or u[0..3] (for MOD) into x5, x6, x7, x10. -/
+theorem divK_epilogue_load_spec (off0 off1 off2 off3 : BitVec 12)
+    (sp r0 r1 r2 r3 v5 v6 v7 v10 : Word) (base : Addr)
+    (hv0 : isValidDwordAccess (sp + signExtend12 off0) = true)
+    (hv1 : isValidDwordAccess (sp + signExtend12 off1) = true)
+    (hv2 : isValidDwordAccess (sp + signExtend12 off2) = true)
+    (hv3 : isValidDwordAccess (sp + signExtend12 off3) = true) :
+    let code :=
+      (base ↦ᵢ .LD .x5 .x12 off0) **
+      ((base + 4) ↦ᵢ .LD .x6 .x12 off1) **
+      ((base + 8) ↦ᵢ .LD .x7 .x12 off2) **
+      ((base + 12) ↦ᵢ .LD .x10 .x12 off3)
+    cpsTriple base (base + 16)
+      (code **
+       (.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ v5) ** (.x6 ↦ᵣ v6) ** (.x7 ↦ᵣ v7) ** (.x10 ↦ᵣ v10) **
+       ((sp + signExtend12 off0) ↦ₘ r0) ** ((sp + signExtend12 off1) ↦ₘ r1) **
+       ((sp + signExtend12 off2) ↦ₘ r2) ** ((sp + signExtend12 off3) ↦ₘ r3))
+      (code **
+       (.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ r0) ** (.x6 ↦ᵣ r1) ** (.x7 ↦ᵣ r2) ** (.x10 ↦ᵣ r3) **
+       ((sp + signExtend12 off0) ↦ₘ r0) ** ((sp + signExtend12 off1) ↦ₘ r1) **
+       ((sp + signExtend12 off2) ↦ₘ r2) ** ((sp + signExtend12 off3) ↦ₘ r3)) := by
+  have I0 := ld_spec_gen .x5 .x12 sp v5 r0 off0 base (by nofun) hv0
+  have I1 := ld_spec_gen .x6 .x12 sp v6 r1 off1 (base + 4) (by nofun) hv1
+  have I2 := ld_spec_gen .x7 .x12 sp v7 r2 off2 (base + 8) (by nofun) hv2
+  have I3 := ld_spec_gen .x10 .x12 sp v10 r3 off3 (base + 12) (by nofun) hv3
+  runBlock I0 I1 I2 I3
+
+/-- Epilogue store phase: ADDI sp+32, store 4 values, JAL to exit. 6 instructions. -/
+theorem divK_epilogue_store_spec (sp : Addr) (base : Addr)
+    (r0 r1 r2 r3 m0 m8 m16 m24 : Word) (jal_off : BitVec 21)
+    (hvalid : ValidMemRange sp 8) :
+    let code :=
+      (base ↦ᵢ .ADDI .x12 .x12 32) **
+      ((base + 4) ↦ᵢ .SD .x12 .x5 0) **
+      ((base + 8) ↦ᵢ .SD .x12 .x6 8) **
+      ((base + 12) ↦ᵢ .SD .x12 .x7 16) **
+      ((base + 16) ↦ᵢ .SD .x12 .x10 24) **
+      ((base + 20) ↦ᵢ .JAL .x0 jal_off)
+    cpsTriple base (base + 20 + signExtend21 jal_off)
+      (code **
+       (.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ r0) ** (.x6 ↦ᵣ r1) ** (.x7 ↦ᵣ r2) ** (.x10 ↦ᵣ r3) **
+       ((sp + 32) ↦ₘ m0) ** ((sp + 40) ↦ₘ m8) **
+       ((sp + 48) ↦ₘ m16) ** ((sp + 56) ↦ₘ m24))
+      (code **
+       (.x12 ↦ᵣ (sp + 32)) ** (.x5 ↦ᵣ r0) ** (.x6 ↦ᵣ r1) ** (.x7 ↦ᵣ r2) ** (.x10 ↦ᵣ r3) **
+       ((sp + 32) ↦ₘ r0) ** ((sp + 40) ↦ₘ r1) **
+       ((sp + 48) ↦ₘ r2) ** ((sp + 56) ↦ₘ r3)) := by
+  have I0 := addi_spec_gen_same .x12 sp 32 base (by nofun)
+  have I1 := sd_spec_gen .x12 .x5 (sp + 32) r0 m0 0 (base + 4) (by validMem)
+  have I2 := sd_spec_gen .x12 .x6 (sp + 32) r1 m8 8 (base + 8) (by validMem)
+  have I3 := sd_spec_gen .x12 .x7 (sp + 32) r2 m16 16 (base + 12) (by validMem)
+  have I4 := sd_spec_gen .x12 .x10 (sp + 32) r3 m24 24 (base + 16) (by validMem)
+  have I5 := jal_x0_spec_gen jal_off (base + 20)
+  runBlock I0 I1 I2 I3 I4 I5
 
 end EvmAsm.Rv64

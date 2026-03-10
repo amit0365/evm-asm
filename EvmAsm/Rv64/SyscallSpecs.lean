@@ -490,4 +490,35 @@ namespace EvmAsm.Rv64
       ((addr ↦ᵢ .SD rs1 .x0 offset) ** (rs1 ↦ᵣ v_addr) ** ((v_addr + signExtend12 offset) ↦ₘ (0 : Word))) :=
   generic_sd_x0_spec rs1 v_addr mem_old offset addr hvalid
 
+-- ============================================================================
+-- 3-register shift specs (rd ≠ rs1, rd ≠ rs2)
+-- ============================================================================
+
+@[spec_gen_rv64] theorem srl_spec_gen (rd rs1 rs2 : Reg) (v_old v1 v2 : Word)
+    (addr : Addr) (hrd_ne_x0 : rd ≠ .x0) :
+    cpsTriple addr (addr + 4)
+      ((addr ↦ᵢ .SRL rd rs1 rs2) ** (rs1 ↦ᵣ v1) ** (rs2 ↦ᵣ v2) ** (rd ↦ᵣ v_old))
+      ((addr ↦ᵢ .SRL rd rs1 rs2) ** (rs1 ↦ᵣ v1) ** (rs2 ↦ᵣ v2) ** (rd ↦ᵣ (v1 >>> (v2.toNat % 64)))) :=
+  generic_3reg_spec (.SRL rd rs1 rs2) rs1 rs2 rd v1 v2 v_old _ addr hrd_ne_x0
+    (by intro s _ hrs1 hrs2; simp [execInstrBr, hrs1, hrs2])
+    (by intro s hfetch; exact step_non_ecall_non_mem s _ hfetch (by nofun) (by nofun) (by rfl))
+
+@[spec_gen_rv64] theorem sll_spec_gen (rd rs1 rs2 : Reg) (v_old v1 v2 : Word)
+    (addr : Addr) (hrd_ne_x0 : rd ≠ .x0) :
+    cpsTriple addr (addr + 4)
+      ((addr ↦ᵢ .SLL rd rs1 rs2) ** (rs1 ↦ᵣ v1) ** (rs2 ↦ᵣ v2) ** (rd ↦ᵣ v_old))
+      ((addr ↦ᵢ .SLL rd rs1 rs2) ** (rs1 ↦ᵣ v1) ** (rs2 ↦ᵣ v2) ** (rd ↦ᵣ (v1 <<< (v2.toNat % 64)))) :=
+  generic_3reg_spec (.SLL rd rs1 rs2) rs1 rs2 rd v1 v2 v_old _ addr hrd_ne_x0
+    (by intro s _ hrs1 hrs2; simp [execInstrBr, hrs1, hrs2])
+    (by intro s hfetch; exact step_non_ecall_non_mem s _ hfetch (by nofun) (by nofun) (by rfl))
+
+@[spec_gen_rv64] theorem add_spec_gen_rd_eq_rs2 (rd rs1 : Reg) (v1 v2 : Word)
+    (addr : Addr) (hrd_ne_x0 : rd ≠ .x0) (hne : rs1 ≠ rd) :
+    cpsTriple addr (addr + 4)
+      ((addr ↦ᵢ .ADD rd rs1 rd) ** (rs1 ↦ᵣ v1) ** (rd ↦ᵣ v2))
+      ((addr ↦ᵢ .ADD rd rs1 rd) ** (rs1 ↦ᵣ v1) ** (rd ↦ᵣ (v1 + v2))) :=
+  generic_2reg_spec (.ADD rd rs1 rd) rs1 rd v1 v2 (v1 + v2) addr hrd_ne_x0
+    (by intro s _ hrs1 hrd; simp [execInstrBr, hrs1, hrd])
+    (by intro s hfetch; exact step_non_ecall_non_mem s _ hfetch (by nofun) (by nofun) (by rfl))
+
 end EvmAsm.Rv64
