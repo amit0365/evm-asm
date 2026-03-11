@@ -192,9 +192,45 @@ All phases below target **Evm64** primarily. Files are under `EvmAsm/Evm64/`.
   div128 subroutine fully specified in 5 composable blocks (phase1, step1,
   compute_un21, step2, end). Branch compositions for BEQ/BLTU merge patterns.
   Hierarchical composition using progAt to avoid WHNF scaling limit:
-  - `divCode` splits `progAt base evm_div` into 14 per-phase progAt blocks
-  - `evm_div_bzero_spec` (b=0 path): phaseA body → BEQ taken → zeroPath (0 sorry) ✅
-  - Remaining: b≠0 path compositions (phaseB → CLZ → ... → epilogue)
+  - `divCode`/`modCode` split `progAt base evm_div/evm_mod` into 14 per-phase progAt blocks
+  - `divCode_mid` (12 blocks excl phaseA+zeroPath), `divCode_noAB` (12 blocks excl phaseA+phaseB)
+  - `progAt_divK_phaseB_at32`: pre-normalized phaseB expansion (21 instrAt atoms at base+K offsets)
+
+  **Completed compositions (0 sorry):**
+  - `evm_div_bzero_spec` (b=0 path): phaseA → BEQ taken → zeroPath ✅
+  - `evm_div_phaseA_ntaken_spec` (b≠0): phaseA body → BEQ ntaken → base+32 ✅
+  - `evm_div_phaseB_n4_spec` (b[3]≠0): init1→init2→ADDI→BNE(taken)→tail, 16 instrs ✅
+  - `evm_div_phaseAB_n4_spec` (b≠0, b[3]≠0): phaseA+phaseB composed, 24 instrs, base→base+116 ✅
+  - `evm_mod_bzero_spec` (b=0 path): same as div but with modCode ✅
+  - `evm_mod_phaseA_ntaken_spec` (b≠0): same as div but with modCode ✅
+
+  **Remaining compositions (b≠0 non-zero path):**
+  - Phase B cascade variants: n=3 (b[3]=0, b[2]≠0), n=2 (b[3]=b[2]=0, b[1]≠0), n=1 (only b[0]≠0)
+    - Same pattern as n=4 but with more BNE fall-throughs before taken
+    - `divK_phaseB_cascade_step_spec` provides parameterized ADDI+BNE cpsBranch for each step
+  - CLZ (Count Leading Zeros): 24 instructions, 6-stage binary search
+    - `divK_clz_init_spec` + 6 × `divK_clz_stage_{taken,ntaken}_spec` already in DivModSpec
+    - Compose into `evm_div_clz_spec` at base+116→base+212
+  - Phase C2 (check n≥2): 4 instructions, cpsBranch at base+212→base+228
+  - NormB (normalize divisor): 21 instructions at base+228
+  - NormA (normalize dividend): 21 instructions at base+312
+  - CopyAU (copy a[] to u[]): 9 instructions at base+396
+  - LoopSetup: 4 instructions, cpsBranch at base+432
+  - LoopBody (main Knuth D loop): 114 instructions at base+448 — the most complex phase
+    - Contains: trial_load, trial_max, mulsub (setup+partA+partB), correction_branch,
+      addback (init+partA+partB+final), sub_carry, store_qj, loop_control
+    - All sub-specs exist in DivModSpec but composing the full loop requires
+      loop invariant proof (inductive over j iterations)
+  - Denorm (denormalize remainder): 25 instructions at base+904
+  - Epilogue (load quotient/remainder): 10 instructions at base+1004
+  - div128 subroutine: 49 instructions at base+1068
+    - Already fully specified in 5 composable blocks, needs hierarchical composition
+
+  **Key technical challenges remaining:**
+  - Loop body composition: 114 instructions with loop invariant (j = 4-n down to 0)
+  - div128 subroutine call/return: JALR-based call requires return address framing
+  - Full path merging: by_cases on n (1/2/3/4) to combine all Phase B variants
+  - MOD mirrors: most DIV compositions transfer directly (same code, different epilogue)
 
 #### 4.3 SDIV and SMOD (Signed)
 - **Approach**: Check signs, compute unsigned div/mod, apply sign correction.

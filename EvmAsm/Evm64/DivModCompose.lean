@@ -275,6 +275,67 @@ private theorem divK_phaseB_n4_nm1_x8 :
 -- signExtend12 32 = 32 (for tail load address: sp + 24 + signExtend12 32 = sp + 56)
 private theorem divK_se12_32 : signExtend12 (32 : BitVec 12) = (32 : Word) := by native_decide
 
+-- Address normalization lemmas for phaseB composition (separate theorems for heartbeat budget)
+private theorem phB_off_4 (base : Addr) : (base + 32 : Addr) + 4 = base + 36 := by bv_omega
+private theorem phB_off_8 (base : Addr) : (base + 32 : Addr) + 8 = base + 40 := by bv_omega
+private theorem phB_off_12 (base : Addr) : (base + 32 : Addr) + 12 = base + 44 := by bv_omega
+private theorem phB_off_16 (base : Addr) : (base + 32 : Addr) + 16 = base + 48 := by bv_omega
+private theorem phB_off_20 (base : Addr) : (base + 32 : Addr) + 20 = base + 52 := by bv_omega
+private theorem phB_off_24 (base : Addr) : (base + 32 : Addr) + 24 = base + 56 := by bv_omega
+private theorem phB_off_28 (base : Addr) : (base + 32 : Addr) + 28 = base + 60 := by bv_omega
+private theorem phB_off_32 (base : Addr) : (base + 32 : Addr) + 32 = base + 64 := by bv_omega
+private theorem phB_off_36 (base : Addr) : (base + 32 : Addr) + 36 = base + 68 := by bv_omega
+private theorem phB_off_40 (base : Addr) : (base + 32 : Addr) + 40 = base + 72 := by bv_omega
+private theorem phB_off_44 (base : Addr) : (base + 32 : Addr) + 44 = base + 76 := by bv_omega
+private theorem phB_off_48 (base : Addr) : (base + 32 : Addr) + 48 = base + 80 := by bv_omega
+private theorem phB_off_52 (base : Addr) : (base + 32 : Addr) + 52 = base + 84 := by bv_omega
+private theorem phB_off_56 (base : Addr) : (base + 32 : Addr) + 56 = base + 88 := by bv_omega
+private theorem phB_off_60 (base : Addr) : (base + 32 : Addr) + 60 = base + 92 := by bv_omega
+private theorem phB_off_64 (base : Addr) : (base + 32 : Addr) + 64 = base + 96 := by bv_omega
+private theorem phB_off_68 (base : Addr) : (base + 32 : Addr) + 68 = base + 100 := by bv_omega
+private theorem phB_off_72 (base : Addr) : (base + 32 : Addr) + 72 = base + 104 := by bv_omega
+private theorem phB_off_76 (base : Addr) : (base + 32 : Addr) + 76 = base + 108 := by bv_omega
+private theorem phB_off_80 (base : Addr) : (base + 32 : Addr) + 80 = base + 112 := by bv_omega
+private theorem phB_i2_4 (base : Addr) : (base + 60 : Addr) + 4 = base + 64 := by bv_omega
+private theorem phB_i2_8 (base : Addr) : (base + 60 : Addr) + 8 = base + 68 := by bv_omega
+private theorem phB_addi_4 (base : Addr) : (base + 68 : Addr) + 4 = base + 72 := by bv_omega
+private theorem phB_bne_4 (base : Addr) : (base + 72 : Addr) + 4 = base + 76 := by bv_omega
+private theorem phB_t_4 (base : Addr) : (base + 96 : Addr) + 4 = base + 100 := by bv_omega
+private theorem phB_t_8 (base : Addr) : (base + 96 : Addr) + 8 = base + 104 := by bv_omega
+private theorem phB_t_12 (base : Addr) : (base + 96 : Addr) + 12 = base + 108 := by bv_omega
+private theorem phB_t_16 (base : Addr) : (base + 96 : Addr) + 16 = base + 112 := by bv_omega
+private theorem phB_t_20 (base : Addr) : (base + 96 : Addr) + 20 = base + 116 := by bv_omega
+private theorem phB_sp24_32 (sp : Addr) : (sp + (24 : Addr) + (32 : Addr)) = sp + 56 := by bv_omega
+
+set_option maxRecDepth 4096 in
+set_option maxHeartbeats 25600000 in
+private theorem progAt_divK_phaseB_at32 (base : Addr) :
+    progAt (base + 32) divK_phaseB =
+    (((base + 32) ↦ᵢ .SD .x12 .x0 4088) **
+    ((base + 36) ↦ᵢ .SD .x12 .x0 4080) **
+    ((base + 40) ↦ᵢ .SD .x12 .x0 4072) **
+    ((base + 44) ↦ᵢ .SD .x12 .x0 4064) **
+    ((base + 48) ↦ᵢ .SD .x12 .x0 4016) **
+    ((base + 52) ↦ᵢ .SD .x12 .x0 4008) **
+    ((base + 56) ↦ᵢ .SD .x12 .x0 4000) **
+    ((base + 60) ↦ᵢ .LD .x6 .x12 40) **
+    ((base + 64) ↦ᵢ .LD .x7 .x12 48) **
+    ((base + 68) ↦ᵢ .ADDI .x5 .x0 4) **
+    ((base + 72) ↦ᵢ .BNE .x10 .x0 24) **
+    ((base + 76) ↦ᵢ .ADDI .x5 .x0 3) **
+    ((base + 80) ↦ᵢ .BNE .x7 .x0 16) **
+    ((base + 84) ↦ᵢ .ADDI .x5 .x0 2) **
+    ((base + 88) ↦ᵢ .BNE .x6 .x0 8) **
+    ((base + 92) ↦ᵢ .ADDI .x5 .x0 1) **
+    ((base + 96) ↦ᵢ .SD .x12 .x5 3984) **
+    ((base + 100) ↦ᵢ .ADDI .x5 .x5 4095) **
+    ((base + 104) ↦ᵢ .SLLI .x5 .x5 3) **
+    ((base + 108) ↦ᵢ .ADD .x5 .x12 .x5) **
+    ((base + 112) ↦ᵢ .LD .x5 .x5 32)) := by
+  rw [progAt_divK_phaseB]
+  simp only [phB_off_4, phB_off_8, phB_off_12, phB_off_16, phB_off_20, phB_off_24, phB_off_28,
+    phB_off_32, phB_off_36, phB_off_40, phB_off_44, phB_off_48, phB_off_52, phB_off_56,
+    phB_off_60, phB_off_64, phB_off_68, phB_off_72, phB_off_76, phB_off_80]
 
 -- ============================================================================
 -- Section 8: Zero path composition (b = 0)
@@ -436,6 +497,254 @@ theorem evm_div_phaseA_ntaken_spec (sp base : Addr)
       rw [progAt_divK_phaseA]
       xperm_hyp hq)
     hfull
+
+-- ============================================================================
+-- Section 9b: Phase B composition for n=4 (b[3] ≠ 0)
+-- init1 → init2 → ADDI x5=4 → BNE x10(taken) → tail
+-- ============================================================================
+
+set_option maxRecDepth 4096 in
+set_option maxHeartbeats 51200000 in
+/-- Phase B when b[3] ≠ 0 (n=4): zero scratch, load b[1..2], cascade BNE taken, load leading limb.
+    Execution path: init1 (7 instrs) + init2 (2) + ADDI (1) + BNE taken (1) + tail (5) = 16 instrs.
+    Exit at base+116 (start of CLZ). x5 = b[3] (leading limb), x6 = b[1], x7 = b[2], n = 4. -/
+theorem evm_div_phaseB_n4_spec (sp base : Addr)
+    (b1 b2 b3 : Word) (v5 v6 v7 : Word)
+    (q0 q1 q2 q3 u5 u6 u7 n_mem : Word)
+    (hb3nz : b3 ≠ 0)
+    (hvalid : ValidMemRange sp 8)
+    (hv_q0 : isValidDwordAccess (sp + signExtend12 4088) = true)
+    (hv_q1 : isValidDwordAccess (sp + signExtend12 4080) = true)
+    (hv_q2 : isValidDwordAccess (sp + signExtend12 4072) = true)
+    (hv_q3 : isValidDwordAccess (sp + signExtend12 4064) = true)
+    (hv_u5 : isValidDwordAccess (sp + signExtend12 4016) = true)
+    (hv_u6 : isValidDwordAccess (sp + signExtend12 4008) = true)
+    (hv_u7 : isValidDwordAccess (sp + signExtend12 4000) = true)
+    (hv_n  : isValidDwordAccess (sp + signExtend12 3984) = true) :
+    cpsTriple (base + 32) (base + 116)
+      (divCode base **
+       (.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ v5) ** (.x10 ↦ᵣ b3) ** (.x0 ↦ᵣ (0 : Word)) **
+       (.x6 ↦ᵣ v6) ** (.x7 ↦ᵣ v7) **
+       ((sp + 40) ↦ₘ b1) ** ((sp + 48) ↦ₘ b2) ** ((sp + 56) ↦ₘ b3) **
+       ((sp + signExtend12 4088) ↦ₘ q0) ** ((sp + signExtend12 4080) ↦ₘ q1) **
+       ((sp + signExtend12 4072) ↦ₘ q2) ** ((sp + signExtend12 4064) ↦ₘ q3) **
+       ((sp + signExtend12 4016) ↦ₘ u5) ** ((sp + signExtend12 4008) ↦ₘ u6) **
+       ((sp + signExtend12 4000) ↦ₘ u7) **
+       ((sp + signExtend12 3984) ↦ₘ n_mem))
+      (divCode base **
+       (.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ b3) ** (.x10 ↦ᵣ b3) ** (.x0 ↦ᵣ (0 : Word)) **
+       (.x6 ↦ᵣ b1) ** (.x7 ↦ᵣ b2) **
+       ((sp + 40) ↦ₘ b1) ** ((sp + 48) ↦ₘ b2) ** ((sp + 56) ↦ₘ b3) **
+       ((sp + signExtend12 4088) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4080) ↦ₘ (0 : Word)) **
+       ((sp + signExtend12 4072) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4064) ↦ₘ (0 : Word)) **
+       ((sp + signExtend12 4016) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4008) ↦ₘ (0 : Word)) **
+       ((sp + signExtend12 4000) ↦ₘ (0 : Word)) **
+       ((sp + signExtend12 3984) ↦ₘ (4 : Word))) := by
+  -- ---- Step 1: init1 (base+32 → base+60) — zero q[0..3] and u[5..7]
+  have hinit1 := divK_phaseB_init1_spec sp (base + 32) q0 q1 q2 q3 u5 u6 u7
+    hv_q0 hv_q1 hv_q2 hv_q3 hv_u5 hv_u6 hv_u7
+  simp only [phB_off_4, phB_off_8, phB_off_12, phB_off_16, phB_off_20, phB_off_24, phB_off_28] at hinit1
+  have hinit1f := cpsTriple_frame_left _ _ _ _
+    (((base + 60) ↦ᵢ .LD .x6 .x12 40) ** ((base + 64) ↦ᵢ .LD .x7 .x12 48) **
+     ((base + 68) ↦ᵢ .ADDI .x5 .x0 4) ** ((base + 72) ↦ᵢ .BNE .x10 .x0 24) **
+     ((base + 76) ↦ᵢ .ADDI .x5 .x0 3) ** ((base + 80) ↦ᵢ .BNE .x7 .x0 16) **
+     ((base + 84) ↦ᵢ .ADDI .x5 .x0 2) ** ((base + 88) ↦ᵢ .BNE .x6 .x0 8) **
+     ((base + 92) ↦ᵢ .ADDI .x5 .x0 1) **
+     ((base + 96) ↦ᵢ .SD .x12 .x5 3984) ** ((base + 100) ↦ᵢ .ADDI .x5 .x5 4095) **
+     ((base + 104) ↦ᵢ .SLLI .x5 .x5 3) ** ((base + 108) ↦ᵢ .ADD .x5 .x12 .x5) **
+     ((base + 112) ↦ᵢ .LD .x5 .x5 32) **
+     (.x5 ↦ᵣ v5) ** (.x10 ↦ᵣ b3) ** (.x0 ↦ᵣ (0 : Word)) ** (.x6 ↦ᵣ v6) ** (.x7 ↦ᵣ v7) **
+     ((sp + 40) ↦ₘ b1) ** ((sp + 48) ↦ₘ b2) ** ((sp + 56) ↦ₘ b3) **
+     ((sp + signExtend12 3984) ↦ₘ n_mem))
+    (by pcFree) hinit1
+  -- ---- Step 2: init2 (base+60 → base+68) — load b[1], b[2]
+  have hinit2 := divK_phaseB_init2_spec sp (base + 60) b1 b2 v6 v7 hvalid
+  simp only [phB_i2_4, phB_i2_8] at hinit2
+  have hinit2f := cpsTriple_frame_left _ _ _ _
+    (((base + 32) ↦ᵢ .SD .x12 .x0 4088) ** ((base + 36) ↦ᵢ .SD .x12 .x0 4080) **
+     ((base + 40) ↦ᵢ .SD .x12 .x0 4072) ** ((base + 44) ↦ᵢ .SD .x12 .x0 4064) **
+     ((base + 48) ↦ᵢ .SD .x12 .x0 4016) ** ((base + 52) ↦ᵢ .SD .x12 .x0 4008) **
+     ((base + 56) ↦ᵢ .SD .x12 .x0 4000) **
+     ((base + 68) ↦ᵢ .ADDI .x5 .x0 4) ** ((base + 72) ↦ᵢ .BNE .x10 .x0 24) **
+     ((base + 76) ↦ᵢ .ADDI .x5 .x0 3) ** ((base + 80) ↦ᵢ .BNE .x7 .x0 16) **
+     ((base + 84) ↦ᵢ .ADDI .x5 .x0 2) ** ((base + 88) ↦ᵢ .BNE .x6 .x0 8) **
+     ((base + 92) ↦ᵢ .ADDI .x5 .x0 1) **
+     ((base + 96) ↦ᵢ .SD .x12 .x5 3984) ** ((base + 100) ↦ᵢ .ADDI .x5 .x5 4095) **
+     ((base + 104) ↦ᵢ .SLLI .x5 .x5 3) ** ((base + 108) ↦ᵢ .ADD .x5 .x12 .x5) **
+     ((base + 112) ↦ᵢ .LD .x5 .x5 32) **
+     (.x5 ↦ᵣ v5) ** (.x10 ↦ᵣ b3) ** (.x0 ↦ᵣ (0 : Word)) **
+     ((sp + 56) ↦ₘ b3) **
+     ((sp + signExtend12 4088) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4080) ↦ₘ (0 : Word)) **
+     ((sp + signExtend12 4072) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4064) ↦ₘ (0 : Word)) **
+     ((sp + signExtend12 4016) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4008) ↦ₘ (0 : Word)) **
+     ((sp + signExtend12 4000) ↦ₘ (0 : Word)) **
+     ((sp + signExtend12 3984) ↦ₘ n_mem))
+    (by pcFree) hinit2
+  have h12 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
+    (fun h hp => by xperm_hyp hp) hinit1f hinit2f
+  -- ---- Step 3: ADDI x5 x0 4 at base+68 → base+72
+  have haddi := addi_x0_spec_gen .x5 v5 4 (base + 68) (by nofun)
+  simp only [phB_addi_4, divK_se12_4] at haddi
+  have haddif := cpsTriple_frame_left _ _ _ _
+    (((base + 32) ↦ᵢ .SD .x12 .x0 4088) ** ((base + 36) ↦ᵢ .SD .x12 .x0 4080) **
+     ((base + 40) ↦ᵢ .SD .x12 .x0 4072) ** ((base + 44) ↦ᵢ .SD .x12 .x0 4064) **
+     ((base + 48) ↦ᵢ .SD .x12 .x0 4016) ** ((base + 52) ↦ᵢ .SD .x12 .x0 4008) **
+     ((base + 56) ↦ᵢ .SD .x12 .x0 4000) **
+     ((base + 60) ↦ᵢ .LD .x6 .x12 40) ** ((base + 64) ↦ᵢ .LD .x7 .x12 48) **
+     ((base + 72) ↦ᵢ .BNE .x10 .x0 24) **
+     ((base + 76) ↦ᵢ .ADDI .x5 .x0 3) ** ((base + 80) ↦ᵢ .BNE .x7 .x0 16) **
+     ((base + 84) ↦ᵢ .ADDI .x5 .x0 2) ** ((base + 88) ↦ᵢ .BNE .x6 .x0 8) **
+     ((base + 92) ↦ᵢ .ADDI .x5 .x0 1) **
+     ((base + 96) ↦ᵢ .SD .x12 .x5 3984) ** ((base + 100) ↦ᵢ .ADDI .x5 .x5 4095) **
+     ((base + 104) ↦ᵢ .SLLI .x5 .x5 3) ** ((base + 108) ↦ᵢ .ADD .x5 .x12 .x5) **
+     ((base + 112) ↦ᵢ .LD .x5 .x5 32) **
+     (.x12 ↦ᵣ sp) ** (.x10 ↦ᵣ b3) ** (.x6 ↦ᵣ b1) ** (.x7 ↦ᵣ b2) **
+     ((sp + 40) ↦ₘ b1) ** ((sp + 48) ↦ₘ b2) ** ((sp + 56) ↦ₘ b3) **
+     ((sp + signExtend12 4088) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4080) ↦ₘ (0 : Word)) **
+     ((sp + signExtend12 4072) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4064) ↦ₘ (0 : Word)) **
+     ((sp + signExtend12 4016) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4008) ↦ₘ (0 : Word)) **
+     ((sp + signExtend12 4000) ↦ₘ (0 : Word)) **
+     ((sp + signExtend12 3984) ↦ₘ n_mem))
+    (by pcFree) haddi
+  have h123 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
+    (fun h hp => by xperm_hyp hp) h12 haddif
+  -- ---- Step 4: BNE x10 x0 24 at base+72, elim ntaken (b3=0 absurd)
+  have hbne_raw := bne_spec_gen .x10 .x0 24 b3 (0 : Word) (base + 72)
+  rw [show (base + 72 : Addr) + signExtend13 24 = base + 96 from by
+        rw [signExtend13_24]; bv_omega, phB_bne_4] at hbne_raw
+  have hbne_clean := cpsBranch_elim_taken_strip_pure3 _ _ _ _ _ _ _ _ _ hbne_raw
+    (fun hp hQf => by
+      obtain ⟨_, _, _, _, _, h1⟩ := hQf
+      obtain ⟨_, _, _, _, _, h2⟩ := h1
+      exact absurd ((sepConj_pure_right _ _ _).mp h2).2 hb3nz)
+  have hbnef := cpsTriple_frame_left _ _ _ _
+    (((base + 32) ↦ᵢ .SD .x12 .x0 4088) ** ((base + 36) ↦ᵢ .SD .x12 .x0 4080) **
+     ((base + 40) ↦ᵢ .SD .x12 .x0 4072) ** ((base + 44) ↦ᵢ .SD .x12 .x0 4064) **
+     ((base + 48) ↦ᵢ .SD .x12 .x0 4016) ** ((base + 52) ↦ᵢ .SD .x12 .x0 4008) **
+     ((base + 56) ↦ᵢ .SD .x12 .x0 4000) **
+     ((base + 60) ↦ᵢ .LD .x6 .x12 40) ** ((base + 64) ↦ᵢ .LD .x7 .x12 48) **
+     ((base + 68) ↦ᵢ .ADDI .x5 .x0 4) **
+     ((base + 76) ↦ᵢ .ADDI .x5 .x0 3) ** ((base + 80) ↦ᵢ .BNE .x7 .x0 16) **
+     ((base + 84) ↦ᵢ .ADDI .x5 .x0 2) ** ((base + 88) ↦ᵢ .BNE .x6 .x0 8) **
+     ((base + 92) ↦ᵢ .ADDI .x5 .x0 1) **
+     ((base + 96) ↦ᵢ .SD .x12 .x5 3984) ** ((base + 100) ↦ᵢ .ADDI .x5 .x5 4095) **
+     ((base + 104) ↦ᵢ .SLLI .x5 .x5 3) ** ((base + 108) ↦ᵢ .ADD .x5 .x12 .x5) **
+     ((base + 112) ↦ᵢ .LD .x5 .x5 32) **
+     (.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ (4 : Word)) ** (.x6 ↦ᵣ b1) ** (.x7 ↦ᵣ b2) **
+     ((sp + 40) ↦ₘ b1) ** ((sp + 48) ↦ₘ b2) ** ((sp + 56) ↦ₘ b3) **
+     ((sp + signExtend12 4088) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4080) ↦ₘ (0 : Word)) **
+     ((sp + signExtend12 4072) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4064) ↦ₘ (0 : Word)) **
+     ((sp + signExtend12 4016) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4008) ↦ₘ (0 : Word)) **
+     ((sp + signExtend12 4000) ↦ₘ (0 : Word)) **
+     ((sp + signExtend12 3984) ↦ₘ n_mem))
+    (by pcFree) hbne_clean
+  have h1234 := cpsTriple_seq_with_perm _ _ _ _ _ _ _
+    (fun h hp => by xperm_hyp hp) h123 hbnef
+  -- ---- Step 5: Tail (base+96 → base+116) — store n=4, load leading limb b[3]
+  have hv_limb : isValidDwordAccess
+      ((sp + ((4 : Word) + signExtend12 (4095 : BitVec 12)) <<< (3 : BitVec 6).toNat)
+       + signExtend12 (32 : BitVec 12)) = true := by
+    rw [divK_phaseB_n4_nm1_x8, divK_se12_32, phB_sp24_32]
+    exact hvalid.get (show 7 < 8 from by omega)
+  have htail := divK_phaseB_tail_spec sp (4 : Word) b3 n_mem (base + 96) hv_n hv_limb
+  simp only [phB_t_4, phB_t_8, phB_t_12, phB_t_16, phB_t_20,
+    divK_phaseB_n4_nm1_x8, divK_se12_32, phB_sp24_32] at htail
+  have htailf := cpsTriple_frame_left _ _ _ _
+    (((base + 32) ↦ᵢ .SD .x12 .x0 4088) ** ((base + 36) ↦ᵢ .SD .x12 .x0 4080) **
+     ((base + 40) ↦ᵢ .SD .x12 .x0 4072) ** ((base + 44) ↦ᵢ .SD .x12 .x0 4064) **
+     ((base + 48) ↦ᵢ .SD .x12 .x0 4016) ** ((base + 52) ↦ᵢ .SD .x12 .x0 4008) **
+     ((base + 56) ↦ᵢ .SD .x12 .x0 4000) **
+     ((base + 60) ↦ᵢ .LD .x6 .x12 40) ** ((base + 64) ↦ᵢ .LD .x7 .x12 48) **
+     ((base + 68) ↦ᵢ .ADDI .x5 .x0 4) ** ((base + 72) ↦ᵢ .BNE .x10 .x0 24) **
+     ((base + 76) ↦ᵢ .ADDI .x5 .x0 3) ** ((base + 80) ↦ᵢ .BNE .x7 .x0 16) **
+     ((base + 84) ↦ᵢ .ADDI .x5 .x0 2) ** ((base + 88) ↦ᵢ .BNE .x6 .x0 8) **
+     ((base + 92) ↦ᵢ .ADDI .x5 .x0 1) **
+     (.x10 ↦ᵣ b3) ** (.x0 ↦ᵣ (0 : Word)) ** (.x6 ↦ᵣ b1) ** (.x7 ↦ᵣ b2) **
+     ((sp + 40) ↦ₘ b1) ** ((sp + 48) ↦ₘ b2) **
+     ((sp + signExtend12 4088) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4080) ↦ₘ (0 : Word)) **
+     ((sp + signExtend12 4072) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4064) ↦ₘ (0 : Word)) **
+     ((sp + signExtend12 4016) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4008) ↦ₘ (0 : Word)) **
+     ((sp + signExtend12 4000) ↦ₘ (0 : Word)))
+    (by pcFree) htail
+  have hphaseB := cpsTriple_seq_with_perm _ _ _ _ _ _ _
+    (fun h hp => by xperm_hyp hp) h1234 htailf
+  -- ---- Step 6: Frame with remaining code (phaseA + everything after phaseB)
+  have hframed := cpsTriple_frame_left _ _ _ _
+    (progAt base (divK_phaseA 1016) ** divCode_noAB base)
+    (by unfold divCode_noAB; pcFree) hphaseB
+  -- ---- Step 7: Final consequence — fold instrAt ↔ divCode
+  exact cpsTriple_consequence _ _ _ _ _ _
+    (fun h hp => by
+      unfold divCode at hp
+      rw [progAt_divK_phaseB_at32] at hp
+      unfold divCode_noAB
+      xperm_hyp hp)
+    (fun h hq => by
+      unfold divCode_noAB at hq
+      unfold divCode
+      rw [progAt_divK_phaseB_at32]
+      xperm_hyp hq)
+    hframed
+
+-- ============================================================================
+-- Section 9c: Phase A + Phase B n=4 composition (b≠0, b[3]≠0)
+-- base → base+116 (entry to CLZ)
+-- ============================================================================
+
+set_option maxRecDepth 2048 in
+set_option maxHeartbeats 25600000 in
+/-- When b ≠ 0 and b[3] ≠ 0, evm_div executes Phase A (ntaken) then Phase B (n=4).
+    Execution: 8 + 16 = 24 instructions, base → base+116 (start of CLZ).
+    Pre/postcondition shapes reflect frame structure from composition. -/
+theorem evm_div_phaseAB_n4_spec (sp base : Addr)
+    (b0 b1 b2 b3 v5 v6 v7 v10 : Word)
+    (q0 q1 q2 q3 u5 u6 u7 n_mem : Word)
+    (hbnz : b0 ||| b1 ||| b2 ||| b3 ≠ 0)
+    (hb3nz : b3 ≠ 0)
+    (hvalid : ValidMemRange sp 8)
+    (hv_q0 : isValidDwordAccess (sp + signExtend12 4088) = true)
+    (hv_q1 : isValidDwordAccess (sp + signExtend12 4080) = true)
+    (hv_q2 : isValidDwordAccess (sp + signExtend12 4072) = true)
+    (hv_q3 : isValidDwordAccess (sp + signExtend12 4064) = true)
+    (hv_u5 : isValidDwordAccess (sp + signExtend12 4016) = true)
+    (hv_u6 : isValidDwordAccess (sp + signExtend12 4008) = true)
+    (hv_u7 : isValidDwordAccess (sp + signExtend12 4000) = true)
+    (hv_n  : isValidDwordAccess (sp + signExtend12 3984) = true) :
+    cpsTriple base (base + 116)
+      ((divCode base **
+        (.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ v5) ** (.x10 ↦ᵣ v10) ** (.x0 ↦ᵣ (0 : Word)) **
+        ((sp + 32) ↦ₘ b0) ** ((sp + 40) ↦ₘ b1) **
+        ((sp + 48) ↦ₘ b2) ** ((sp + 56) ↦ₘ b3)) **
+       (.x6 ↦ᵣ v6) ** (.x7 ↦ᵣ v7) **
+       ((sp + signExtend12 4088) ↦ₘ q0) ** ((sp + signExtend12 4080) ↦ₘ q1) **
+       ((sp + signExtend12 4072) ↦ₘ q2) ** ((sp + signExtend12 4064) ↦ₘ q3) **
+       ((sp + signExtend12 4016) ↦ₘ u5) ** ((sp + signExtend12 4008) ↦ₘ u6) **
+       ((sp + signExtend12 4000) ↦ₘ u7) ** ((sp + signExtend12 3984) ↦ₘ n_mem))
+      ((divCode base **
+        (.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ b3) ** (.x10 ↦ᵣ b3) ** (.x0 ↦ᵣ (0 : Word)) **
+        (.x6 ↦ᵣ b1) ** (.x7 ↦ᵣ b2) **
+        ((sp + 40) ↦ₘ b1) ** ((sp + 48) ↦ₘ b2) ** ((sp + 56) ↦ₘ b3) **
+        ((sp + signExtend12 4088) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4080) ↦ₘ (0 : Word)) **
+        ((sp + signExtend12 4072) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4064) ↦ₘ (0 : Word)) **
+        ((sp + signExtend12 4016) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4008) ↦ₘ (0 : Word)) **
+        ((sp + signExtend12 4000) ↦ₘ (0 : Word)) ** ((sp + signExtend12 3984) ↦ₘ (4 : Word))) **
+       ((sp + 32) ↦ₘ b0)) := by
+  have hA := evm_div_phaseA_ntaken_spec sp base b0 b1 b2 b3 v5 v10 hbnz hvalid
+  have hAf := cpsTriple_frame_left _ _ _ _
+    ((.x6 ↦ᵣ v6) ** (.x7 ↦ᵣ v7) **
+     ((sp + signExtend12 4088) ↦ₘ q0) ** ((sp + signExtend12 4080) ↦ₘ q1) **
+     ((sp + signExtend12 4072) ↦ₘ q2) ** ((sp + signExtend12 4064) ↦ₘ q3) **
+     ((sp + signExtend12 4016) ↦ₘ u5) ** ((sp + signExtend12 4008) ↦ₘ u6) **
+     ((sp + signExtend12 4000) ↦ₘ u7) ** ((sp + signExtend12 3984) ↦ₘ n_mem))
+    (by pcFree) hA
+  have hB := evm_div_phaseB_n4_spec sp base b1 b2 b3
+    (b0 ||| b1 ||| b2 ||| b3) v6 v7 q0 q1 q2 q3 u5 u6 u7 n_mem
+    hb3nz hvalid hv_q0 hv_q1 hv_q2 hv_q3 hv_u5 hv_u6 hv_u7 hv_n
+  have hBf := cpsTriple_frame_left _ _ _ _
+    (((sp + 32) ↦ₘ b0))
+    (by pcFree) hB
+  exact cpsTriple_seq_with_perm _ _ _ _ _ _ _
+    (fun h hp => by xperm_hyp hp) hAf hBf
 
 -- ============================================================================
 -- Section 10: MOD program code infrastructure
