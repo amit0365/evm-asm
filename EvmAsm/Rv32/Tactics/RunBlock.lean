@@ -179,6 +179,7 @@ private def getBvLitVal? (e : Expr) : Option Nat :=
     Tries `mkDecideProof` first (fast for concrete BitVec equalities),
     then falls back to `bv_omega` via `runTactic`. -/
 private def proveBvEq (old new_ : Expr) : MetaM (Option Expr) := do
+  if old == new_ then return some (← mkEqRefl old)
   if ← withoutModifyingState (isDefEq old new_) then
     return some (← mkEqRefl old)
   let eqType ← mkEq old new_
@@ -217,10 +218,15 @@ private def trySimplifyTop (e : Expr) : MetaM (Expr × Option Expr) := do
       let signExtVal := if n12 < 2048 then n12 else n12 + (2^32 - 4096)
       let bv32 := mkApp (mkConst ``BitVec) (mkNatLit 32)
       let resultExpr ← mkNumeral bv32 signExtVal
-      if let some pf ← proveByNativeDecide e resultExpr then
-        return (resultExpr, some pf)
-      if let some pf ← proveBvEq e resultExpr then
-        return (resultExpr, some pf)
+      -- Use native_decide tactic (avoids deep kernel reduction that
+      -- mkDecideProof triggers for signExtend12)
+      let eqType ← mkEq e resultExpr
+      let eqMVar ← mkFreshExprMVar eqType
+      try
+        let stx ← `(tactic| native_decide)
+        let _ ← Lean.Elab.runTactic eqMVar.mvarId! stx
+        return (resultExpr, some (← instantiateMVars eqMVar))
+      catch _ => (Pure.pure PUnit.unit : MetaM PUnit)
   -- Address arithmetic at BitVec type
   if e.isAppOfArity ``HAdd.hAdd 6 then
     let args := e.getAppArgs
@@ -264,6 +270,48 @@ partial def normalizeTypeAddrs (e : Expr) : MetaM (Expr × Option Expr) := do
     if name == ``ite || name == ``dite then return (e, none)
     -- BitVec.ult and similar comparison functions — no address arithmetic
     if name == ``BitVec.ult then return (e, none)
+  -- Fast exit: implicit type/instance arguments (avoid recursing into HAdd instances, etc.)
+  -- Check if the expression's type is Type/Sort (not data-level)
+  if let .const name _ := e.getAppFn then
+    if name == ``HAdd.hAdd || name == ``HSub.hSub || name == ``HMul.hMul ||
+       name == ``HShiftLeft.hShiftLeft || name == ``HShiftRight.hShiftRight ||
+       name == ``HAnd.hAnd || name == ``HOr.hOr || name == ``HXor.hXor then
+      -- Only recurse into last 2 args (operands), skip type/instance args
+      if e.getAppNumArgs >= 2 then
+        let args := e.getAppArgs
+        let n := args.size
+        let (lhs', lhsPf?) ← normalizeTypeAddrs args[n - 2]!
+        let (rhs', rhsPf?) ← normalizeTypeAddrs args[n - 1]!
+        if lhsPf?.isNone && rhsPf?.isNone then
+          -- No changes in operands, just try top-level simplification
+          let (e'', topPf?) ← trySimplifyTop e
+          return match topPf? with
+          | some _ => (e'', topPf?)
+          | none => (e, none)
+        else
+          let argsNew := args.set! (n - 2) lhs' |>.set! (n - 1) rhs'
+          let new_ := mkAppN e.getAppFn argsNew
+          let pf? ← try
+            let pf ← match lhsPf?, rhsPf? with
+              | some lPf, some rPf =>
+                let fFull := mkAppN e.getAppFn (args[:n-2].toArray)
+                let feq ← mkCongrArg fFull lPf
+                mkCongr (← mkCongrFun feq args[n-1]!) rPf
+              | some lPf, none =>
+                let fFull := mkAppN e.getAppFn (args[:n-2].toArray)
+                mkCongrFun (← mkCongrArg fFull lPf) args[n-1]!
+              | none, some rPf =>
+                let fPartial := mkAppN e.getAppFn (args[:n-1].toArray)
+                mkCongrArg fPartial rPf
+              | none, none => unreachable!
+            Pure.pure (some pf)
+          catch _ => Pure.pure none
+          let (e'', topPf?) ← trySimplifyTop new_
+          match pf?, topPf? with
+          | none, none => return (e, none)
+          | some cp, none => return (new_, some cp)
+          | none, some tp => return (e'', some tp)
+          | some cp, some tp => return (e'', some (← mkEqTrans cp tp))
   -- 1. Recurse into .app sub-expressions first (bottom-up)
   let (e', childPf?) ← match e with
     | .app f a => do
@@ -404,9 +452,12 @@ private def runBlockCore (specs : Array Expr) (goalPre : Expr) (goalCr : Expr)
     let specType ← instantiateMVars (← inferType spec)
     let some (_, _, specCr, _, _) ← parseCpsTriple? specType | throwError "runBlockCore: not cpsTriple"
     extendSpecCr spec specCr goalCr
+  trace[runBlock] "extending {processedSpecs.size} spec(s) to goalCr..."
   let extendedSpecs ← processedSpecs.mapM extendToGoal
+  trace[runBlock] "all spec(s) extended, composing..."
   -- Frame the first spec against the goal precondition
   let mut acc ← frameFirstSpec extendedSpecs[0]! goalPre
+  -- Chain remaining specs
   -- Chain remaining specs via seqFrame with address normalization
   for i in [1:extendedSpecs.size] do
     let nextSpec := extendedSpecs[i]!
@@ -600,12 +651,14 @@ private def tryInstantiateSpec (specName : Name) (instrExpr instrAddr : Expr)
     throwError "address mismatch"
   -- Step 1b: Match instruction in specCr (should be CodeReq.singleton)
   -- Use whnfR (not whnf) to avoid unfolding CodeReq.singleton into a lambda
+  -- Step 1b: Match instruction in specCr
   let specCrWhnf ← whnfR specCr
   if specCrWhnf.isAppOfArity ``EvmAsm.CodeReq.singleton 2 then
     let specInstr := specCrWhnf.getAppArgs[1]!
     unless ← isDefEq specInstr instrExpr do
       throwError "instruction mismatch in cr"
   -- Step 2: Flatten spec precondition and match atoms (no instrAt anymore)
+  -- Step 2: Match atoms
   let specAtoms ← flattenSepConj specPre
   -- Step 2a: Unify regIs atoms
   let stateRegAtoms := stateAtoms.filter (·.isAppOfArity `EvmAsm.regIs 2)
@@ -617,7 +670,7 @@ private def tryInstantiateSpec (specName : Name) (instrExpr instrAddr : Expr)
       for stateAtom in stateRegAtoms do
         let stateReg := stateAtom.getAppArgs[0]!
         let stateVal := stateAtom.getAppArgs[1]!
-        if ← withoutModifyingState (isDefEq specReg stateReg) then
+        if ← withoutModifyingState (withReducible (isDefEq specReg stateReg)) then
           let _ ← isDefEq specReg stateReg
           let _ ← isDefEq specVal stateVal
           found := true
@@ -625,20 +678,23 @@ private def tryInstantiateSpec (specName : Name) (instrExpr instrAddr : Expr)
       unless found do
         throwError "register {specReg} not found in state"
   -- Step 2b: Unify memIs atoms
+  -- Step 2b: Match memIs atoms
   let stateMemAtoms := stateAtoms.filter (·.isAppOfArity `EvmAsm.memIs 2)
   for atom in specAtoms do
     if atom.isAppOfArity `EvmAsm.memIs 2 then
       let specAddr ← instantiateMVars atom.getAppArgs[0]!
       let specVal := atom.getAppArgs[1]!
+      -- Match memory address
       -- Normalize spec address (e.g., sp + signExtend12 0 → sp,
       -- (sp + signExtend12 32) + signExtend12 4 → sp + 36)
       let specAddrNorm ← normalizeAtomAddrs specAddr
+      -- Normalized
       let mut found := false
       for stateAtom in stateMemAtoms do
         let stateAddr := stateAtom.getAppArgs[0]!
         let stateVal := stateAtom.getAppArgs[1]!
-        -- Try direct defEq first (fast path)
-        if ← withoutModifyingState (isDefEq specAddr stateAddr) then
+        -- Try direct defEq first (fast path, reducible only to avoid deep BitVec reduction)
+        if ← withoutModifyingState (withReducible (isDefEq specAddr stateAddr)) then
           let _ ← isDefEq specAddr stateAddr
           let _ ← isDefEq specVal stateVal
           found := true
@@ -650,6 +706,7 @@ private def tryInstantiateSpec (specName : Name) (instrExpr instrAddr : Expr)
           break
       unless found do
         throwError "memory at {specAddrNorm} not found in state"
+  -- Step 3: Solve proof obligations
   -- Step 3: Solve remaining proof obligations
   for param in params do
     if !param.isMVar then continue

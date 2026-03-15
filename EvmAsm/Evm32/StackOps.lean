@@ -106,7 +106,7 @@ theorem evm_push0_spec (nsp base : Addr)
       ((.x12 ↦ᵣ nsp) **
        (nsp ↦ₘ 0) ** ((nsp + 4) ↦ₘ 0) ** ((nsp + 8) ↦ₘ 0) ** ((nsp + 12) ↦ₘ 0) **
        ((nsp + 16) ↦ₘ 0) ** ((nsp + 20) ↦ₘ 0) ** ((nsp + 24) ↦ₘ 0) ** ((nsp + 28) ↦ₘ 0)) := by
-  sorry
+  sorry -- maxRecDepth: normalizeTypeAddrs walks into BitVec instance trees
 
 theorem evm_push0_stack_spec (nsp base : Addr)
     (d0 d1 d2 d3 d4 d5 d6 d7 : Word) (rest : List EvmWord)
