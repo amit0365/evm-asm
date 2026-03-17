@@ -2064,10 +2064,79 @@ theorem CodeReq.Disjoint.union_left {cr1 cr2 cr3 : CodeReq}
 theorem CodeReq.Disjoint.symm {cr1 cr2 : CodeReq} (hd : cr1.Disjoint cr2) :
     cr2.Disjoint cr1 := fun a => (hd a).symm
 
+/-- Simplify CodeReq.union applied to a concrete address, when the head is a singleton.
+    This collapses `(singleton a i |> union · rest) a'` into an if-then-else
+    at the ite level rather than the match-over-ite level. -/
+theorem CodeReq.union_singleton_apply (a a' : Addr) (i : Instr) (rest : CodeReq) :
+    (CodeReq.union (CodeReq.singleton a i) rest) a' =
+      if a' == a then some i else rest a' := by
+  simp only [CodeReq.union, CodeReq.singleton]
+  split <;> simp_all
+
+/-- BEq of offset addresses: `(a + k1) == (a + k2) = (k1 == k2)`. -/
+theorem CodeReq.beq_base_offset (a : Addr) (k1 k2 : Addr) :
+    ((a + k1) == (a + k2)) = (k1 == k2) := by
+  rw [show (k1 == k2) = decide (k1 = k2) from rfl,
+      show ((a + k1) == (a + k2)) = decide (a + k1 = a + k2) from rfl]
+  congr 1; exact propext ⟨fun h => by bv_omega, fun h => by bv_omega⟩
+
+/-- BEq of (a + k) vs a: reduces to k == 0. -/
+theorem CodeReq.beq_offset_self_left (a : Addr) (k : Addr) :
+    ((a + k) == a) = (k == 0) := by
+  rw [show (k == (0 : Addr)) = decide (k = 0) from rfl,
+      show ((a + k) == a) = decide (a + k = a) from rfl]
+  congr 1; exact propext ⟨fun h => by bv_omega, fun h => by bv_omega⟩
+
+/-- BEq of a vs (a + k): reduces to k == 0. -/
+theorem CodeReq.beq_offset_self_right (a : Addr) (k : Addr) :
+    (a == (a + k)) = (k == 0) := by
+  rw [show (k == (0 : Addr)) = decide (k = 0) from rfl,
+      show (a == (a + k)) = decide (a = a + k) from rfl]
+  congr 1; exact propext ⟨fun h => by bv_omega, fun h => by bv_omega⟩
+
 /-- Left child of a union is subsumed (unconditionally true, union is left-biased). -/
 theorem CodeReq.union_mono_left (cr1 cr2 : CodeReq) :
     ∀ a i, cr1 a = some i → (cr1.union cr2) a = some i := by
   intro a i h; simp [CodeReq.union, h]
+
+/-- Monotonicity in the tail of a union: if tail1 ⊆ tail2 then (head ∪ tail1) ⊆ (head ∪ tail2). -/
+theorem CodeReq.union_mono_tail {cr tail1 tail2 : CodeReq}
+    (h : ∀ a i, tail1 a = some i → tail2 a = some i) :
+    ∀ a i, (cr.union tail1) a = some i → (cr.union tail2) a = some i := by
+  intro a i hq
+  simp only [CodeReq.union] at hq ⊢
+  cases hc : cr a with
+  | none => simp [hc] at hq ⊢; exact h a i hq
+  | some j => simp [hc] at hq ⊢; exact hq
+
+/-- A singleton's only address can be found in a target CodeReq, if target maps that address
+    to the same instruction. Useful for proving singleton ⊆ target. -/
+theorem CodeReq.singleton_mono {a : Addr} {i : Instr} {cr : CodeReq}
+    (h : cr a = some i) :
+    ∀ a' i', CodeReq.singleton a i a' = some i' → cr a' = some i' := by
+  intro a' i' hq
+  simp only [CodeReq.singleton] at hq
+  split at hq
+  · next heq => rw [beq_iff_eq] at heq; subst heq; simp at hq; subst hq; exact h
+  · simp at hq
+
+/-- A singleton misses any address not equal to its own. -/
+theorem CodeReq.singleton_miss {a a' : Addr} {i : Instr}
+    (hne : a' ≠ a) :
+    (CodeReq.singleton a i) a' = none := by
+  simp [CodeReq.singleton, beq_eq_false_iff_ne.mpr hne]
+
+/-- Skip a non-matching head of a union: if head misses at a, we look at the tail. -/
+theorem CodeReq.union_skip {head tail : CodeReq} {a : Addr} {i : Instr}
+    (hne : head a = none) (htail : tail a = some i) :
+    (head.union tail) a = some i := by
+  simp [CodeReq.union, hne, htail]
+
+/-- Hit at the head of a union. -/
+theorem CodeReq.union_hit {head tail : CodeReq} {a : Addr} {i : Instr}
+    (hh : head a = some i) :
+    (head.union tail) a = some i := by
+  simp [CodeReq.union, hh]
 
 /-- Skip head of union: if head is disjoint from oldCr and oldCr ⊆ tail, then oldCr ⊆ union. -/
 theorem CodeReq.mono_union_right {oldCr head tail : CodeReq}

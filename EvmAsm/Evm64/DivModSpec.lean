@@ -2608,7 +2608,8 @@ theorem divK_div128_step1_spec
   -- Sub-spec 1: init [10]-[12]
   have h1_raw := divK_div128_step1_init_spec u_hi d_hi v5_old v10_old base
   have h1 : cpsTriple base (base + 12) cr _ _ :=
-    cpsTriple_extend_code (h := h1_raw) (hmono := by sorry)
+    cpsTriple_extend_code (h := h1_raw) (hmono := by
+      rw [hcr_eq]; exact CodeReq.union_mono_tail (CodeReq.union_mono_tail (CodeReq.union_mono_left _ _)))
   have h1f := cpsTriple_frame_left _ _ _ _ _
     ((.x11 ↦ᵣ un1) ** (.x1 ↦ᵣ v1_old) ** (.x12 ↦ᵣ sp) ** (.x0 ↦ᵣ 0) **
      (sp + signExtend12 3952 ↦ₘ dlo))
@@ -2621,7 +2622,18 @@ theorem divK_div128_step1_spec
   have : (base + 12 : Addr) + 16 = base + 28 := by bv_omega
   simp only [*] at h2_raw
   have h2 : cpsTriple (base + 12) (base + 28) cr _ _ :=
-    cpsTriple_extend_code (h := h2_raw) (hmono := by sorry)
+    cpsTriple_extend_code (h := h2_raw) (hmono := by
+      rw [hcr_eq]; intro a i
+      simp only [CodeReq.union_singleton_apply, CodeReq.singleton]; intro h
+      split at h
+      · next hab => rw [beq_iff_eq] at hab; subst hab; simp_all [CodeReq.beq_offset_self_left, CodeReq.beq_base_offset]
+      · split at h
+        · next hab => rw [beq_iff_eq] at hab; subst hab; simp_all [CodeReq.beq_offset_self_left, CodeReq.beq_base_offset]
+        · split at h
+          · next hab => rw [beq_iff_eq] at hab; subst hab; simp_all [CodeReq.beq_offset_self_left, CodeReq.beq_base_offset]
+          · split at h
+            · next hab => rw [beq_iff_eq] at hab; subst hab; simp_all [CodeReq.beq_offset_self_left, CodeReq.beq_base_offset]
+            · simp at h)
   have h2f := cpsTriple_frame_left _ _ _ _ _
     ((.x11 ↦ᵣ un1) ** (.x1 ↦ᵣ v1_old) ** (.x12 ↦ᵣ sp) **
      (sp + signExtend12 3952 ↦ₘ dlo))
@@ -2642,7 +2654,26 @@ theorem divK_div128_step1_spec
   have : (base + 28 : Addr) + 32 = base + 60 := by bv_omega
   simp only [*] at h3_raw
   have h3 : cpsTriple (base + 28) (base + 60) cr _ _ :=
-    cpsTriple_extend_code (h := h3_raw) (hmono := by sorry)
+    cpsTriple_extend_code (h := h3_raw) (hmono := by
+      rw [hcr_eq]; intro a i
+      simp only [CodeReq.union_singleton_apply, CodeReq.singleton]; intro h
+      split at h
+      · next hab => rw [beq_iff_eq] at hab; subst hab; simp_all [CodeReq.beq_offset_self_left, CodeReq.beq_base_offset]
+      · split at h
+        · next hab => rw [beq_iff_eq] at hab; subst hab; simp_all [CodeReq.beq_offset_self_left, CodeReq.beq_base_offset]
+        · split at h
+          · next hab => rw [beq_iff_eq] at hab; subst hab; simp_all [CodeReq.beq_offset_self_left, CodeReq.beq_base_offset]
+          · split at h
+            · next hab => rw [beq_iff_eq] at hab; subst hab; simp_all [CodeReq.beq_offset_self_left, CodeReq.beq_base_offset]
+            · split at h
+              · next hab => rw [beq_iff_eq] at hab; subst hab; simp_all [CodeReq.beq_offset_self_left, CodeReq.beq_base_offset]
+              · split at h
+                · next hab => rw [beq_iff_eq] at hab; subst hab; simp_all [CodeReq.beq_offset_self_left, CodeReq.beq_base_offset]
+                · split at h
+                  · next hab => rw [beq_iff_eq] at hab; subst hab; simp_all [CodeReq.beq_offset_self_left, CodeReq.beq_base_offset]
+                  · split at h
+                    · next hab => rw [beq_iff_eq] at hab; subst hab; simp_all [CodeReq.beq_offset_self_left, CodeReq.beq_base_offset]
+                    · simp at h)
   have h3f := cpsTriple_frame_left _ _ _ _ _
     ((.x0 ↦ᵣ 0))
     (by pcFree) h3
@@ -2722,7 +2753,8 @@ theorem divK_div128_step2_spec
   -- Sub-spec 1: init [30]-[32]
   have h1_raw := divK_div128_step2_init_spec un21 d_hi v1_old v5_old v11_old base
   have h1 : cpsTriple base (base + 12) cr _ _ :=
-    cpsTriple_extend_code (h := h1_raw) (hmono := by sorry)
+    cpsTriple_extend_code (h := h1_raw) (hmono := by
+      rw [hcr_eq]; exact CodeReq.union_mono_tail (CodeReq.union_mono_tail (CodeReq.union_mono_left _ _)))
   have h1f := cpsTriple_frame_left _ _ _ _ _
     ((.x12 ↦ᵣ sp) ** (.x0 ↦ᵣ 0) **
      (sp + signExtend12 3952 ↦ₘ dlo) ** (sp + signExtend12 3944 ↦ₘ un0))
@@ -2735,7 +2767,18 @@ theorem divK_div128_step2_spec
   have : (base + 12 : Addr) + 16 = base + 28 := by bv_omega
   simp only [*] at h2_raw
   have h2 : cpsTriple (base + 12) (base + 28) cr _ _ :=
-    cpsTriple_extend_code (h := h2_raw) (hmono := by sorry)
+    cpsTriple_extend_code (h := h2_raw) (hmono := by
+      rw [hcr_eq]; intro a i
+      simp only [CodeReq.union_singleton_apply, CodeReq.singleton]; intro h
+      split at h
+      · next hab => rw [beq_iff_eq] at hab; subst hab; simp_all [CodeReq.beq_offset_self_left, CodeReq.beq_base_offset]
+      · split at h
+        · next hab => rw [beq_iff_eq] at hab; subst hab; simp_all [CodeReq.beq_offset_self_left, CodeReq.beq_base_offset]
+        · split at h
+          · next hab => rw [beq_iff_eq] at hab; subst hab; simp_all [CodeReq.beq_offset_self_left, CodeReq.beq_base_offset]
+          · split at h
+            · next hab => rw [beq_iff_eq] at hab; subst hab; simp_all [CodeReq.beq_offset_self_left, CodeReq.beq_base_offset]
+            · simp at h)
   have h2f := cpsTriple_frame_left _ _ _ _ _
     ((.x7 ↦ᵣ un21) ** (.x12 ↦ᵣ sp) **
      (sp + signExtend12 3952 ↦ₘ dlo) ** (sp + signExtend12 3944 ↦ₘ un0))
@@ -2756,7 +2799,26 @@ theorem divK_div128_step2_spec
   have : (base + 28 : Addr) + 32 = base + 60 := by bv_omega
   simp only [*] at h3_raw
   have h3 : cpsTriple (base + 28) (base + 60) cr _ _ :=
-    cpsTriple_extend_code (h := h3_raw) (hmono := by sorry)
+    cpsTriple_extend_code (h := h3_raw) (hmono := by
+      rw [hcr_eq]; intro a i
+      simp only [CodeReq.union_singleton_apply, CodeReq.singleton]; intro h
+      split at h
+      · next hab => rw [beq_iff_eq] at hab; subst hab; simp_all [CodeReq.beq_offset_self_left, CodeReq.beq_base_offset]
+      · split at h
+        · next hab => rw [beq_iff_eq] at hab; subst hab; simp_all [CodeReq.beq_offset_self_left, CodeReq.beq_base_offset]
+        · split at h
+          · next hab => rw [beq_iff_eq] at hab; subst hab; simp_all [CodeReq.beq_offset_self_left, CodeReq.beq_base_offset]
+          · split at h
+            · next hab => rw [beq_iff_eq] at hab; subst hab; simp_all [CodeReq.beq_offset_self_left, CodeReq.beq_base_offset]
+            · split at h
+              · next hab => rw [beq_iff_eq] at hab; subst hab; simp_all [CodeReq.beq_offset_self_left, CodeReq.beq_base_offset]
+              · split at h
+                · next hab => rw [beq_iff_eq] at hab; subst hab; simp_all [CodeReq.beq_offset_self_left, CodeReq.beq_base_offset]
+                · split at h
+                  · next hab => rw [beq_iff_eq] at hab; subst hab; simp_all [CodeReq.beq_offset_self_left, CodeReq.beq_base_offset]
+                  · split at h
+                    · next hab => rw [beq_iff_eq] at hab; subst hab; simp_all [CodeReq.beq_offset_self_left, CodeReq.beq_base_offset]
+                    · simp at h)
   have h3f := cpsTriple_frame_left _ _ _ _ _
     ((.x6 ↦ᵣ d_hi) ** (.x0 ↦ᵣ 0))
     (by pcFree) h3
