@@ -2256,12 +2256,30 @@ theorem divK_div128_prodcheck1_merged_spec
        (sp + signExtend12 3952 ↦ₘ dlo))
       (by pcFree) I_jal_cr
     simp only [sepConj_emp_left'] at hjal_framed
-    exact cpsTriple_seq_with_perm_same_cr _ _ _ _ _ _ _ _
-      (fun h hp => by
-        have hp' := sepConj_mono_left (sepConj_mono_right
-          (fun h' hp' => ((sepConj_pure_right _ _ h').1 hp').1)) h hp
-        xperm_hyp hp')
-      ntaken_br hjal_framed
+    -- Strip pure and compose with JAL
+    have ntaken_clean : cpsTriple base (base + 20) cr
+        ((.x12 ↦ᵣ sp) ** (.x10 ↦ᵣ q1) ** (.x7 ↦ᵣ rhat) ** (.x11 ↦ᵣ un1) **
+         (.x5 ↦ᵣ v5_old) ** (.x1 ↦ᵣ v1_old) ** (.x6 ↦ᵣ d_hi) **
+         (sp + signExtend12 3952 ↦ₘ dlo))
+        ((.x1 ↦ᵣ rhat_un1) ** (.x5 ↦ᵣ q_dlo) **
+         (.x12 ↦ᵣ sp) ** (.x10 ↦ᵣ q1) ** (.x7 ↦ᵣ rhat) ** (.x11 ↦ᵣ un1) **
+         (.x6 ↦ᵣ d_hi) ** (sp + signExtend12 3952 ↦ₘ dlo)) :=
+      cpsTriple_consequence _ _ _ _ _ _ _
+        (fun h hp => hp)
+        (fun h hp => by
+          have hp' : (((.x1 ↦ᵣ rhat_un1) ** (.x5 ↦ᵣ q_dlo)) **
+            ((.x12 ↦ᵣ sp) ** (.x10 ↦ᵣ q1) ** (.x7 ↦ᵣ rhat) ** (.x11 ↦ᵣ un1) **
+             (.x6 ↦ᵣ d_hi) ** (sp + signExtend12 3952 ↦ₘ dlo))) h :=
+            sepConj_mono_left (sepConj_mono_right
+              (fun h' hp' => ((sepConj_pure_right _ _ h').1 hp').1)) h hp
+          xperm_hyp hp')
+        ntaken_br
+    exact cpsTriple_consequence _ _ _ _ _ _ _
+      (fun _ hp => hp)
+      (fun h hp => by xperm_hyp hp)
+      (cpsTriple_seq_with_perm_same_cr _ _ _ _ _ _ _ _
+        (fun _ hp => hp)
+        ntaken_clean hjal_framed)
 -- ============================================================================
 -- div128 subroutine: Clamp q0 section [33]-[36].
 -- 4 instructions: SRLI + BEQ + ADDI + ADD.
@@ -2500,12 +2518,29 @@ theorem divK_div128_prodcheck2_merged_spec
        (sp + signExtend12 3952 ↦ₘ dlo) ** (sp + signExtend12 3944 ↦ₘ un0))
       (by pcFree) I_jal_cr
     simp only [sepConj_emp_left'] at hjal_framed
-    exact cpsTriple_seq_with_perm_same_cr _ _ _ _ _ _ _ _
-      (fun h hp => by
-        have hp' := sepConj_mono_left (sepConj_mono_right
-          (fun h' hp' => ((sepConj_pure_right _ _ h').1 hp').1)) h hp
-        xperm_hyp hp')
-      ntaken_br hjal_framed
+    have ntaken_clean : cpsTriple base (base + 24) cr
+        ((.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ q0) ** (.x11 ↦ᵣ rhat2) **
+         (.x7 ↦ᵣ v7_old) ** (.x1 ↦ᵣ v1_old) **
+         (sp + signExtend12 3952 ↦ₘ dlo) ** (sp + signExtend12 3944 ↦ₘ un0))
+        ((.x1 ↦ᵣ rhat2_un0) ** (.x7 ↦ᵣ q0_dlo) **
+         (.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ q0) ** (.x11 ↦ᵣ un0) **
+         (sp + signExtend12 3952 ↦ₘ dlo) ** (sp + signExtend12 3944 ↦ₘ un0)) :=
+      cpsTriple_consequence _ _ _ _ _ _ _
+        (fun h hp => hp)
+        (fun h hp => by
+          have hp' : (((.x1 ↦ᵣ rhat2_un0) ** (.x7 ↦ᵣ q0_dlo)) **
+            ((.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ q0) ** (.x11 ↦ᵣ un0) **
+             (sp + signExtend12 3952 ↦ₘ dlo) ** (sp + signExtend12 3944 ↦ₘ un0))) h :=
+            sepConj_mono_left (sepConj_mono_right
+              (fun h' hp' => ((sepConj_pure_right _ _ h').1 hp').1)) h hp
+          xperm_hyp hp')
+        ntaken_br
+    exact cpsTriple_consequence _ _ _ _ _ _ _
+      (fun _ hp => hp)
+      (fun h hp => by xperm_hyp hp)
+      (cpsTriple_seq_with_perm_same_cr _ _ _ _ _ _ _ _
+        (fun _ hp => hp)
+        ntaken_clean hjal_framed)
 -- ============================================================================
 -- div128 subroutine: Step 1 full [10]-[24].
 -- 15 instructions: DIVU+MUL+SUB (init) + SRLI+BEQ+ADDI+ADD (clamp q1)
