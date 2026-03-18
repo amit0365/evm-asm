@@ -63,7 +63,7 @@ import EvmAsm.Rv64.Tactics.SpecDb
 
 open Lean Meta Elab Tactic
 
-initialize registerTraceClass `runBlock
+initialize registerTraceClass `runBlock (inherited := true)
 
 namespace EvmAsm.Rv64.Tactics
 
@@ -105,7 +105,7 @@ private def proveBvEq (old new_ : Expr) : MetaM (Option Expr) := do
   let eqMVar ← mkFreshExprMVar eqType
   try
     let stx ← `(tactic| bv_omega)
-    let _ ← Lean.Elab.runTactic eqMVar.mvarId! stx
+    runTacticSilent eqMVar.mvarId! stx
     return some (← instantiateMVars eqMVar)
   catch _ =>
     (Pure.pure PUnit.unit : MetaM PUnit)
@@ -113,7 +113,7 @@ private def proveBvEq (old new_ : Expr) : MetaM (Option Expr) := do
   let eqMVar2 ← mkFreshExprMVar eqType
   try
     let stx ← `(tactic| simp only [signExtend12_0, signExtend12_8, signExtend12_16, signExtend12_24, signExtend12_32, signExtend12_40, signExtend12_48, signExtend12_56, signExtend12_4095, signExtend12_4088, signExtend12_4080, signExtend12_4072, signExtend12_4064, signExtend12_4056, signExtend12_4048, signExtend12_4040, signExtend12_4032, signExtend12_4024, signExtend12_4016, signExtend12_4008, signExtend12_4000, signExtend12_3992, signExtend12_3984, signExtend12_3976, signExtend12_3968, signExtend12_3960, signExtend12_3952, signExtend12_3944] <;> bv_omega)
-    let _ ← Lean.Elab.runTactic eqMVar2.mvarId! stx
+    runTacticSilent eqMVar2.mvarId! stx
     return some (← instantiateMVars eqMVar2)
   catch _ => return none
 
@@ -128,7 +128,7 @@ private def proveByNativeDecide (old new_ : Expr) : MetaM (Option Expr) := do
   let eqMVar ← mkFreshExprMVar eqType
   try
     let stx ← `(tactic| native_decide)
-    let _ ← Lean.Elab.runTactic eqMVar.mvarId! stx
+    runTacticSilent eqMVar.mvarId! stx
     return some (← instantiateMVars eqMVar)
   catch _ => return none
 
@@ -310,7 +310,7 @@ private def normalizeAddr (accExpr : Expr) (targetExit : Expr) : MetaM Expr := d
   let eqMVar ← mkFreshExprMVar eqType
   try
     let stx ← `(tactic| bv_omega)
-    let _ ← Lean.Elab.runTactic eqMVar.mvarId! stx
+    runTacticSilent eqMVar.mvarId! stx
   catch _ =>
     throwError "runBlock: cannot prove address equality:\n  {exit₁} = {targetExit}"
   let eqProof ← instantiateMVars eqMVar
@@ -558,7 +558,7 @@ private def solveObligation (mvarId : MVarId) : MetaM Bool := do
   -- Try bv_omega as last resort
   try
     let stx ← `(tactic| bv_omega)
-    let _ ← Lean.Elab.runTactic mvarId stx
+    runTacticSilent mvarId stx
     return true
   catch _ =>
     return false

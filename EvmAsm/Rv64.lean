@@ -20,3 +20,4 @@ import EvmAsm.Rv64.Tactics.XCancel
 import EvmAsm.Rv64.Tactics.SeqFrame
 import EvmAsm.Rv64.Tactics.SpecDb
 import EvmAsm.Rv64.Tactics.RunBlock
+import EvmAsm.Rv64.Tactics.LiftSpec

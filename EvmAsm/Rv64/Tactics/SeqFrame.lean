@@ -33,6 +33,21 @@ open Lean Meta Elab Tactic
 
 namespace EvmAsm.Rv64.Tactics
 
+/-- Run a tactic without leaking error diagnostics on failure.
+    Saves the message log before running, restores it if the tactic throws.
+    This prevents speculative tactic calls (e.g., bv_omega in try/catch blocks)
+    from polluting the error output when they fail as expected. -/
+def runTacticSilent (mvarId : MVarId) (stx : Syntax) : MetaM Unit := do
+  let savedLog ← Lean.Core.getMessageLog
+  Lean.Core.resetMessageLog
+  try
+    let _ ← Lean.Elab.runTactic mvarId stx
+    let newLog ← Lean.Core.getMessageLog
+    Lean.Core.setMessageLog (savedLog ++ newLog)
+  catch e =>
+    Lean.Core.setMessageLog savedLog
+    throw e
+
 /-- Parse `cpsTriple entry exit_ cr P Q` returning the five arguments.
     Does NOT whnf (which would unfold the def). -/
 def parseCpsTriple? (e : Expr) : MetaM (Option (Expr × Expr × Expr × Expr × Expr)) := do
@@ -173,11 +188,14 @@ partial def buildDisjointProof (cr1 cr2 : Expr) : MetaM Expr := do
     let i1 := cr1.getAppArgs[1]!
     let a2 := cr2.getAppArgs[0]!
     let i2 := cr2.getAppArgs[1]!
-    -- Prove a1 ≠ a2 via bv_omega
+    -- Quick check: if addresses are definitionally equal, cannot prove disjoint
+    if ← withoutModifyingState (isDefEq a1 a2) then
+      throwError "buildDisjointProof: addresses are equal: {a1}"
+    -- Prove a1 ≠ a2 via bv_omega (suppress diagnostics on failure to avoid leaked errors)
     let neqType := mkApp3 (mkConst ``Ne [levelOne]) (mkConst ``EvmAsm.Rv64.Addr) a1 a2
     let neqMVar ← mkFreshExprMVar neqType
     let stx ← `(tactic| bv_omega)
-    let _ ← Lean.Elab.runTactic neqMVar.mvarId! stx
+    runTacticSilent neqMVar.mvarId! stx
     let neqProof ← instantiateMVars neqMVar
     return ← mkAppM ``EvmAsm.Rv64.CodeReq.Disjoint.singleton #[neqProof, i1, i2]
   -- Case: cr1 = union sub1 sub2 → need sub1.Disjoint cr2 and sub2.Disjoint cr2
@@ -199,7 +217,7 @@ partial def buildDisjointProof (cr1 cr2 : Expr) : MetaM Expr := do
   let disjMVar ← mkFreshExprMVar disjType
   let stx ← `(tactic| intro a; simp [CodeReq.singleton, CodeReq.union, CodeReq.empty]; decide)
   try
-    let _ ← Lean.Elab.runTactic disjMVar.mvarId! stx
+    runTacticSilent disjMVar.mvarId! stx
     return ← instantiateMVars disjMVar
   catch _ =>
     throwError "seqFrame: cannot prove CodeReq.Disjoint for:\n  cr1 = {cr1}\n  cr2 = {cr2}"
@@ -232,7 +250,7 @@ private def buildMonoProofTactic (oldCr newCr : Expr) : MetaM Expr := do
   let mvar ← mkFreshExprMVar propType
   try
     let stx ← `(tactic| intro a i h; simp only [EvmAsm.Rv64.CodeReq.singleton, EvmAsm.Rv64.CodeReq.union] at *; (first | simp_all | (split at h <;> simp_all <;> bv_omega)))
-    let _ ← Lean.Elab.runTactic mvar.mvarId! stx
+    runTacticSilent mvar.mvarId! stx
     return ← instantiateMVars mvar
   catch _ =>
     throwError "seqFrame: cannot build monotonicity proof for CodeReq extension (fallback)"

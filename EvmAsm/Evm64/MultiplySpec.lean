@@ -284,7 +284,7 @@ abbrev evm_mul_code (base : Addr) : CodeReq :=
   (CodeReq.union (mul_col3_code (base + 228))
   (CodeReq.singleton (base + 248) (.ADDI .x12 .x12 32)))))
 
-set_option maxHeartbeats 6400000 in
+set_option maxHeartbeats 25600000 in
 /-- Full 256-bit EVM MUL: composes 4 per-column specs + ADDI sp adjustment.
     63 instructions total. Pops 2 stack words (A at sp, B at sp+32),
     writes (A * B) mod 2^256 to sp+32..sp+56, advances sp by 32. -/
