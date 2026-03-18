@@ -94,14 +94,50 @@ private def getBvLitVal? (e : Expr) : Option Nat :=
     | _ => none
   else none
 
-/-- Prove `old = new` via `bv_omega`. Returns `none` on failure.
-    Tries `mkDecideProof` first (fast for concrete BitVec equalities),
-    then falls back to `bv_omega` via `runTactic`. -/
+/-- Try to prove `old = new` using fast reflection lemmas (no tactic overhead).
+    Handles: `base + 0 = base`, `(base + k1) + k2 = base + sum`, `base + k = base + k`.
+    Returns `none` if the pattern doesn't match. -/
+private def proveAddrEqFast (old new_ : Expr) : MetaM (Option Expr) := do
+  -- Case: old = lhs + rhs
+  if old.isAppOfArity ``HAdd.hAdd 6 then
+    let oldArgs := old.getAppArgs
+    -- Check it's BitVec/Addr addition
+    unless oldArgs[0]!.isAppOfArity ``BitVec 1 do return none
+    let lhs := oldArgs[4]!
+    let rhs := oldArgs[5]!
+    -- Case: base + 0 = base (new_ is just lhs)
+    if let some 0 := getBvLitVal? rhs then
+      if lhs == new_ then
+        return some (mkApp (mkConst ``EvmAsm.Rv64.addr_add_zero_bv) lhs)
+    -- Case: (a + k1) + k2 = a + sum
+    if let some rhsVal := getBvLitVal? rhs then
+      if lhs.isAppOfArity ``HAdd.hAdd 6 then
+        let innerArgs := lhs.getAppArgs
+        let a := innerArgs[4]!
+        let k1 := innerArgs[5]!
+        if let some k1Val := getBvLitVal? k1 then
+          -- Check new_ = a + sum
+          if new_.isAppOfArity ``HAdd.hAdd 6 then
+            let newArgs := new_.getAppArgs
+            if newArgs[4]! == a then
+              if let some sumVal := getBvLitVal? newArgs[5]! then
+                if k1Val + rhsVal == sumVal then
+                  try
+                    let sumLit := newArgs[5]!
+                    let sumEqType ← mkEq (← mkAppM ``HAdd.hAdd #[k1, rhs]) sumLit
+                    let hSum ← mkDecideProof sumEqType
+                    return some (mkApp5 (mkConst ``EvmAsm.Rv64.addr_reassoc) a k1 rhs sumLit hSum)
+                  catch _ => (Pure.pure PUnit.unit : MetaM PUnit)
+  return none
+
+/-- Prove `old = new` via fast reflection, then `bv_omega` fallback. Returns `none` on failure. -/
 private def proveBvEq (old new_ : Expr) : MetaM (Option Expr) := do
   if ← withoutModifyingState (isDefEq old new_) then
     return some (← mkEqRefl old)
+  -- Fast reflection path (avoids tactic overhead)
+  if let some pf ← proveAddrEqFast old new_ then return some pf
   let eqType ← mkEq old new_
-  -- Fast path: bv_omega directly
+  -- bv_omega via tactic
   let eqMVar ← mkFreshExprMVar eqType
   try
     let stx ← `(tactic| bv_omega)
@@ -156,8 +192,12 @@ private def trySimplifyTop (e : Expr) : MetaM (Expr × Option Expr) := do
     let args := e.getAppArgs
     let lhs := args[4]!
     let rhs := args[5]!
-    let eTy ← inferType e
-    if (← whnf eTy).isAppOfArity ``BitVec 1 then
+    -- Fast type check: HAdd.hAdd's γ (result type) arg is args[2].
+    -- Check for BitVec n / Addr / Word directly, avoiding inferType + whnf.
+    let γType := args[2]!
+    if γType.isAppOfArity ``BitVec 1 ||
+       γType == mkConst ``EvmAsm.Rv64.Addr ||
+       γType == mkConst ``EvmAsm.Rv64.Word then
       -- e + 0 → e (common after signExtend12 0 normalization)
       if let some 0 := getBvLitVal? rhs then
         -- Fast path: use addr_add_zero_bv (avoids bv_omega overhead)
@@ -312,21 +352,27 @@ private def normalizeSpecAddresses (proof : Expr) : MetaM Expr :=
     else Pure.pure (mkApp2 (mkConst ``id [levelZero]) workType expandedProof)
 
 /-- Normalize the exit address of a cpsTriple proof to match a target address.
-    Proves equality via `bv_omega` when needed. -/
+    Uses fast reflection when possible, falls back to `bv_omega`. -/
 private def normalizeAddr (accExpr : Expr) (targetExit : Expr) : MetaM Expr := do
   let accType ← inferType accExpr
   let some (entry, exit₁, cr, P, Q) ← parseCpsTriple? accType
     | throwError "runBlock: not a cpsTriple"
   if ← withoutModifyingState (isDefEq exit₁ targetExit) then
     return accExpr
-  let eqType ← mkEq exit₁ targetExit
-  let eqMVar ← mkFreshExprMVar eqType
-  try
-    let stx ← `(tactic| bv_omega)
-    runTacticSilent eqMVar.mvarId! stx
-  catch _ =>
-    throwError "runBlock: cannot prove address equality:\n  {exit₁} = {targetExit}"
-  let eqProof ← instantiateMVars eqMVar
+  -- Try fast reflection first (avoids tactic overhead)
+  let eqProof ← do
+    if let some pf ← proveAddrEqFast exit₁ targetExit then
+      Pure.pure pf
+    else
+      -- Fallback: bv_omega
+      let eqType ← mkEq exit₁ targetExit
+      let eqMVar ← mkFreshExprMVar eqType
+      try
+        let stx ← `(tactic| bv_omega)
+        runTacticSilent eqMVar.mvarId! stx
+      catch _ =>
+        throwError "runBlock: cannot prove address equality:\n  {exit₁} = {targetExit}"
+      instantiateMVars eqMVar
   let addrType ← inferType exit₁
   withLocalDeclD `x addrType fun x => do
     let body := mkAppN (mkConst ``EvmAsm.Rv64.cpsTriple) #[entry, x, cr, P, Q]
