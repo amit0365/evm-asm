@@ -633,26 +633,46 @@ theorem sub_borrow_chain_correct (a b : EvmWord) :
       Nat.add_mul_mod_self_right]
   have strip2 : ∀ (p q r W : Nat), (p + (q + r * W)) % W = (p + q) % W := by
     intro p q r W; rw [show p + (q + r * W) = (p + q) + r * W from by ring, Nat.add_mul_mod_self_right]
+  -- Complement borrow: (a0+W-b0)/W = 0 if a0<b0, 1 otherwise
+  have hdiv0 : (a0.toNat + W - b0.toNat) / W = if a0.toNat < b0.toNat then 0 else 1 := by
+    split
+    · rename_i h; exact Nat.div_eq_of_lt (by omega)
+    · rename_i h; push_neg at h
+      rw [show a0.toNat + W - b0.toNat = (a0.toNat - b0.toNat) + 1 * W from by omega,
+          Nat.add_mul_div_right _ _ hW, Nat.div_eq_of_lt (by omega)]
+  -- 2-limb complement borrow
+  have hdiv1 : ((a0.toNat + W - b0.toNat) / W + (a1.toNat + W - 1 - b1.toNat)) / W =
+      if a0.toNat + a1.toNat * W < b0.toNat + b1.toNat * W then 0 else 1 := by
+    rw [hdiv0]; split <;> (rename_i h; split <;> rename_i h2)
+    · exact Nat.div_eq_of_lt (by omega)
+    · rw [show (0 + (a1.toNat + W - 1 - b1.toNat)) =
+            (a1.toNat - 1 - b1.toNat) + 1 * W from by omega,
+          Nat.add_mul_div_right _ _ hW, Nat.div_eq_of_lt (by omega)]
+    · exact Nat.div_eq_of_lt (by omega)
+    · rw [show 1 + (a1.toNat + W - 1 - b1.toNat) = (a1.toNat - b1.toNat) + 1 * W from by omega,
+          Nat.add_mul_div_right _ _ hW, Nat.div_eq_of_lt (by omega)]
+  -- 3-limb complement borrow
+  have hdiv2 : (((a0.toNat + W - b0.toNat) / W + (a1.toNat + W - 1 - b1.toNat)) / W +
+      (a2.toNat + W - 1 - b2.toNat)) / W =
+      if a0.toNat + a1.toNat * W + a2.toNat * (W * W) <
+         b0.toNat + b1.toNat * W + b2.toNat * (W * W) then 0 else 1 := by
+    rw [hdiv1]; split <;> (rename_i h; split <;> rename_i h2)
+    · exact Nat.div_eq_of_lt (by omega)
+    · rw [show (0 + (a2.toNat + W - 1 - b2.toNat)) =
+            (a2.toNat - 1 - b2.toNat) + 1 * W from by omega,
+          Nat.add_mul_div_right _ _ hW, Nat.div_eq_of_lt (by omega)]
+    · exact Nat.div_eq_of_lt (by omega)
+    · rw [show 1 + (a2.toNat + W - 1 - b2.toNat) = (a2.toNat - b2.toNat) + 1 * W from by omega,
+          Nat.add_mul_div_right _ _ hW, Nat.div_eq_of_lt (by omega)]
   constructor
-  -- Limb 0: same as ADD limb 0 approach
+  -- Limb 0
   · apply BitVec.eq_of_toNat_eq
     rw [key0, hdiff0_nat, h256, Nat.mod_mul_right_mod, hD0, Nat.add_mul_mod_self_right]
   constructor
   -- Limb 1
   · apply BitVec.eq_of_toNat_eq
     rw [key1, hresult1_nat, hb0_nat, h256, Nat.mod_mul_right_div_self]
-    rw [hD0, Nat.add_mul_div_right _ _ hW, Nat.mod_mul_right_mod, strip2]
-    -- Key: (a0'+W-b0')/W + (a1'+W-1-b1') relates to (a1'+2W-b1' - borrow)
-    have hdiv0 : (a0.toNat + W - b0.toNat) / W = if a0.toNat < b0.toNat then 0 else 1 := by
-      split
-      · rename_i h
-        exact Nat.div_eq_of_lt (by omega)
-      · rename_i h; push_neg at h
-        have hlt : a0.toNat - b0.toNat < W := by omega
-        rw [show a0.toNat + W - b0.toNat = (a0.toNat - b0.toNat) + 1 * W from by omega,
-            Nat.add_mul_div_right _ _ hW, Nat.div_eq_of_lt hlt]
-    rw [hdiv0]
-    -- Both sides are equal mod W (differ by multiples of W)
+    rw [hD0, Nat.add_mul_div_right _ _ hW, Nat.mod_mul_right_mod, strip2, hdiv0]
     split
     · -- a0 < b0: LHS = (0 + (a1'+W-1-b1')) % W, RHS = (a1'+W-b1'+W-1) % W
       rw [show (0 + (a1.toNat + W - 1 - b1.toNat)) = a1.toNat + W - 1 - b1.toNat from by omega,
@@ -673,7 +693,16 @@ theorem sub_borrow_chain_correct (a b : EvmWord) :
     rw [hD1, Nat.add_mul_div_right _ _ (show 0 < W * W by positivity), strip2]
     rw [show W * W = W * W from rfl, ← Nat.div_div_eq_div_mul,
         Nat.add_mul_div_right _ _ hW]
-    split <;> sorry
+    rw [hdiv1]
+    split
+    · rw [show (0 + (a2.toNat + W - 1 - b2.toNat)) = a2.toNat + W - 1 - b2.toNat from by omega,
+          show a2.toNat + W - b2.toNat + W - 1 =
+            (a2.toNat + W - 1 - b2.toNat) + 1 * W from by omega,
+          Nat.add_mul_mod_self_right]
+    · rw [show 1 + (a2.toNat + W - 1 - b2.toNat) = a2.toNat + W - b2.toNat from by omega,
+          show a2.toNat + W - b2.toNat + W - 0 =
+            (a2.toNat + W - b2.toNat) + 1 * W from by omega,
+          Nat.add_mul_mod_self_right]
   -- Limb 3
   · apply BitVec.eq_of_toNat_eq
     rw [key3, hresult3_nat, hb2_nat, h192, h256,
@@ -687,7 +716,16 @@ theorem sub_borrow_chain_correct (a b : EvmWord) :
         Nat.add_mul_div_right _ _ hW]
     conv_lhs => rw [show ∀ (p q r : Nat), p + (q + r * W) = (p + q) + r * W from by intros; ring]
     rw [Nat.add_mul_div_right _ _ hW]
-    split <;> sorry
+    rw [hdiv2, ← h128]
+    split
+    · rw [show (0 + (a3.toNat + W - 1 - b3.toNat)) = a3.toNat + W - 1 - b3.toNat from by omega,
+          show a3.toNat + W - b3.toNat + W - 1 =
+            (a3.toNat + W - 1 - b3.toNat) + 1 * W from by omega,
+          Nat.add_mul_mod_self_right]
+    · rw [show 1 + (a3.toNat + W - 1 - b3.toNat) = a3.toNat + W - b3.toNat from by omega,
+          show a3.toNat + W - b3.toNat + W - 0 =
+            (a3.toNat + W - b3.toNat) + 1 * W from by omega,
+          Nat.add_mul_mod_self_right]
 
 -- ============================================================================
 -- SLT correctness: signed comparison decomposition
