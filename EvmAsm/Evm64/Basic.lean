@@ -102,6 +102,30 @@ def toLimbs (v : EvmWord) : List Word :=
 theorem toLimbs_length (v : EvmWord) : v.toLimbs.length = 4 := by
   simp [toLimbs]
 
+private theorem or3_eq_zero_left (a b c : BitVec 64) (h : a ||| b ||| c = 0) : a = 0 := by
+  bv_decide
+private theorem or3_eq_zero_mid (a b c : BitVec 64) (h : a ||| b ||| c = 0) : b = 0 := by
+  bv_decide
+private theorem or3_eq_zero_right (a b c : BitVec 64) (h : a ||| b ||| c = 0) : c = 0 := by
+  bv_decide
+
+/-- When the upper three limbs OR to zero, `v.toNat` equals `(v.getLimb 0).toNat`. -/
+theorem toNat_eq_getLimb0_of_high_zero (v : EvmWord)
+    (h : v.getLimb 1 ||| v.getLimb 2 ||| v.getLimb 3 = 0) :
+    v.toNat = (v.getLimb 0).toNat := by
+  have h1 := or3_eq_zero_left _ _ _ h
+  have h2 := or3_eq_zero_mid _ _ _ h
+  have h3 := or3_eq_zero_right _ _ _ h
+  simp only [getLimb, show (0 : Fin 4).val = 0 from rfl, show (1 : Fin 4).val = 1 from rfl,
+    show (2 : Fin 4).val = 2 from rfl, show (3 : Fin 4).val = 3 from rfl] at *
+  have hn1 : (v.extractLsb' (1 * 64) 64).toNat = 0 := by rw [h1]; rfl
+  have hn2 : (v.extractLsb' (2 * 64) 64).toNat = 0 := by rw [h2]; rfl
+  have hn3 : (v.extractLsb' (3 * 64) 64).toNat = 0 := by rw [h3]; rfl
+  simp [BitVec.extractLsb'_toNat] at hn1 hn2 hn3
+  simp [BitVec.extractLsb'_toNat]
+  have hv := v.isLt
+  omega
+
 end EvmWord
 
 end EvmAsm.Rv64

@@ -156,7 +156,15 @@ theorem evm_shr_stack_spec (sp base : Addr)
       -- High limbs = 0 but shift ≥ 256 → s0 ≥ 256
       -- (shift.toNat = s0.toNat when high limbs are 0)
       have hlarge : BitVec.ult (shift.getLimb 0) (signExtend12 (256 : BitVec 12)) = false := by
-        sorry -- requires: shift.toNat = s0.toNat when high limbs = 0
+        have h_toNat := EvmWord.toNat_eq_getLimb0_of_high_zero shift hhigh'
+        rw [h_toNat] at hge
+        have h256 : (signExtend12 (256 : BitVec 12)).toNat = 256 := by native_decide
+        simp only [BitVec.ult, h256]
+        -- Goal: decide (getLimb0.toNat < 256) = false
+        -- hge : getLimb0.toNat ≥ 256
+        cases h : decide ((shift.getLimb 0).toNat < 256)
+        · rfl
+        · simp at h; omega
       exact shr_zero_lift sp base shift value r5 r6 r7 r10 r11 hvalid
         (evm_shr_zero_large_spec sp base _ _ _ _ _ _ _ _ r5 r10 hhigh' hlarge hvalid)
         result hresult
