@@ -53,7 +53,6 @@ theorem mul_col3_spec (sp : Addr) (base : Addr)
 abbrev mul_col2_code (base : Addr) : CodeReq :=
   CodeReq.ofProg base mul_col2
 
-set_option maxHeartbeats 1600000 in
 /-- Column 2: multiply b[2] × {a[0],a[1]}, finalize r[2], update r[3] accumulator.
     13 instructions. Input: x11 = r2 acc, sp+16 = r3 partial.
     Output: x10 = r3 total, sp+48 = r2 stored. -/
@@ -100,7 +99,6 @@ theorem mul_col2_spec (sp : Addr) (base : Addr)
 abbrev mul_col1_partA_code (base : Addr) : CodeReq :=
   CodeReq.ofProg base (mul_col1.take 10)
 
-set_option maxHeartbeats 1600000 in
 /-- Column 1 part A: load b1, multiply a0×b1, store r1, begin r2 accumulation.
     10 instructions at base..base+36. -/
 theorem mul_col1_partA_spec (sp : Addr) (base : Addr)
@@ -140,7 +138,6 @@ theorem mul_col1_partA_spec (sp : Addr) (base : Addr)
 abbrev mul_col1_partB_code (base : Addr) : CodeReq :=
   CodeReq.ofProg (base + 40) (mul_col1.drop 10)
 
-set_option maxHeartbeats 1600000 in
 /-- Column 1 part B: multiply a1×b1, a2×b1, accumulate r2/r3, store r3 spill.
     13 instructions at base+40..base+88. -/
 theorem mul_col1_partB_spec (sp : Addr) (base : Addr)
@@ -181,7 +178,6 @@ theorem mul_col1_partB_spec (sp : Addr) (base : Addr)
 abbrev mul_col1_code (base : Addr) : CodeReq :=
   CodeReq.ofProg base mul_col1
 
-set_option maxHeartbeats 1600000 in
 /-- Column 1: multiply b[1] × {a[0],a[1],a[2]}, finalize r[1], update r[2]/r[3].
     23 instructions. Input: x10 = r1 acc, x11 = r2 acc, sp+24 = r3 partial from col0.
     Output: x11 = r2 acc, sp+16 = r3 partial, sp+40 = r1 stored. -/
@@ -228,7 +224,6 @@ theorem mul_col1_spec (sp : Addr) (base : Addr)
 abbrev mul_col0_partA_code (base : Addr) : CodeReq :=
   CodeReq.ofProg base (mul_col0.take 11)
 
-set_option maxHeartbeats 1600000 in
 /-- Column 0 part A: load b0, multiply a0×b0 and a1×b0, store r0, begin r1/r2 accumulation.
     11 instructions at base..base+40. -/
 theorem mul_col0_partA_spec (sp : Addr) (base : Addr)
@@ -268,7 +263,6 @@ theorem mul_col0_partA_spec (sp : Addr) (base : Addr)
 abbrev mul_col0_partB_code (base : Addr) : CodeReq :=
   CodeReq.ofProg (base + 44) (mul_col0.drop 11)
 
-set_option maxHeartbeats 1600000 in
 /-- Column 0 part B: multiply a2×b0 and a3×b0, accumulate r2, store r3 partial.
     10 instructions at base+44..base+80. -/
 theorem mul_col0_partB_spec (sp : Addr) (base : Addr)
@@ -304,7 +298,6 @@ theorem mul_col0_partB_spec (sp : Addr) (base : Addr)
 abbrev mul_col0_code (base : Addr) : CodeReq :=
   CodeReq.ofProg base mul_col0
 
-set_option maxHeartbeats 1600000 in
 /-- Column 0: multiply b[0] × {a[0],a[1],a[2],a[3]}, store r[0], spill r[3] partial.
     21 instructions. Output: x10 = r1 acc, x11 = r2 acc, sp+24 = r3p, sp+32 = r0. -/
 theorem mul_col0_spec (sp : Addr) (base : Addr)
@@ -347,7 +340,6 @@ theorem mul_col0_spec (sp : Addr) (base : Addr)
 abbrev evm_mul_code01 (base : Addr) : CodeReq :=
   CodeReq.union (mul_col0_code base) (mul_col1_code (base + 84))
 
-set_option maxHeartbeats 6400000 in
 /-- Intermediate: compose col0 + col1. 44 instructions at base..base+176. -/
 theorem evm_mul_cols01_spec (sp : Addr) (base : Addr)
     (a0 a1 a2 a3 b0 b1 : Word)
@@ -405,7 +397,6 @@ abbrev evm_mul_cols23ep_code (base : Addr) : CodeReq :=
   (CodeReq.union (mul_col3_code (base + 228))
   (CodeReq.singleton (base + 248) (.ADDI .x12 .x12 32)))
 
-set_option maxHeartbeats 1600000 in
 /-- Intermediate: compose col2 + col3 + epilogue. 19 instructions at base+176..base+252. -/
 theorem evm_mul_cols23ep_spec (sp : Addr) (base : Addr)
     (a0 a1 b2 b3 r2_in r3p_in v5 v6 v7 v10 : Word)
@@ -443,7 +434,6 @@ abbrev evm_mul_code (base : Addr) : CodeReq :=
       (CodeReq.union (mul_col3_code (base + 228))
         (CodeReq.singleton (base + 248) (.ADDI .x12 .x12 32)))))
 
-set_option maxHeartbeats 12800000 in
 /-- Full 256-bit EVM MUL: composes cols01 + cols23ep intermediate triples.
     63 instructions total. Pops 2 stack words (A at sp, B at sp+32),
     writes (A * B) mod 2^256 to sp+32..sp+56, advances sp by 32. -/
