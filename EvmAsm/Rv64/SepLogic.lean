@@ -2303,6 +2303,44 @@ theorem CodeReq.ofProg_lookup (base : Addr) (prog : List Instr) (k : Nat)
       rw [ofProg_addr_succ]
       exact ih (base + 4) k' (by simp [List.length] at hk; omega) (by simp [List.length] at hbound; omega)
 
+/-- Reverse of ofProg_none_range: if `ofProg` returns `some` at address `a`,
+    then `a` must be `base + 4*k` for some `k < prog.length`. -/
+theorem CodeReq.ofProg_some_range (base : Addr) (prog : List Instr) (a : Addr) (i : Instr)
+    (h : (CodeReq.ofProg base prog) a = some i) :
+    ∃ k, k < prog.length ∧ a = base + BitVec.ofNat 64 (4 * k) := by
+  induction prog generalizing base with
+  | nil => simp [CodeReq.ofProg_nil, CodeReq.empty] at h
+  | cons instr rest ih =>
+    rw [CodeReq.ofProg_cons] at h
+    simp only [CodeReq.union, CodeReq.singleton] at h
+    by_cases hb : (a == base) = true
+    · rw [beq_iff_eq] at hb
+      exact ⟨0, by simp, by simp [hb, BitVec.ofNat]⟩
+    · simp [hb] at h
+      obtain ⟨k, hk, haddr⟩ := ih (base + 4) h
+      exact ⟨k + 1, by simp [List.length]; omega, by rw [haddr]; exact (ofProg_addr_succ base k).symm⟩
+
+/-- Two ofProg blocks at non-overlapping address ranges are disjoint.
+    Only requires the address-inequality predicate, not list expansion. -/
+theorem CodeReq.ofProg_disjoint_range (base1 : Addr) (prog1 : List Instr)
+    (base2 : Addr) (prog2 : List Instr)
+    (h : ∀ k1 k2, k1 < prog1.length → k2 < prog2.length →
+      base1 + BitVec.ofNat 64 (4 * k1) ≠ base2 + BitVec.ofNat 64 (4 * k2)) :
+    CodeReq.Disjoint (CodeReq.ofProg base1 prog1) (CodeReq.ofProg base2 prog2) := by
+  intro a
+  by_cases h1 : (CodeReq.ofProg base1 prog1) a = none
+  · left; exact h1
+  · right
+    -- h1 : ¬ ... = none, so ∃ i, ... = some i
+    match hsome : (CodeReq.ofProg base1 prog1) a with
+    | none => exact absurd hsome h1
+    | some i =>
+      obtain ⟨k1, hk1, haddr⟩ := CodeReq.ofProg_some_range base1 prog1 a i hsome
+      apply CodeReq.ofProg_none_range
+      intro k2 hk2
+      rw [haddr]
+      exact h k1 k2 hk1 hk2
+
 theorem CodeReq.union_satisfiedBy (cr1 cr2 : CodeReq) (s : MachineState)
     (hd : cr1.Disjoint cr2) :
     (cr1.union cr2).SatisfiedBy s ↔ cr1.SatisfiedBy s ∧ cr2.SatisfiedBy s := by

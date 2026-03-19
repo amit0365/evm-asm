@@ -230,11 +230,57 @@ def mkIdLambda (p : Expr) : MetaM Expr := do
     withLocalDeclD `hp (mkApp p h) fun hp =>
       mkLambdaFVars #[h, hp] hp
 
+/-- Extract the byte offset from an address expression.
+    - `base + lit` → `some (base, lit_val)`
+    - `base` → `some (base, 0)`
+    Does NOT use extractBaseAndOffset to avoid coupling. -/
+private def getAddrOffset? (e : Expr) : Option (Expr × Nat) :=
+  if e.isAppOfArity ``HAdd.hAdd 6 then
+    let base := e.getAppArgs[4]!
+    let rhs := e.getAppArgs[5]!
+    if let some k := getBvLitVal? rhs then some (base, k) else none
+  else some (e, 0)
+
+/-- Count the length of a concrete List expression via whnf. -/
+private partial def countListLength (list : Expr) : MetaM Nat := do
+  let w ← whnf list
+  if w.isAppOfArity ``List.cons 3 then
+    return 1 + (← countListLength w.getAppArgs[2]!)
+  else return 0
+
+/-- Build a proof of `Disjoint (ofProg base1 prog1) (ofProg base2 prog2)` using
+    range arithmetic: if address ranges don't overlap, apply `ofProg_disjoint_range`
+    and close the address inequality with `bv_omega`. O(1) in program size. -/
+private def buildOfProgDisjointRange (cr1 cr2 : Expr) : MetaM Expr := do
+  let base1 := cr1.getAppArgs[0]!
+  let prog1 := cr1.getAppArgs[1]!
+  let base2 := cr2.getAppArgs[0]!
+  let prog2 := cr2.getAppArgs[1]!
+  -- Extract shared base + offsets
+  let some (_, off1) := getAddrOffset? base1 | throwError "ofProg range: can't extract offset from {base1}"
+  let some (_, off2) := getAddrOffset? base2 | throwError "ofProg range: can't extract offset from {base2}"
+  -- Compute lengths
+  let n1 ← countListLength prog1
+  let n2 ← countListLength prog2
+  -- Quick check: ranges don't overlap (fail fast before expensive tactic call)
+  unless off1 + 4 * n1 ≤ off2 ∨ off2 + 4 * n2 ≤ off1 do
+    throwError "ofProg range: address ranges overlap"
+  -- Build proof via tactic: apply ofProg_disjoint_range, then bv_omega closes each inequality
+  let disjType := mkApp2 (mkConst ``EvmAsm.Rv64.CodeReq.Disjoint) cr1 cr2
+  let mvar ← mkFreshExprMVar disjType
+  let stx ← `(tactic|
+    apply CodeReq.ofProg_disjoint_range
+    intro k1 k2 hk1 hk2
+    bv_omega)
+  runTacticSilent mvar.mvarId! stx
+  instantiateMVars mvar
+
 /-- Build a proof of `CodeReq.Disjoint cr1 cr2` by structural recursion on cr1, cr2.
     Handles the common cases:
     - empty vs anything
     - singleton vs singleton (uses bv_omega to prove addresses differ)
     - union vs anything (recursive)
+    - ofProg vs ofProg (range-based, O(1))
     Falls back to the `decide` tactic for unknown structures. -/
 partial def buildDisjointProof (cr1 cr2 : Expr) : MetaM Expr :=
   withTraceNode `runBlock.perf.extend (fun _ => return m!"buildDisjointProof") do
@@ -273,6 +319,13 @@ partial def buildDisjointProof (cr1 cr2 : Expr) : MetaM Expr :=
     let hd1 ← buildDisjointProof cr1 sub1
     let hd2 ← buildDisjointProof cr1 sub2
     return ← mkAppM ``EvmAsm.Rv64.CodeReq.Disjoint.union_right #[hd1, hd2]
+  -- Case: both sides are ofProg → range-based disjointness (O(1))
+  if cr1.isAppOfArity ``EvmAsm.Rv64.CodeReq.ofProg 2 &&
+     cr2.isAppOfArity ``EvmAsm.Rv64.CodeReq.ofProg 2 then
+    try
+      let proof ← buildOfProgDisjointRange cr1 cr2
+      return proof
+    catch _ => (Pure.pure PUnit.unit : MetaM PUnit) -- fall through to element-wise
   -- Case: cr1 = ofProg base (i :: rest) → peel head singleton, recurse
   if cr1.isAppOfArity ``EvmAsm.Rv64.CodeReq.ofProg 2 then
     let base := cr1.getAppArgs[0]!
@@ -441,17 +494,6 @@ def buildMonoProofDirect (oldCr : Expr) (chain : Array (Expr × Expr × Expr))
   -- accepts this as a proof for singleton specAddr specInstr ⊆ chainCr.
   return some (mkAppN (mkConst ``EvmAsm.Rv64.CodeReq.singleton_mono)
     #[matchAddr, matchInstr, chainCr, crProof])
-
-/-- Extract the byte offset from an address expression.
-    - `base + lit` → `some (base, lit_val)`
-    - `base` → `some (base, 0)`
-    Does NOT use extractBaseAndOffset to avoid coupling. -/
-private def getAddrOffset? (e : Expr) : Option (Expr × Nat) :=
-  if e.isAppOfArity ``HAdd.hAdd 6 then
-    let base := e.getAppArgs[4]!
-    let rhs := e.getAppArgs[5]!
-    if let some k := getBvLitVal? rhs then some (base, k) else none
-  else some (e, 0)
 
 /-- Walk a concrete `List Instr` expression and find the index of a matching instruction.
     Returns `(index, listLength)` for the first match. Also verifies the address offset. -/
