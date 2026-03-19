@@ -499,30 +499,36 @@ For a zkVM EVM implementation optimizing for prover cost on **riscv64**:
 ## Verification Status
 
 A key advantage of evm-asm over compiled Rust is **machine-checked correctness proofs**.
-Each opcode has a formal specification (pre/postcondition in separation logic) and a
+Proved opcodes have a formal specification (pre/postcondition in separation logic) and a
 Lean 4 proof that the assembly implements it correctly. The entire codebase compiles
 with **0 sorry** (no proof gaps).
 
-### Proved Opcodes (52 total, 0 sorry)
+### Proved Opcodes (14 total, 0 sorry)
 
-| Category | Opcodes | Proof lines | Status |
-|----------|---------|------------|--------|
-| Arithmetic | ADD, SUB, MUL, SIGNEXTEND | ~1,100 | Fully proved |
-| Bitwise | AND, OR, XOR, NOT, BYTE | ~900 | Fully proved |
-| Shift | SHR, SHL, SAR | ~1,600 | Fully proved |
-| Comparison | LT, GT, EQ, ISZERO, SLT, SGT | ~1,200 | Fully proved |
-| Stack | POP, PUSH0, DUP1-16, SWAP1-16 | ~700 | Fully proved |
+| Category | Opcodes | Status |
+|----------|---------|--------|
+| Arithmetic | ADD, SUB, MUL, SIGNEXTEND | Fully proved |
+| Bitwise | AND, OR, XOR, NOT | Fully proved |
+| Comparison | LT, GT, EQ, ISZERO, SLT, SGT | Fully proved |
+
+### Programs Without Full Specs
+
+| Category | Opcodes | Status |
+|----------|---------|--------|
+| Shift | SHR, SHL, SAR | Programs + tests only (specs pending recreation) |
+| Byte | BYTE | Program + tests only (spec pending recreation) |
+| Stack | POP, PUSH0, DUP1-16, SWAP1-16 | Programs removed; trivially verifiable by inspection |
 
 ### DIV/MOD Verification (in progress, 0 sorry for completed specs)
 
 DIV/MOD are the most complex opcodes (316 instructions each, Knuth Algorithm D). The
 verification uses a hierarchical decomposition:
 
-- **Building-block specs** (`DivModSpec.lean`, 3,135 lines): 69 theorems covering every
+- **Building-block specs** (`DivModSpec.lean`, 3,101 lines): 69 theorems covering every
   phase of the algorithm — zero path, Phase A/B, normalization, CLZ, loop body
   (mulsub, addback, trial division, correction), denormalization, epilogue, and the
   49-instruction div128 subroutine (5 composable blocks).
-- **Hierarchical composition** (`DivModCompose.lean`, 938 lines): 85 theorems composing
+- **Hierarchical composition** (`DivModCompose.lean`, 920 lines): 85 theorems composing
   building blocks into program-level specs using `progAt` to work around Lean's WHNF
   scaling limits. Completed compositions:
   - `evm_div_bzero_spec` / `evm_mod_bzero_spec`: b=0 path (Phase A → BEQ taken → zero)
@@ -532,13 +538,15 @@ verification uses a hierarchical decomposition:
 - **Remaining**: Phase B cascade variants (n=1,2,3), full loop invariant, subroutine
   call/return framing, path merging across all divisor sizes.
 
-### Proof Architecture: CodeReq Pattern
+### Proof Architecture: CodeReq + ofProg Pattern
 
-All 19 Evm64 opcode files use the **CodeReq** (Code Requirement) pattern, where
+All Evm64 opcode specs use the **CodeReq** (Code Requirement) pattern, where
 instruction memory is a persistent side-condition on `cpsTriple` rather than an
 assertion in pre/postconditions. This eliminates O(N) code atoms from separation logic
 permutation searches, giving O(N²) improvement for large programs (e.g., 90-instruction
-SHR). The migration was completed across all files with zero regressions.
+SHR). Specs are further migrating from manual singleton `CodeReq` chains to
+**`CodeReq.ofProg`**, which derives the requirement from a program definition with
+O(1) range-based disjointness checking (instead of O(n) per-atom expansion).
 
 ## Reproduction
 
@@ -566,16 +574,14 @@ with open('target/riscv64gc-unknown-none-elf/release/deps/u256_asm_compare-*.s')
 
 ### evm-asm source
 Located in `EvmAsm/Evm64/`:
-- `Add.lean`, `Sub.lean` — ADD (30), SUB (30)
-- `Multiply.lean`, `MultiplySpec.lean` — MUL (63) + full spec
+- `Add.lean`, `Sub.lean` — ADD (30), SUB (30) + full specs
+- `Multiply.lean`, `MultiplySpec.lean` — MUL (63) + full spec (ofProg)
 - `DivMod.lean` — DIV (~316), MOD (~316) programs + tests
-- `DivModSpec.lean` — 69 building-block CPS specs (3,135 lines)
-- `DivModCompose.lean` — 85 hierarchical composition theorems (938 lines)
-- `And.lean`, `Or.lean`, `Xor.lean`, `Not.lean` — Bitwise (17/17/17/12)
-- `Lt.lean`, `Gt.lean`, `Eq.lean`, `IsZero.lean` — Comparison (26/26/21/12)
-- `Slt.lean`, `Sgt.lean` — Signed comparison (25/25)
-- `Shift.lean` — SHR (90), SHL (90), SAR (95)
-- `ShiftSpec.lean`, `ShlSpec.lean`, `SarSpec.lean` — Full shift specs
-- `Byte.lean`, `ByteSpec.lean` — BYTE (45) + full spec
+- `DivModSpec.lean` — 69 building-block CPS specs (3,101 lines)
+- `DivModCompose.lean` — 85 hierarchical composition theorems (920 lines)
+- `And.lean`, `Or.lean`, `Xor.lean`, `Not.lean` — Bitwise (17/17/17/12) + full specs
+- `Lt.lean`, `Gt.lean`, `Eq.lean`, `IsZero.lean` — Comparison (26/26/21/12) + full specs
+- `Slt.lean`, `Sgt.lean` — Signed comparison (25/25) + full specs
+- `Shift.lean` — SHR (90), SHL (90), SAR (95) programs only (specs pending recreation)
+- `Byte.lean` — BYTE (45) program only (spec pending recreation)
 - `SignExtend.lean`, `SignExtendSpec.lean` — SIGNEXTEND (48) + full spec
-- `StackOps.lean` — POP (1), PUSH0 (5), DUP1-16 (9), SWAP1-16 (16)
