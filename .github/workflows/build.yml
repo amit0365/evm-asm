@@ -16,3 +16,4 @@ jobs:
         with:
           use-mathlib-cache: true
           lake-package-directory: .
+          use-github-cache: false
