@@ -8,6 +8,7 @@
 -/
 
 import EvmAsm.Evm64.ShrSpec
+import Mathlib.Tactic.Set
 
 open EvmAsm.Rv64.Tactics
 
@@ -614,11 +615,331 @@ theorem evm_shr_body_evmWord_spec (sp base : Addr)
       ((.x12 ↦ᵣ (sp + 32)) ** (regOwn .x5) ** (.x0 ↦ᵣ (0 : Word)) ** (regOwn .x10) **
        (regOwn .x6) ** (regOwn .x7) ** (regOwn .x11) **
        evmWordIs sp shift ** evmWordIs (sp + 32) (value >>> shift.toNat)) := by
-  -- The body composition + bitvector bridge.
-  -- Both components are individually proved:
-  -- 1. Body composition: Phase A ntaken → B → C → bodies (commit 4bd9349)
-  -- 2. Bitvector bridge: getLimb_ushiftRight in Basic.lean
-  -- Connecting them requires ~200 lines. Left as sorry for now.
-  sorry
+  -- Abbreviate shift/value/result limbs
+  set s0 := shift.getLimb 0
+  set s1 := shift.getLimb 1
+  set s2 := shift.getLimb 2
+  set s3 := shift.getLimb 3
+  set v0 := value.getLimb 0
+  set v1 := value.getLimb 1
+  set v2 := value.getLimb 2
+  set v3 := value.getLimb 3
+  set result := value >>> shift.toNat
+  -- Reduce evmWordIs to raw memIs using suffices
+  suffices h_raw : cpsTriple base (base + 360) (shrCode base)
+      ((.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ r5) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ r10) **
+       (.x6 ↦ᵣ r6) ** (.x7 ↦ᵣ r7) ** (.x11 ↦ᵣ r11) **
+       (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
+       ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3))
+      ((.x12 ↦ᵣ (sp + 32)) ** (regOwn .x5) ** (.x0 ↦ᵣ (0 : Word)) ** (regOwn .x10) **
+       (regOwn .x6) ** (regOwn .x7) ** (regOwn .x11) **
+       (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
+       ((sp + 32) ↦ₘ getLimb result 0) ** ((sp + 40) ↦ₘ getLimb result 1) **
+       ((sp + 48) ↦ₘ getLimb result 2) ** ((sp + 56) ↦ₘ getLimb result 3)) by
+    exact cpsTriple_consequence _ _ _ _ _ _ _
+      (fun h hp => by
+        unfold evmWordIs at hp
+        simp only [show (sp + 32 : Addr) + 8 = sp + 40 from by bv_omega,
+                   show (sp + 32 : Addr) + 16 = sp + 48 from by bv_omega,
+                   show (sp + 32 : Addr) + 24 = sp + 56 from by bv_omega] at hp
+        xperm_hyp hp)
+      (fun h hq => by
+        unfold evmWordIs
+        simp only [show (sp + 32 : Addr) + 8 = sp + 40 from by bv_omega,
+                   show (sp + 32 : Addr) + 16 = sp + 48 from by bv_omega,
+                   show (sp + 32 : Addr) + 24 = sp + 56 from by bv_omega]
+        xperm_hyp hq)
+      h_raw
+  -- Now prove h_raw in flat raw memIs form
+  -- Memory validity
+  have hv0 : isValidDwordAccess sp = true := by
+    have := hvalid.get (i := 0) (by omega); simpa using this
+  have hv8 : isValidDwordAccess (sp + 8) = true := by
+    have := hvalid.get (i := 1) (by omega); simpa using this
+  have hv16 : isValidDwordAccess (sp + 16) = true := by
+    have := hvalid.get (i := 2) (by omega); simpa using this
+  have hv24 : isValidDwordAccess (sp + 24) = true := by
+    have := hvalid.get (i := 3) (by omega); simpa using this
+  have hv32 : ValidMemRange (sp + 32) 4 := validMem_value_portion hvalid
+  -- Address normalization for sp+32 region
+  have ha40 : sp + 40 = (sp + 32 : Addr) + 8 := by bv_omega
+  have ha48 : sp + 48 = (sp + 32 : Addr) + 16 := by bv_omega
+  have ha56 : sp + 56 = (sp + 32 : Addr) + 24 := by bv_omega
+  -- Phase A: linear chain base -> base+36
+  have h1 := cpsTriple_extend_code (ld_s1_sub_shrCode base)
+    (ld_spec_gen .x5 .x12 sp r5 s1 8 base (by nofun) (by simp only [signExtend12_8]; exact hv8))
+  simp only [signExtend12_8] at h1
+  have h2 := cpsTriple_extend_code (ld_or_16_sub_shrCode base)
+    (shr_ld_or_acc_spec sp s1 r10 s2 16 (base + 4) (by simp only [signExtend12_16]; exact hv16))
+  simp only [signExtend12_16] at h2; rw [shr_off_4] at h2
+  have h3 := cpsTriple_extend_code (ld_or_24_sub_shrCode base)
+    (shr_ld_or_acc_spec sp (s1 ||| s2) s2 s3 24 (base + 12) (by simp only [signExtend12_24]; exact hv24))
+  simp only [signExtend12_24] at h3; rw [shr_off_12] at h3
+  have h1f := cpsTriple_frame_left base (base + 4) _ _ _
+    ((.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ r10) ** (.x6 ↦ᵣ r6) ** (.x7 ↦ᵣ r7) ** (.x11 ↦ᵣ r11) **
+     (sp ↦ₘ s0) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
+     ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3))
+    (by pcFree) h1
+  have h2f := cpsTriple_frame_left (base + 4) (base + 12) _ _ _
+    ((.x0 ↦ᵣ (0 : Word)) ** (.x6 ↦ᵣ r6) ** (.x7 ↦ᵣ r7) ** (.x11 ↦ᵣ r11) **
+     (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 24) ↦ₘ s3) **
+     ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3))
+    (by pcFree) h2
+  have h12 := cpsTriple_seq_with_perm_same_cr base (base + 4) (base + 12) _ _ _ _ _
+    (fun h hp => by xperm_hyp hp) h1f h2f
+  have h3f := cpsTriple_frame_left (base + 12) (base + 20) _ _ _
+    ((.x0 ↦ᵣ (0 : Word)) ** (.x6 ↦ᵣ r6) ** (.x7 ↦ᵣ r7) ** (.x11 ↦ᵣ r11) **
+     (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) **
+     ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3))
+    (by pcFree) h3
+  have h123 := cpsTriple_seq_with_perm_same_cr base (base + 12) (base + 20) _ _ _ _ _
+    (fun h hp => by xperm_hyp hp) h12 h3f
+  -- BNE at base+20: eliminate TAKEN (s1|||s2|||s3=0 contradicts ne 0)
+  have hbne_raw := bne_spec_gen .x5 .x0 320 (s1 ||| s2 ||| s3) (0 : Word) (base + 20)
+  rw [shr_bne_target, shr_off_20] at hbne_raw
+  have hbne := cpsBranch_extend_code (bne_sub_shrCode base) hbne_raw
+  have hbne_ntaken := cpsBranch_elim_ntaken_strip_pure2 _ _ _ _ _ _ _ _ _ hbne
+    (fun hp hQt => by
+      obtain ⟨_, _, _, _, _, h_rest⟩ := hQt
+      exact ((sepConj_pure_right _ _ _).mp h_rest).2 hhigh_zero)
+  have hbne_framed := cpsTriple_frame_left (base + 20) (base + 24) _ _ _
+    ((.x12 ↦ᵣ sp) ** (.x10 ↦ᵣ s3) ** (.x6 ↦ᵣ r6) ** (.x7 ↦ᵣ r7) ** (.x11 ↦ᵣ r11) **
+     (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
+     ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3))
+    (by pcFree) hbne_ntaken
+  have h1234 := cpsTriple_seq_with_perm_same_cr base (base + 20) (base + 24) _ _ _ _ _
+    (fun h hp => by xperm_hyp hp) h123 hbne_framed
+  -- LD x5 x12 0 at base+24
+  have hld_raw := ld_spec_gen .x5 .x12 sp (s1 ||| s2 ||| s3) s0 0 (base + 24) (by nofun)
+    (by simp only [signExtend12_0]; rw [show sp + (0 : Word) = sp from by bv_omega]; exact hv0)
+  simp only [signExtend12_0] at hld_raw
+  rw [show sp + (0 : Word) = sp from by bv_omega, shr_off_24] at hld_raw
+  have hld := cpsTriple_extend_code (ld_s0_sub_shrCode base) hld_raw
+  -- SLTIU at base+28
+  have hsltiu_raw := sltiu_spec_gen .x10 .x5 s3 s0 256 (base + 28) (by nofun)
+  rw [shr_off_28] at hsltiu_raw
+  have hsltiu := cpsTriple_extend_code (sltiu_sub_shrCode base) hsltiu_raw
+  have hld_f := cpsTriple_frame_left (base + 24) (base + 28) _ _ _
+    ((.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ s3) ** (.x6 ↦ᵣ r6) ** (.x7 ↦ᵣ r7) ** (.x11 ↦ᵣ r11) **
+     ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
+     ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3))
+    (by pcFree) hld
+  have hsltiu_f := cpsTriple_frame_left (base + 28) (base + 32) _ _ _
+    ((.x12 ↦ᵣ sp) ** (.x0 ↦ᵣ (0 : Word)) ** (.x6 ↦ᵣ r6) ** (.x7 ↦ᵣ r7) ** (.x11 ↦ᵣ r11) **
+     (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
+     ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3))
+    (by pcFree) hsltiu
+  have h56 := cpsTriple_seq_with_perm_same_cr (base + 24) (base + 28) (base + 32) _ _ _ _ _
+    (fun h hp => by xperm_hyp hp) hld_f hsltiu_f
+  have h123456 := cpsTriple_seq_with_perm_same_cr base (base + 24) (base + 32) _ _ _ _ _
+    (fun h hp => by xperm_hyp hp) h1234 h56
+  -- BEQ at base+32: eliminate TAKEN (sltiu_val=1 since s0<256, so 1=0 is absurd)
+  let sltiu_val := (if BitVec.ult s0 (signExtend12 (256 : BitVec 12)) then (1 : Word) else (0 : Word))
+  have hsltiu_eq : sltiu_val = (1 : Word) := by simp only [sltiu_val, hlt_s0]; decide
+  have hbeq_raw := beq_spec_gen .x10 .x0 308 sltiu_val (0 : Word) (base + 32)
+  rw [shr_beq_target, shr_off_32] at hbeq_raw
+  have hbeq := cpsBranch_extend_code (beq_sub_shrCode base) hbeq_raw
+  have hbeq_ntaken := cpsBranch_elim_ntaken_strip_pure2 _ _ _ _ _ _ _ _ _ hbeq
+    (fun hp hQt => by
+      obtain ⟨_, _, _, _, _, h_rest⟩ := hQt
+      have heq := ((sepConj_pure_right _ _ _).mp h_rest).2
+      simp [hsltiu_eq] at heq)
+  have hbeq_framed := cpsTriple_frame_left (base + 32) (base + 36) _ _ _
+    ((.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ s0) ** (.x6 ↦ᵣ r6) ** (.x7 ↦ᵣ r7) ** (.x11 ↦ᵣ r11) **
+     (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
+     ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3))
+    (by pcFree) hbeq_ntaken
+  have hphaseA := cpsTriple_seq_with_perm_same_cr base (base + 32) (base + 36) _ _ _ _ _
+    (fun h hp => by xperm_hyp hp) h123456 hbeq_framed
+  -- Phase B: base+36 -> base+64
+  let bit_shift := s0 &&& signExtend12 63
+  let limb_shift := s0 >>> (6 : BitVec 6).toNat
+  let cond := if BitVec.ult (0 : Word) bit_shift then (1 : Word) else 0
+  let mask := (0 : Word) - cond
+  let anti_shift := (64 : Word) - bit_shift
+  have hphaseB_raw := shr_phase_b_spec s0 sp r6 r7 r11 (base + 36)
+  have hphaseB := cpsTriple_extend_code (phase_b_sub_shrCode base) hphaseB_raw
+  rw [shr_off_36_28] at hphaseB
+  rw [shr_off_sp32] at hphaseB
+  have hphaseB_f := cpsTriple_frame_left (base + 36) (base + 64) _ _ _
+    ((.x10 ↦ᵣ sltiu_val) **
+     (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
+     ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3))
+    (by pcFree) hphaseB
+  have hphaseAB := cpsTriple_seq_with_perm_same_cr base (base + 36) (base + 64) _ _ _ _ _
+    (fun h hp => by xperm_hyp hp) hphaseA hphaseB_f
+  -- Phase C: cascade dispatch at base+64
+  have hphaseC_raw := shr_phase_c_spec limb_shift sltiu_val (base + 64)
+    (base + 240) (base + 164) (base + 112) (base + 84)
+    (shr_c_e0 base) (shr_c_e1 base) (shr_c_e2 base) (shr_c_e3 base)
+  have hphaseC := cpsNBranch_extend_code (phase_c_sub_shrCode base) hphaseC_raw
+  -- Body specs extended to shrCode
+  have hbody3 := cpsTriple_extend_code (body_3_sub_shrCode base)
+    (shr_body_3_spec (sp + 32) limb_shift ((0 : Word) + signExtend12 2) bit_shift anti_shift mask
+      v0 v1 v2 v3 (base + 84) (base + 360) 252 (shr_body3_exit base) hv32)
+  have hbody2 := cpsTriple_extend_code (body_2_sub_shrCode base)
+    (shr_body_2_spec (sp + 32) limb_shift ((0 : Word) + signExtend12 2) bit_shift anti_shift mask
+      v0 v1 v2 v3 (base + 112) (base + 360) 200 (shr_body2_exit base) hv32)
+  have hbody1 := cpsTriple_extend_code (body_1_sub_shrCode base)
+    (shr_body_1_spec (sp + 32) limb_shift ((0 : Word) + signExtend12 1) bit_shift anti_shift mask
+      v0 v1 v2 v3 (base + 164) (base + 360) 124 (shr_body1_exit base) hv32)
+  have hbody0 := cpsTriple_extend_code (body_0_sub_shrCode base)
+    (shr_body_0_spec (sp + 32) limb_shift sltiu_val bit_shift anti_shift mask
+      v0 v1 v2 v3 (base + 240) (base + 360) 24 (shr_body0_exit base) hv32)
+  -- Frame each body with (x0=0 ** shift_mem)
+  have hbody3_f := cpsTriple_frame_left (base + 84) (base + 360) _ _ _
+    ((.x0 ↦ᵣ (0 : Word)) ** (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3))
+    (by pcFree) hbody3
+  have hbody2_f := cpsTriple_frame_left (base + 112) (base + 360) _ _ _
+    ((.x0 ↦ᵣ (0 : Word)) ** (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3))
+    (by pcFree) hbody2
+  have hbody1_f := cpsTriple_frame_left (base + 164) (base + 360) _ _ _
+    ((.x0 ↦ᵣ (0 : Word)) ** (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3))
+    (by pcFree) hbody1
+  have hbody0_f := cpsTriple_frame_left (base + 240) (base + 360) _ _ _
+    ((.x0 ↦ᵣ (0 : Word)) ** (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3))
+    (by pcFree) hbody0
+  have ha40' : (sp + 32 : Addr) + 8 = sp + 40 := by bv_omega
+  have ha48' : (sp + 32 : Addr) + 16 = sp + 48 := by bv_omega
+  have ha56' : (sp + 32 : Addr) + 24 = sp + 56 := by bv_omega
+  simp only [ha40', ha48', ha56'] at hbody3_f hbody2_f hbody1_f hbody0_f
+  -- Helper: weaken regs to regOwn while keeping concrete mem values
+  -- For each body, we keep the concrete memory values and weaken regs to regOwn
+  have body_post_weaken : ∀ (r5v r6v r7v r10v r11v m32 m40 m48 m56 : Word),
+      ∀ h, ((.x12 ↦ᵣ (sp + 32)) ** (.x5 ↦ᵣ r5v) ** (.x6 ↦ᵣ r6v) ** (.x7 ↦ᵣ r7v) **
+            (.x10 ↦ᵣ r10v) ** (.x11 ↦ᵣ r11v) **
+            ((sp + 32) ↦ₘ m32) ** ((sp + 40) ↦ₘ m40) ** ((sp + 48) ↦ₘ m48) ** ((sp + 56) ↦ₘ m56) **
+            (.x0 ↦ᵣ (0 : Word)) ** (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3)) h →
+           ((.x12 ↦ᵣ (sp + 32)) ** (regOwn .x5) ** (.x0 ↦ᵣ (0 : Word)) ** (regOwn .x10) **
+            (regOwn .x6) ** (regOwn .x7) ** (regOwn .x11) **
+            (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
+            ((sp + 32) ↦ₘ m32) ** ((sp + 40) ↦ₘ m40) ** ((sp + 48) ↦ₘ m48) ** ((sp + 56) ↦ₘ m56)) h := by
+    intro r5v r6v r7v r10v r11v m32 m40 m48 m56 h hp
+    have w1 := sepConj_mono_right (sepConj_mono_left (regIs_to_regOwn .x5 _)) h hp
+    have w2 := sepConj_mono_right (sepConj_mono_right (sepConj_mono_left (regIs_to_regOwn .x6 _))) h w1
+    have w3 := sepConj_mono_right (sepConj_mono_right (sepConj_mono_right (sepConj_mono_left (regIs_to_regOwn .x7 _)))) h w2
+    have w4 := sepConj_mono_right (sepConj_mono_right (sepConj_mono_right (sepConj_mono_right (sepConj_mono_left (regIs_to_regOwn .x10 _))))) h w3
+    have w5 := sepConj_mono_right (sepConj_mono_right (sepConj_mono_right (sepConj_mono_right (sepConj_mono_right (sepConj_mono_left (regIs_to_regOwn .x11 _)))))) h w4
+    exact (congrFun (show _ = _ from by xperm) h).mp w5
+  -- Apply weakening to each body (keep concrete mem values)
+  have hbody0_w := cpsTriple_consequence _ _ _ _ _ _ _
+    (fun h hp => hp) (fun h hq => body_post_weaken _ _ _ _ _ _ _ _ _ h (by xperm_hyp hq)) hbody0_f
+  have hbody1_w := cpsTriple_consequence _ _ _ _ _ _ _
+    (fun h hp => hp) (fun h hq => body_post_weaken _ _ _ _ _ _ _ _ _ h (by xperm_hyp hq)) hbody1_f
+  have hbody2_w := cpsTriple_consequence _ _ _ _ _ _ _
+    (fun h hp => hp) (fun h hq => body_post_weaken _ _ _ _ _ _ _ _ _ h (by xperm_hyp hq)) hbody2_f
+  have hbody3_w := cpsTriple_consequence _ _ _ _ _ _ _
+    (fun h hp => hp) (fun h hq => body_post_weaken _ _ _ _ _ _ _ _ _ h (by xperm_hyp hq)) hbody3_f
+  -- Define the result limbs for each body path
+  -- Body 3 (limb_shift=3): result = [v3>>>bs, 0, 0, 0]
+  -- Body 2 (limb_shift=2): result = [(v2>>>bs)||((v3<<<as)&&&mask), v3>>>bs, 0, 0]
+  -- Body 1 (limb_shift=1): result = [(v1>>>bs)||((v2<<<as)&&&mask), (v2>>>bs)||((v3<<<as)&&&mask), v3>>>bs, 0]
+  -- Body 0 (limb_shift=0): result = [(v0>>>bs)||((v1<<<as)&&&mask), (v1>>>bs)||((v2<<<as)&&&mask), (v2>>>bs)||((v3<<<as)&&&mask), v3>>>bs]
+  -- where bs = bit_shift.toNat % 64, as = anti_shift.toNat % 64
+  -- The common postcondition for all bodies: regs weakened + shift preserved + concrete result
+  -- We use cpsTriple_consequence to unify all body postconditions to the single evmWordIs form
+  -- First: bitvector bridge - show body results equal (value >>> shift.toNat).getLimb i
+  -- This requires getLimb_ushiftRight + connecting s0/bit_shift/anti_shift/mask to shift.toNat
+  -- We leave these as sorry for now (pure bitvector arithmetic)
+  -- Bridge: each body's output limbs = getLimb result i
+  -- The bridge lemma needs: shift.toNat / 64 = limb_shift.toNat (when < 4)
+  -- and shift.toNat % 64 = bit_shift.toNat % 64
+  -- For body L, limb_shift.toNat = L (established by Phase C dispatch)
+  -- We'll use cpsTriple_consequence on each weakened body to rewrite mem values
+  -- Helper to strengthen body0 postcondition to use result limbs
+  have hbody0_ev : cpsTriple (base + 240) (base + 360) (shrCode base)
+      ((.x5 ↦ᵣ limb_shift) ** (.x6 ↦ᵣ bit_shift) ** (.x0 ↦ᵣ (0 : Word)) **
+       (.x11 ↦ᵣ mask) ** (.x7 ↦ᵣ anti_shift) ** (.x12 ↦ᵣ (sp + 32)) **
+       (.x10 ↦ᵣ sltiu_val) **
+       (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
+       ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3))
+      ((.x12 ↦ᵣ (sp + 32)) ** (regOwn .x5) ** (.x0 ↦ᵣ (0 : Word)) ** (regOwn .x10) **
+       (regOwn .x6) ** (regOwn .x7) ** (regOwn .x11) **
+       (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
+       ((sp + 32) ↦ₘ getLimb result 0) ** ((sp + 40) ↦ₘ getLimb result 1) **
+       ((sp + 48) ↦ₘ getLimb result 2) ** ((sp + 56) ↦ₘ getLimb result 3)) :=
+    cpsTriple_consequence _ _ _ _ _ _ _
+      (fun h hp => by xperm_hyp hp) (fun h hq => by
+        -- body0 produces: (v0>>>bs)|((v1<<<as)&mask), (v1>>>bs)|((v2<<<as)&mask), (v2>>>bs)|((v3<<<as)&mask), v3>>>bs
+        -- Need to show these = getLimb result 0..3
+        -- This is pure bitvector arithmetic via getLimb_ushiftRight
+        sorry) hbody0_w
+  have hbody1_ev : cpsTriple (base + 164) (base + 360) (shrCode base)
+      ((.x5 ↦ᵣ limb_shift) ** (.x6 ↦ᵣ bit_shift) ** (.x0 ↦ᵣ (0 : Word)) **
+       (.x11 ↦ᵣ mask) ** (.x7 ↦ᵣ anti_shift) ** (.x12 ↦ᵣ (sp + 32)) **
+       (.x10 ↦ᵣ ((0 : Word) + signExtend12 1)) **
+       (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
+       ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3))
+      ((.x12 ↦ᵣ (sp + 32)) ** (regOwn .x5) ** (.x0 ↦ᵣ (0 : Word)) ** (regOwn .x10) **
+       (regOwn .x6) ** (regOwn .x7) ** (regOwn .x11) **
+       (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
+       ((sp + 32) ↦ₘ getLimb result 0) ** ((sp + 40) ↦ₘ getLimb result 1) **
+       ((sp + 48) ↦ₘ getLimb result 2) ** ((sp + 56) ↦ₘ getLimb result 3)) :=
+    cpsTriple_consequence _ _ _ _ _ _ _
+      (fun h hp => by xperm_hyp hp) (fun h hq => by sorry) hbody1_w
+  have hbody2_ev : cpsTriple (base + 112) (base + 360) (shrCode base)
+      ((.x5 ↦ᵣ limb_shift) ** (.x6 ↦ᵣ bit_shift) ** (.x0 ↦ᵣ (0 : Word)) **
+       (.x11 ↦ᵣ mask) ** (.x7 ↦ᵣ anti_shift) ** (.x12 ↦ᵣ (sp + 32)) **
+       (.x10 ↦ᵣ ((0 : Word) + signExtend12 2)) **
+       (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
+       ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3))
+      ((.x12 ↦ᵣ (sp + 32)) ** (regOwn .x5) ** (.x0 ↦ᵣ (0 : Word)) ** (regOwn .x10) **
+       (regOwn .x6) ** (regOwn .x7) ** (regOwn .x11) **
+       (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
+       ((sp + 32) ↦ₘ getLimb result 0) ** ((sp + 40) ↦ₘ getLimb result 1) **
+       ((sp + 48) ↦ₘ getLimb result 2) ** ((sp + 56) ↦ₘ getLimb result 3)) :=
+    cpsTriple_consequence _ _ _ _ _ _ _
+      (fun h hp => by xperm_hyp hp) (fun h hq => by sorry) hbody2_w
+  have hbody3_ev : cpsTriple (base + 84) (base + 360) (shrCode base)
+      ((.x5 ↦ᵣ limb_shift) ** (.x6 ↦ᵣ bit_shift) ** (.x0 ↦ᵣ (0 : Word)) **
+       (.x11 ↦ᵣ mask) ** (.x7 ↦ᵣ anti_shift) ** (.x12 ↦ᵣ (sp + 32)) **
+       (.x10 ↦ᵣ ((0 : Word) + signExtend12 2)) **
+       (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
+       ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3))
+      ((.x12 ↦ᵣ (sp + 32)) ** (regOwn .x5) ** (.x0 ↦ᵣ (0 : Word)) ** (regOwn .x10) **
+       (regOwn .x6) ** (regOwn .x7) ** (regOwn .x11) **
+       (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
+       ((sp + 32) ↦ₘ getLimb result 0) ** ((sp + 40) ↦ₘ getLimb result 1) **
+       ((sp + 48) ↦ₘ getLimb result 2) ** ((sp + 56) ↦ₘ getLimb result 3)) :=
+    cpsTriple_consequence _ _ _ _ _ _ _
+      (fun h hp => by xperm_hyp hp) (fun h hq => by sorry) hbody3_w
+  -- Frame Phase C and merge with body specs
+  have hphaseC_framed := cpsNBranch_frame_left
+    (F := (.x6 ↦ᵣ bit_shift) ** (.x7 ↦ᵣ anti_shift) ** (.x11 ↦ᵣ mask) ** (.x12 ↦ᵣ (sp + 32)) **
+          (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
+          ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3))
+    (by pcFree) hphaseC
+  simp only [List.map] at hphaseC_framed
+  -- Use cpsNBranch_merge to compose Phase C + all bodies
+  have hphaseCD := cpsNBranch_merge (base + 64) (base + 360) (shrCode base) _ _ _ hphaseC_framed
+    (fun exit hmem => by
+      simp only [List.mem_cons, List.mem_nil_iff, or_false] at hmem
+      rcases hmem with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
+      · exact cpsTriple_consequence _ _ _ _ _ _ _
+          (fun h hp => by xperm_hyp hp) (fun _ hq => hq) hbody0_ev
+      · exact cpsTriple_consequence _ _ _ _ _ _ _
+          (fun h hp => by xperm_hyp hp) (fun _ hq => hq) hbody1_ev
+      · exact cpsTriple_consequence _ _ _ _ _ _ _
+          (fun h hp => by xperm_hyp hp) (fun _ hq => hq) hbody2_ev
+      · exact cpsTriple_consequence _ _ _ _ _ _ _
+          (fun h hp => by xperm_hyp hp) (fun _ hq => hq) hbody3_ev)
+  -- Flatten hphaseAB postcondition for composition via explicit type annotation
+  have hphaseAB' : cpsTriple base (base + 64) (shrCode base)
+      ((.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ r5) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ r10) **
+       (.x6 ↦ᵣ r6) ** (.x7 ↦ᵣ r7) ** (.x11 ↦ᵣ r11) **
+       (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
+       ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3))
+      ((.x5 ↦ᵣ limb_shift) ** (.x6 ↦ᵣ bit_shift) ** (.x0 ↦ᵣ (0 : Word)) **
+       (.x11 ↦ᵣ mask) ** (.x7 ↦ᵣ anti_shift) ** (.x12 ↦ᵣ (sp + 32)) **
+       (.x10 ↦ᵣ sltiu_val) **
+       (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
+       ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3)) :=
+    cpsTriple_consequence _ _ _ _ _ _ _
+      (fun h hp => by xperm_hyp hp)
+      (fun h hq => by xperm_hyp hq)
+      hphaseAB
+  -- Final: Phase AB -> Phase CD
+  exact cpsTriple_seq_with_perm_same_cr base (base + 64) (base + 360) _ _ _ _ _
+    (fun h hp => by xperm_hyp hp) hphaseAB' hphaseCD
 
 end EvmAsm.Rv64
