@@ -56,11 +56,11 @@ theorem shr_merge_limb_spec (src_off next_off dst_off : BitVec 12)
        (.x7 ↦ᵣ anti_shift) ** (.x10 ↦ᵣ shifted_next) ** (.x11 ↦ᵣ mask) **
        (mem_src ↦ₘ src) ** (mem_next ↦ₘ next) ** (mem_dst ↦ₘ result)) := by
   have L1 := ld_spec_gen .x5 .x12 sp v5 src src_off base (by nofun) hvalid_src
-  have SR := srl_spec_gen_rd_eq_rs1 .x5 .x6 src bit_shift (base + 4) (by nofun) (by nofun)
+  have SR := srl_spec_gen_rd_eq_rs1 .x5 .x6 src bit_shift (base + 4) (by nofun)
   have L2 := ld_spec_gen .x10 .x12 sp v10 next next_off (base + 8) (by nofun) hvalid_next
-  have SL := sll_spec_gen_rd_eq_rs1 .x10 .x7 next anti_shift (base + 12) (by nofun) (by nofun)
-  have AN := and_spec_gen_rd_eq_rs1 .x10 .x11 (next <<< (anti_shift.toNat % 64)) mask (base + 16) (by nofun) (by nofun)
-  have OR_ := or_spec_gen_rd_eq_rs1 .x5 .x10 (src >>> (bit_shift.toNat % 64)) ((next <<< (anti_shift.toNat % 64)) &&& mask) (base + 20) (by nofun) (by nofun)
+  have SL := sll_spec_gen_rd_eq_rs1 .x10 .x7 next anti_shift (base + 12) (by nofun)
+  have AN := and_spec_gen_rd_eq_rs1 .x10 .x11 (next <<< (anti_shift.toNat % 64)) mask (base + 16) (by nofun)
+  have OR_ := or_spec_gen_rd_eq_rs1 .x5 .x10 (src >>> (bit_shift.toNat % 64)) ((next <<< (anti_shift.toNat % 64)) &&& mask) (base + 20) (by nofun)
   have SD_ := sd_spec_gen .x12 .x5 sp ((src >>> (bit_shift.toNat % 64)) ||| ((next <<< (anti_shift.toNat % 64)) &&& mask)) dst_old dst_off (base + 24) hvalid_dst
   runBlock L1 SR L2 SL AN OR_ SD_
 
@@ -83,7 +83,7 @@ theorem shr_last_limb_spec (dst_off : BitVec 12)
       ((.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ result) ** (.x6 ↦ᵣ bit_shift) **
        (mem_src ↦ₘ src) ** (mem_dst ↦ₘ result)) := by
   have L := ld_spec_gen .x5 .x12 sp v5 src 24 base (by nofun) hvalid_src
-  have SR := srl_spec_gen_rd_eq_rs1 .x5 .x6 src bit_shift (base + 4) (by nofun) (by nofun)
+  have SR := srl_spec_gen_rd_eq_rs1 .x5 .x6 src bit_shift (base + 4) (by nofun)
   have SD_ := sd_spec_gen .x12 .x5 sp (src >>> (bit_shift.toNat % 64)) dst_old dst_off (base + 8) hvalid_dst
   runBlock L SR SD_
 
@@ -110,11 +110,11 @@ theorem shr_merge_limb_inplace_spec (off next_off : BitVec 12)
        (.x7 ↦ᵣ anti_shift) ** (.x10 ↦ᵣ shifted_next) ** (.x11 ↦ᵣ mask) **
        (mem_loc ↦ₘ result) ** (mem_next ↦ₘ next)) := by
   have L1 := ld_spec_gen .x5 .x12 sp v5 src off base (by nofun) hvalid_loc
-  have SR := srl_spec_gen_rd_eq_rs1 .x5 .x6 src bit_shift (base + 4) (by nofun) (by nofun)
+  have SR := srl_spec_gen_rd_eq_rs1 .x5 .x6 src bit_shift (base + 4) (by nofun)
   have L2 := ld_spec_gen .x10 .x12 sp v10 next next_off (base + 8) (by nofun) hvalid_next
-  have SL := sll_spec_gen_rd_eq_rs1 .x10 .x7 next anti_shift (base + 12) (by nofun) (by nofun)
-  have AN := and_spec_gen_rd_eq_rs1 .x10 .x11 (next <<< (anti_shift.toNat % 64)) mask (base + 16) (by nofun) (by nofun)
-  have OR_ := or_spec_gen_rd_eq_rs1 .x5 .x10 (src >>> (bit_shift.toNat % 64)) ((next <<< (anti_shift.toNat % 64)) &&& mask) (base + 20) (by nofun) (by nofun)
+  have SL := sll_spec_gen_rd_eq_rs1 .x10 .x7 next anti_shift (base + 12) (by nofun)
+  have AN := and_spec_gen_rd_eq_rs1 .x10 .x11 (next <<< (anti_shift.toNat % 64)) mask (base + 16) (by nofun)
+  have OR_ := or_spec_gen_rd_eq_rs1 .x5 .x10 (src >>> (bit_shift.toNat % 64)) ((next <<< (anti_shift.toNat % 64)) &&& mask) (base + 20) (by nofun)
   have SD_ := sd_spec_gen .x12 .x5 sp ((src >>> (bit_shift.toNat % 64)) ||| ((next <<< (anti_shift.toNat % 64)) &&& mask)) src off (base + 24) hvalid_loc
   runBlock L1 SR L2 SL AN OR_ SD_
 
@@ -133,7 +133,7 @@ theorem shr_last_limb_inplace_spec
       ((.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ v5) ** (.x6 ↦ᵣ bit_shift) ** (mem ↦ₘ src))
       ((.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ result) ** (.x6 ↦ᵣ bit_shift) ** (mem ↦ₘ result)) := by
   have L := ld_spec_gen .x5 .x12 sp v5 src 24 base (by nofun) hvalid
-  have SR := srl_spec_gen_rd_eq_rs1 .x5 .x6 src bit_shift (base + 4) (by nofun) (by nofun)
+  have SR := srl_spec_gen_rd_eq_rs1 .x5 .x6 src bit_shift (base + 4) (by nofun)
   have SD_ := sd_spec_gen .x12 .x5 sp (src >>> (bit_shift.toNat % 64)) src 24 (base + 8) hvalid
   runBlock L SR SD_
 
@@ -188,9 +188,9 @@ theorem shr_phase_b_spec (shift0 sp r6 r7 r11 : Word) (base : Addr) :
   have A1 := andi_spec_gen .x6 .x5 r6 shift0 63 base (by nofun)
   have SR := srli_spec_gen_same .x5 shift0 6 (base + 4) (by nofun)
   have SL := sltu_spec_gen .x11 .x0 .x6 r11 (0 : Word) (shift0 &&& signExtend12 63) (base + 8) (by nofun)
-  have SU := sub_spec_gen_rd_eq_rs2 .x11 .x0 (0 : Word) (if BitVec.ult (0 : Word) (shift0 &&& signExtend12 63) then (1 : Word) else 0) (base + 12) (by nofun) (by nofun)
+  have SU := sub_spec_gen_rd_eq_rs2 .x11 .x0 (0 : Word) (if BitVec.ult (0 : Word) (shift0 &&& signExtend12 63) then (1 : Word) else 0) (base + 12) (by nofun)
   have LI_ := li_spec_gen .x7 r7 64 (base + 16) (by nofun)
-  have SU2 := sub_spec_gen_rd_eq_rs1 .x7 .x6 (64 : Word) (shift0 &&& signExtend12 63) (base + 20) (by nofun) (by nofun)
+  have SU2 := sub_spec_gen_rd_eq_rs1 .x7 .x6 (64 : Word) (shift0 &&& signExtend12 63) (base + 20) (by nofun)
   have AD := addi_spec_gen_same .x12 sp 32 (base + 24) (by nofun)
   runBlock A1 SR SL SU LI_ SU2 AD
 
@@ -209,7 +209,7 @@ theorem shr_ld_or_acc_spec (sp acc prev_x10 val : Word) (off : BitVec 12)
       ((.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ acc) ** (.x10 ↦ᵣ prev_x10) ** ((sp + signExtend12 off) ↦ₘ val))
       ((.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ (acc ||| val)) ** (.x10 ↦ᵣ val) ** ((sp + signExtend12 off) ↦ₘ val)) := by
   have L := ld_spec_gen .x10 .x12 sp prev_x10 val off base (by nofun) hvalid
-  have OR_ := or_spec_gen_rd_eq_rs1 .x5 .x10 acc val (base + 4) (by nofun) (by nofun)
+  have OR_ := or_spec_gen_rd_eq_rs1 .x5 .x10 acc val (base + 4) (by nofun)
   runBlock L OR_
 
 -- ============================================================================
