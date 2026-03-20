@@ -170,8 +170,22 @@ theorem evm_shr_stack_spec (sp base : Addr)
         result hresult
   · -- shift < 256: result = value >>> shift.toNat
     have hlt : shift.toNat < 256 := Nat.lt_of_not_le hge
-    -- Need: the body path produces evmWordIs (sp+32) (value >>> shift.toNat)
-    -- This requires the bitvector bridge lemma getLimb_ushiftRight
+    have hresult : result = value >>> shift.toNat := by simp [result, show ¬(shift.toNat ≥ 256) from hge]
+    -- High limbs must be 0 when shift < 256
+    have hhigh_zero : shift.getLimb 1 ||| shift.getLimb 2 ||| shift.getLimb 3 = 0 := by
+      sorry -- shift.toNat < 256 → high limbs are 0
+    -- s0 < 256
+    have hlt_s0 : BitVec.ult (shift.getLimb 0) (signExtend12 (256 : BitVec 12)) = true := by
+      have h_toNat := EvmWord.toNat_eq_getLimb0_of_high_zero shift hhigh_zero
+      rw [h_toNat] at hlt
+      have h256 : (signExtend12 (256 : BitVec 12)).toNat = 256 := by native_decide
+      simp only [BitVec.ult, h256]
+      cases h : decide ((shift.getLimb 0).toNat < 256)
+      · simp at h; omega
+      · rfl
+    -- Body composition: Phase A ntaken → B → C → bodies
+    -- The body path produces concrete per-limb results that match (value >>> shift.toNat).getLimb i
+    -- This is the core of the SHR correctness proof.
     sorry
 
 end EvmAsm.Rv64
