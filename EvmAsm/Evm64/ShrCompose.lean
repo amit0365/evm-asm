@@ -597,6 +597,114 @@ private theorem validMem_value_portion {sp : Addr} (hvalid : ValidMemRange sp 8)
 -- Body path composition with evmWordIs postcondition
 -- ============================================================================
 
+/-- Strip a pure fact ⌜fact⌝ from a cpsTriple's precondition and use it
+    to convert the postcondition. -/
+private theorem cpsTriple_strip_pure_and_convert
+    {entry exit_ : Addr} {cr : CodeReq}
+    {P Q Q' : Assertion} {fact : Prop}
+    (hbody : cpsTriple entry exit_ cr P Q)
+    (hpost : fact → ∀ h, Q h → Q' h) :
+    cpsTriple entry exit_ cr (P ** ⌜fact⌝) Q' := by
+  intro R hR s hcr hPFR hpc
+  have hfact : fact := by
+    obtain ⟨hp, _, hpq⟩ := hPFR
+    obtain ⟨h1, _, _, _, hPF, _⟩ := hpq
+    exact ((sepConj_pure_right P fact h1).1 hPF).2
+  have hPR : (P ** R).holdsFor s := by
+    obtain ⟨hp, hcompat, hpq⟩ := hPFR
+    exact ⟨hp, hcompat, by
+      obtain ⟨h1, h2, hd, hunion, hPF, hR_⟩ := hpq
+      exact ⟨h1, h2, hd, hunion, ((sepConj_pure_right P fact h1).1 hPF).1, hR_⟩⟩
+  obtain ⟨k, s', hstep, hpc', hQR⟩ := hbody R hR s hcr hPR hpc
+  exact ⟨k, s', hstep, hpc', by
+    obtain ⟨hp', hcompat', hpq'⟩ := hQR
+    exact ⟨hp', hcompat', sepConj_mono_left (hpost hfact) hp' hpq'⟩⟩
+
+-- ============================================================================
+-- Bridge lemmas: connect per-limb body outputs to getLimb (value >>> n)
+-- ============================================================================
+
+-- Merge limb bridge: for limbs i where both getLimbN(i+L) and getLimbN(i+L+1) are in range.
+open EvmWord in
+set_option maxHeartbeats 800000 in
+private theorem shr_bridge_merge (value : EvmWord) (s0 : Word)
+    (result : EvmWord) (hresult : result = value >>> s0.toNat)
+    (L : Nat) (i : Fin 4)
+    (hL : (s0 >>> (6 : BitVec 6).toNat).toNat = L)
+    (hiL : i.val + L < 4) (hiL1 : i.val + L + 1 < 4) :
+    let bs := s0 &&& signExtend12 63
+    let as_ := (64 : Word) - bs
+    let mask := (0 : Word) - (if BitVec.ult (0 : Word) bs then (1 : Word) else 0)
+    (value.getLimb ⟨i.val + L, by omega⟩ >>> (bs.toNat % 64)) |||
+    ((value.getLimb ⟨i.val + L + 1, by omega⟩ <<< (as_.toNat % 64)) &&& mask) =
+    getLimb result i := by
+  intro bs as_ mask; rw [hresult]
+  have hbs_val : bs.toNat = s0.toNat % 64 := by
+    simp only [bs, signExtend12_63]
+    rw [BitVec.toNat_and, show (63 : BitVec 64).toNat = 63 from by native_decide]
+    exact Nat.and_two_pow_sub_one_eq_mod s0.toNat 6
+  have hbs_lt : bs.toNat < 64 := by omega
+  have hL_div : s0.toNat / 64 = L := by
+    have h6 : (6 : BitVec 6).toNat = 6 := by native_decide
+    rw [← hL, h6]; simp [BitVec.toNat_ushiftRight]; omega
+  rw [getLimb_ushiftRight value s0.toNat i, hL_div,
+      getLimbN_lt value (i.val + L) hiL,
+      getLimbN_lt value (i.val + L + 1) hiL1]
+  by_cases hmod0 : s0.toNat % 64 = 0
+  · have hmask : mask = 0 := by
+      simp only [mask]; have : BitVec.ult (0 : Word) bs = false := by simp [BitVec.ult]; omega
+      rw [this]; simp
+    simp [hmod0, hmask, show bs.toNat % 64 = 0 from by omega]
+  · have hmask : mask = BitVec.allOnes 64 := by
+      simp only [mask]; have : BitVec.ult (0 : Word) bs = true := by simp [BitVec.ult]; omega
+      rw [this, show (if true = true then (1 : Word) else 0) = 1 from by decide]
+      show (0 : Word) - 1 = BitVec.allOnes 64; native_decide
+    rw [show bs.toNat % 64 = s0.toNat % 64 from by omega,
+        show as_.toNat % 64 = 64 - s0.toNat % 64 from by
+          have : as_.toNat = 64 - bs.toNat := by simp only [as_]; bv_omega
+          rw [this, hbs_val]; omega,
+        hmask, if_neg hmod0]
+
+-- Last limb bridge: for the highest non-zero limb (i+L = 3, second getLimbN out of range).
+open EvmWord in
+set_option maxHeartbeats 400000 in
+private theorem shr_bridge_last (value : EvmWord) (s0 : Word)
+    (result : EvmWord) (hresult : result = value >>> s0.toNat)
+    (L : Nat) (i : Fin 4)
+    (hL : (s0 >>> (6 : BitVec 6).toNat).toNat = L)
+    (hiL : i.val + L = 3) :
+    let bs := s0 &&& signExtend12 63
+    value.getLimb ⟨3, by omega⟩ >>> (bs.toNat % 64) = getLimb result i := by
+  intro bs; rw [hresult]
+  have hbs_val : bs.toNat = s0.toNat % 64 := by
+    simp only [bs, signExtend12_63]
+    rw [BitVec.toNat_and, show (63 : BitVec 64).toNat = 63 from by native_decide]
+    exact Nat.and_two_pow_sub_one_eq_mod s0.toNat 6
+  have hL_div : s0.toNat / 64 = L := by
+    have h6 : (6 : BitVec 6).toNat = 6 := by native_decide
+    rw [← hL, h6]; simp [BitVec.toNat_ushiftRight]; omega
+  rw [getLimb_ushiftRight value s0.toNat i, hL_div, hiL,
+      getLimbN_lt value 3 (by omega), getLimbN_ge value 4 (by omega)]
+  simp [show bs.toNat % 64 = s0.toNat % 64 from by omega]
+
+-- Zero limb bridge: for limbs beyond the shift (i+L >= 4, result is 0).
+open EvmWord in
+set_option maxHeartbeats 400000 in
+private theorem shr_bridge_zero (value : EvmWord) (s0 : Word)
+    (result : EvmWord) (hresult : result = value >>> s0.toNat)
+    (L : Nat) (i : Fin 4)
+    (hL : (s0 >>> (6 : BitVec 6).toNat).toNat = L)
+    (hiL : i.val + L ≥ 4) :
+    getLimb result i = 0 := by
+  rw [hresult]
+  have hL_div : s0.toNat / 64 = L := by
+    have h6 : (6 : BitVec 6).toNat = 6 := by native_decide
+    rw [← hL, h6]; simp [BitVec.toNat_ushiftRight]; omega
+  rw [getLimb_ushiftRight value s0.toNat i, hL_div,
+      getLimbN_ge value (i.val + L) (by omega),
+      getLimbN_ge value (i.val + L + 1) (by omega)]
+  simp
+
 open EvmWord in
 set_option maxHeartbeats 6400000 in
 /-- Body path: shift < 256 → result is `value >>> shift.toNat`.
@@ -768,8 +876,8 @@ theorem evm_shr_body_evmWord_spec (sp base : Addr)
     (by pcFree) hphaseB
   have hphaseAB := cpsTriple_seq_with_perm_same_cr base (base + 36) (base + 64) _ _ _ _ _
     (fun h hp => by xperm_hyp hp) hphaseA hphaseB_f
-  -- Phase C: cascade dispatch at base+64
-  have hphaseC_raw := shr_phase_c_spec limb_shift sltiu_val (base + 64)
+  -- Phase C: cascade dispatch at base+64 (with pure dispatch facts)
+  have hphaseC_raw := shr_phase_c_spec_pure limb_shift sltiu_val (base + 64)
     (base + 240) (base + 164) (base + 112) (base + 84)
     (shr_c_e0 base) (shr_c_e1 base) (shr_c_e2 base) (shr_c_e3 base)
   have hphaseC := cpsNBranch_extend_code (phase_c_sub_shrCode base) hphaseC_raw
@@ -830,79 +938,103 @@ theorem evm_shr_body_evmWord_spec (sp base : Addr)
     (fun h hp => hp) (fun h hq => body_post_weaken _ _ _ _ _ _ _ _ _ h (by xperm_hyp hq)) hbody2_f
   have hbody3_w := cpsTriple_consequence _ _ _ _ _ _ _
     (fun h hp => hp) (fun h hq => body_post_weaken _ _ _ _ _ _ _ _ _ h (by xperm_hyp hq)) hbody3_f
-  -- Define the result limbs for each body path
-  -- Body 3 (limb_shift=3): result = [v3>>>bs, 0, 0, 0]
-  -- Body 2 (limb_shift=2): result = [(v2>>>bs)||((v3<<<as)&&&mask), v3>>>bs, 0, 0]
-  -- Body 1 (limb_shift=1): result = [(v1>>>bs)||((v2<<<as)&&&mask), (v2>>>bs)||((v3<<<as)&&&mask), v3>>>bs, 0]
-  -- Body 0 (limb_shift=0): result = [(v0>>>bs)||((v1<<<as)&&&mask), (v1>>>bs)||((v2<<<as)&&&mask), (v2>>>bs)||((v3<<<as)&&&mask), v3>>>bs]
-  -- where bs = bit_shift.toNat % 64, as = anti_shift.toNat % 64
-  -- The common postcondition for all bodies: regs weakened + shift preserved + concrete result
-  -- We use cpsTriple_consequence to unify all body postconditions to the single evmWordIs form
-  -- First: bitvector bridge - show body results equal (value >>> shift.toNat).getLimb i
-  -- This requires getLimb_ushiftRight + connecting s0/bit_shift/anti_shift/mask to shift.toNat
-  -- We leave these as sorry for now (pure bitvector arithmetic)
-  -- Bridge: each body's output limbs = getLimb result i
-  -- The bridge lemma needs: shift.toNat / 64 = limb_shift.toNat (when < 4)
-  -- and shift.toNat % 64 = bit_shift.toNat % 64
-  -- For body L, limb_shift.toNat = L (established by Phase C dispatch)
-  -- We'll use cpsTriple_consequence on each weakened body to rewrite mem values
-  -- Helper to strengthen body0 postcondition to use result limbs
-  have hbody0_ev : cpsTriple (base + 240) (base + 360) (shrCode base)
-      ((.x5 ↦ᵣ limb_shift) ** (.x6 ↦ᵣ bit_shift) ** (.x0 ↦ᵣ (0 : Word)) **
-       (.x11 ↦ᵣ mask) ** (.x7 ↦ᵣ anti_shift) ** (.x12 ↦ᵣ (sp + 32)) **
-       (.x10 ↦ᵣ sltiu_val) **
-       (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
-       ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3))
-      ((.x12 ↦ᵣ (sp + 32)) ** (regOwn .x5) ** (.x0 ↦ᵣ (0 : Word)) ** (regOwn .x10) **
-       (regOwn .x6) ** (regOwn .x7) ** (regOwn .x11) **
-       (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
-       ((sp + 32) ↦ₘ getLimb result 0) ** ((sp + 40) ↦ₘ getLimb result 1) **
-       ((sp + 48) ↦ₘ getLimb result 2) ** ((sp + 56) ↦ₘ getLimb result 3)) :=
-    cpsTriple_consequence _ _ _ _ _ _ _
-      (fun h hp => by xperm_hyp hp) (fun h hq => by
-        -- body0 produces: (v0>>>bs)|((v1<<<as)&mask), (v1>>>bs)|((v2<<<as)&mask), (v2>>>bs)|((v3<<<as)&mask), v3>>>bs
-        -- Need to show these = getLimb result 0..3
-        -- This is pure bitvector arithmetic via getLimb_ushiftRight
-        sorry) hbody0_w
-  have hbody1_ev : cpsTriple (base + 164) (base + 360) (shrCode base)
-      ((.x5 ↦ᵣ limb_shift) ** (.x6 ↦ᵣ bit_shift) ** (.x0 ↦ᵣ (0 : Word)) **
-       (.x11 ↦ᵣ mask) ** (.x7 ↦ᵣ anti_shift) ** (.x12 ↦ᵣ (sp + 32)) **
-       (.x10 ↦ᵣ ((0 : Word) + signExtend12 1)) **
-       (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
-       ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3))
-      ((.x12 ↦ᵣ (sp + 32)) ** (regOwn .x5) ** (.x0 ↦ᵣ (0 : Word)) ** (regOwn .x10) **
-       (regOwn .x6) ** (regOwn .x7) ** (regOwn .x11) **
-       (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
-       ((sp + 32) ↦ₘ getLimb result 0) ** ((sp + 40) ↦ₘ getLimb result 1) **
-       ((sp + 48) ↦ₘ getLimb result 2) ** ((sp + 56) ↦ₘ getLimb result 3)) :=
-    cpsTriple_consequence _ _ _ _ _ _ _
-      (fun h hp => by xperm_hyp hp) (fun h hq => by sorry) hbody1_w
-  have hbody2_ev : cpsTriple (base + 112) (base + 360) (shrCode base)
-      ((.x5 ↦ᵣ limb_shift) ** (.x6 ↦ᵣ bit_shift) ** (.x0 ↦ᵣ (0 : Word)) **
-       (.x11 ↦ᵣ mask) ** (.x7 ↦ᵣ anti_shift) ** (.x12 ↦ᵣ (sp + 32)) **
-       (.x10 ↦ᵣ ((0 : Word) + signExtend12 2)) **
-       (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
-       ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3))
-      ((.x12 ↦ᵣ (sp + 32)) ** (regOwn .x5) ** (.x0 ↦ᵣ (0 : Word)) ** (regOwn .x10) **
-       (regOwn .x6) ** (regOwn .x7) ** (regOwn .x11) **
-       (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
-       ((sp + 32) ↦ₘ getLimb result 0) ** ((sp + 40) ↦ₘ getLimb result 1) **
-       ((sp + 48) ↦ₘ getLimb result 2) ** ((sp + 56) ↦ₘ getLimb result 3)) :=
-    cpsTriple_consequence _ _ _ _ _ _ _
-      (fun h hp => by xperm_hyp hp) (fun h hq => by sorry) hbody2_w
-  have hbody3_ev : cpsTriple (base + 84) (base + 360) (shrCode base)
-      ((.x5 ↦ᵣ limb_shift) ** (.x6 ↦ᵣ bit_shift) ** (.x0 ↦ᵣ (0 : Word)) **
-       (.x11 ↦ᵣ mask) ** (.x7 ↦ᵣ anti_shift) ** (.x12 ↦ᵣ (sp + 32)) **
-       (.x10 ↦ᵣ ((0 : Word) + signExtend12 2)) **
-       (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
-       ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3))
-      ((.x12 ↦ᵣ (sp + 32)) ** (regOwn .x5) ** (.x0 ↦ᵣ (0 : Word)) ** (regOwn .x10) **
-       (regOwn .x6) ** (regOwn .x7) ** (regOwn .x11) **
-       (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
-       ((sp + 32) ↦ₘ getLimb result 0) ** ((sp + 40) ↦ₘ getLimb result 1) **
-       ((sp + 48) ↦ₘ getLimb result 2) ** ((sp + 56) ↦ₘ getLimb result 3)) :=
-    cpsTriple_consequence _ _ _ _ _ _ _
-      (fun h hp => by xperm_hyp hp) (fun h hq => by sorry) hbody3_w
+  -- Bitvector bridge: common facts
+  have hshift_toNat : shift.toNat = s0.toNat :=
+    EvmWord.toNat_eq_getLimb0_of_high_zero shift hhigh_zero
+  -- Body bridge specs: use cpsTriple_strip_pure_and_convert to thread pure dispatch fact
+  -- from Phase C postcondition into body postcondition conversion.
+  -- Each hbodyL_ev has precondition (P ** ⌜dispatch_fact⌝) and postcondition (getLimb result).
+  let resultPost :=
+    (.x12 ↦ᵣ (sp + 32)) ** (regOwn .x5) ** (.x0 ↦ᵣ (0 : Word)) ** (regOwn .x10) **
+     (regOwn .x6) ** (regOwn .x7) ** (regOwn .x11) **
+     (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
+     ((sp + 32) ↦ₘ getLimb result 0) ** ((sp + 40) ↦ₘ getLimb result 1) **
+     ((sp + 48) ↦ₘ getLimb result 2) ** ((sp + 56) ↦ₘ getLimb result 3)
+  have hbody0_ev := @cpsTriple_strip_pure_and_convert _ _ _ _ _ resultPost _
+    hbody0_w (fun (hls : limb_shift = 0) h hq => by
+      have hresult : result = value >>> s0.toNat := by
+        show value >>> shift.toNat = value >>> s0.toNat; congr 1
+      have hL : (s0 >>> (6 : BitVec 6).toNat).toNat = 0 := congrArg BitVec.toNat hls
+      have eq0 := shr_bridge_merge value s0 result hresult 0 0 hL (by omega) (by omega)
+      have eq1 := shr_bridge_merge value s0 result hresult 0 1 hL (by omega) (by omega)
+      have eq2 := shr_bridge_merge value s0 result hresult 0 2 hL (by omega) (by omega)
+      have eq3 := shr_bridge_last value s0 result hresult 0 3 hL (by omega)
+      show ((.x12 ↦ᵣ (sp + 32)) ** (regOwn .x5) ** (.x0 ↦ᵣ (0 : Word)) ** (regOwn .x10) **
+           (regOwn .x6) ** (regOwn .x7) ** (regOwn .x11) **
+           (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
+           ((sp + 32) ↦ₘ getLimb result 0) ** ((sp + 40) ↦ₘ getLimb result 1) **
+           ((sp + 48) ↦ₘ getLimb result 2) ** ((sp + 56) ↦ₘ getLimb result 3)) h
+      rw [← eq0, ← eq1, ← eq2, ← eq3]; exact hq)
+  have hbody1_ev := @cpsTriple_strip_pure_and_convert _ _ _ _ _ resultPost _
+    hbody1_w (fun (hls : limb_shift = (0 : Word) + signExtend12 1) h hq => by
+      have hresult : result = value >>> s0.toNat := by
+        show value >>> shift.toNat = value >>> s0.toNat; congr 1
+      have hL : (s0 >>> (6 : BitVec 6).toNat).toNat = 1 := by
+        have := congrArg BitVec.toNat hls
+        simp only [show ((0 : Word) + signExtend12 1).toNat = 1 from by native_decide] at this
+        exact this
+      have eq0 := shr_bridge_merge value s0 result hresult 1 0 hL (by omega) (by omega)
+      have eq1 := shr_bridge_merge value s0 result hresult 1 1 hL (by omega) (by omega)
+      have eq2 := shr_bridge_last value s0 result hresult 1 2 hL (by omega)
+      have eq3 := shr_bridge_zero value s0 result hresult 1 3 hL (by omega)
+      show ((.x12 ↦ᵣ (sp + 32)) ** (regOwn .x5) ** (.x0 ↦ᵣ (0 : Word)) ** (regOwn .x10) **
+           (regOwn .x6) ** (regOwn .x7) ** (regOwn .x11) **
+           (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
+           ((sp + 32) ↦ₘ getLimb result 0) ** ((sp + 40) ↦ₘ getLimb result 1) **
+           ((sp + 48) ↦ₘ getLimb result 2) ** ((sp + 56) ↦ₘ getLimb result 3)) h
+      rw [← eq0, ← eq1, ← eq2, eq3]; exact hq)
+  have hbody2_ev := @cpsTriple_strip_pure_and_convert _ _ _ _ _ resultPost _
+    hbody2_w (fun (hls : limb_shift = (0 : Word) + signExtend12 2) h hq => by
+      have hresult : result = value >>> s0.toNat := by
+        show value >>> shift.toNat = value >>> s0.toNat; congr 1
+      have hL : (s0 >>> (6 : BitVec 6).toNat).toNat = 2 := by
+        have := congrArg BitVec.toNat hls
+        simp only [show ((0 : Word) + signExtend12 2).toNat = 2 from by native_decide] at this
+        exact this
+      have eq0 := shr_bridge_merge value s0 result hresult 2 0 hL (by omega) (by omega)
+      have eq1 := shr_bridge_last value s0 result hresult 2 1 hL (by omega)
+      have eq2 := shr_bridge_zero value s0 result hresult 2 2 hL (by omega)
+      have eq3 := shr_bridge_zero value s0 result hresult 2 3 hL (by omega)
+      show ((.x12 ↦ᵣ (sp + 32)) ** (regOwn .x5) ** (.x0 ↦ᵣ (0 : Word)) ** (regOwn .x10) **
+           (regOwn .x6) ** (regOwn .x7) ** (regOwn .x11) **
+           (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
+           ((sp + 32) ↦ₘ getLimb result 0) ** ((sp + 40) ↦ₘ getLimb result 1) **
+           ((sp + 48) ↦ₘ getLimb result 2) ** ((sp + 56) ↦ₘ getLimb result 3)) h
+      rw [← eq0, ← eq1, eq2, eq3]; exact hq)
+  have hbody3_ev := @cpsTriple_strip_pure_and_convert _ _ _ _ _ resultPost _
+    hbody3_w (fun (hls : limb_shift ≠ 0 ∧ limb_shift ≠ (0 : Word) + signExtend12 1 ∧
+                limb_shift ≠ (0 : Word) + signExtend12 2) h hq => by
+      have hresult : result = value >>> s0.toNat := by
+        show value >>> shift.toNat = value >>> s0.toNat; congr 1
+      have hL : (s0 >>> (6 : BitVec 6).toNat).toNat = 3 := by
+        obtain ⟨h0, h1, h2⟩ := hls
+        have h6 : (6 : BitVec 6).toNat = 6 := by native_decide
+        have hlt4 : limb_shift.toNat < 4 := by
+          show (s0 >>> (6 : BitVec 6).toNat).toNat < 4
+          rw [h6]; simp [BitVec.toNat_ushiftRight]; omega
+        have hn0 : limb_shift.toNat ≠ 0 :=
+          fun hc => h0 (BitVec.eq_of_toNat_eq (by simpa using hc))
+        have hn1 : limb_shift.toNat ≠ 1 :=
+          fun hc => h1 (BitVec.eq_of_toNat_eq (by
+            show limb_shift.toNat = ((0 : Word) + signExtend12 1).toNat
+            simp only [show ((0 : Word) + signExtend12 1).toNat = 1 from by native_decide]
+            exact hc))
+        have hn2 : limb_shift.toNat ≠ 2 :=
+          fun hc => h2 (BitVec.eq_of_toNat_eq (by
+            show limb_shift.toNat = ((0 : Word) + signExtend12 2).toNat
+            simp only [show ((0 : Word) + signExtend12 2).toNat = 2 from by native_decide]
+            exact hc))
+        show limb_shift.toNat = 3; omega
+      have eq0 := shr_bridge_last value s0 result hresult 3 0 hL (by omega)
+      have eq1 := shr_bridge_zero value s0 result hresult 3 1 hL (by omega)
+      have eq2 := shr_bridge_zero value s0 result hresult 3 2 hL (by omega)
+      have eq3 := shr_bridge_zero value s0 result hresult 3 3 hL (by omega)
+      show ((.x12 ↦ᵣ (sp + 32)) ** (regOwn .x5) ** (.x0 ↦ᵣ (0 : Word)) ** (regOwn .x10) **
+           (regOwn .x6) ** (regOwn .x7) ** (regOwn .x11) **
+           (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
+           ((sp + 32) ↦ₘ getLimb result 0) ** ((sp + 40) ↦ₘ getLimb result 1) **
+           ((sp + 48) ↦ₘ getLimb result 2) ** ((sp + 56) ↦ₘ getLimb result 3)) h
+      rw [← eq0, eq1, eq2, eq3]; exact hq)
   -- Frame Phase C and merge with body specs
   have hphaseC_framed := cpsNBranch_frame_left
     (F := (.x6 ↦ᵣ bit_shift) ** (.x7 ↦ᵣ anti_shift) ** (.x11 ↦ᵣ mask) ** (.x12 ↦ᵣ (sp + 32)) **
@@ -910,7 +1042,7 @@ theorem evm_shr_body_evmWord_spec (sp base : Addr)
           ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3))
     (by pcFree) hphaseC
   simp only [List.map] at hphaseC_framed
-  -- Use cpsNBranch_merge to compose Phase C + all bodies
+  -- Merge Phase C + bodies. Phase C pure postconditions match body bridge preconditions.
   have hphaseCD := cpsNBranch_merge (base + 64) (base + 360) (shrCode base) _ _ _ hphaseC_framed
     (fun exit hmem => by
       simp only [List.mem_cons, List.mem_nil_iff, or_false] at hmem

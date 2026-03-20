@@ -413,6 +413,46 @@ theorem shr_cascade_step_spec (v5 v10 : Word)
   exact cpsTriple_seq_cpsBranch_with_perm _ _ _ _ hd _ _ _ target _ (base + 8) _
     (fun _ hp => hp) s1' s2'
 
+/-- Cascade step variant that preserves pure dispatch facts.
+    Taken postcondition includes `⌜v5 = k_val⌝`, not-taken includes `⌜v5 ≠ k_val⌝`. -/
+theorem shr_cascade_step_spec_pure (v5 v10 : Word)
+    (k : BitVec 12) (offset : BitVec 13) (base target : Addr)
+    (htarget : (base + 4) + signExtend13 offset = target) :
+    let k_val := (0 : Word) + signExtend12 k
+    let code := shr_cascade_step_code k offset base
+    cpsBranch base code
+      ((.x5 ↦ᵣ v5) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ v10))
+      target ((.x5 ↦ᵣ v5) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ k_val) ** ⌜v5 = k_val⌝)
+      (base + 8) ((.x5 ↦ᵣ v5) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ k_val) ** ⌜v5 ≠ k_val⌝) := by
+  have ha1 : (base + 4 : Addr) + 4 = base + 8 := by bv_omega
+  have hd : CodeReq.Disjoint
+      (CodeReq.singleton base (.ADDI .x10 .x0 k))
+      (CodeReq.singleton (base + 4) (.BEQ .x5 .x10 offset)) :=
+    CodeReq.Disjoint.singleton (by bv_omega) _ _
+  have s1 := addi_spec_gen .x10 .x0 v10 0 k base (by nofun)
+  have s1' : cpsTriple base (base + 4) (CodeReq.singleton base (.ADDI .x10 .x0 k))
+      ((.x5 ↦ᵣ v5) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ v10))
+      ((.x5 ↦ᵣ v5) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ ((0 : Word) + signExtend12 k))) :=
+    cpsTriple_consequence _ _ _ _ _ _ _
+      (fun h hp => by xperm_hyp hp)
+      (fun h hp => by xperm_hyp hp)
+      (cpsTriple_frame_left _ _ _ _ _ (.x5 ↦ᵣ v5) (by pcFree) s1)
+  have s2_raw := beq_spec_gen .x5 .x10 offset v5 ((0 : Word) + signExtend12 k) (base + 4)
+  rw [htarget, ha1] at s2_raw
+  -- Keep pure facts: frame with x0 + permute, preserving ⌜v5 = k_val⌝ / ⌜v5 ≠ k_val⌝
+  have s2' : cpsBranch (base + 4) (CodeReq.singleton (base + 4) (.BEQ .x5 .x10 offset))
+      ((.x5 ↦ᵣ v5) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ ((0 : Word) + signExtend12 k)))
+      target ((.x5 ↦ᵣ v5) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ ((0 : Word) + signExtend12 k)) ** ⌜v5 = (0 : Word) + signExtend12 k⌝)
+      (base + 8) ((.x5 ↦ᵣ v5) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ ((0 : Word) + signExtend12 k)) ** ⌜v5 ≠ (0 : Word) + signExtend12 k⌝) :=
+    cpsBranch_consequence _ _ _ _
+      target _ _ (base + 8) _ _
+      (fun h hp => by xperm_hyp hp)
+      (fun h hp => by xperm_hyp hp)
+      (fun h hp => by xperm_hyp hp)
+      (cpsBranch_frame_left _ _ _ _ _ _ _ (.x0 ↦ᵣ (0 : Word)) (by pcFree) s2_raw)
+  exact cpsTriple_seq_cpsBranch_with_perm _ _ _ _ hd _ _ _ target _ (base + 8) _
+    (fun _ hp => hp) s1' s2'
+
 -- ============================================================================
 -- Section 7: Phase C Cascade (5 instructions, cpsNBranch with 4 exits)
 -- ============================================================================
@@ -522,6 +562,149 @@ theorem shr_phase_c_spec (v5 v10 : Word) (base : Addr)
     simp only [hunion_empty]; rfl
   -- Weaken precondition and rewrite CR
   -- Rewrite CR, weaken pre, and weaken post
+  intro code
+  have n1_rw := hcr_eq ▸ n1
+  exact cpsNBranch_weaken_posts _ _ _ _ _ (cpsNBranch_weaken_pre _ _ _ _ _ (fun h hp => by xperm_hyp hp) n1_rw)
+    (fun ex hmem => by
+      simp only [List.mem_cons, Prod.mk.injEq, List.mem_nil_iff, or_false, false_or] at hmem
+      rcases hmem with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
+      · exact ⟨_, List.Mem.head _, rfl, fun h hp => by xperm_hyp hp⟩
+      · exact ⟨_, List.Mem.tail _ (List.Mem.head _), rfl, fun h hp => by xperm_hyp hp⟩
+      · exact ⟨_, List.Mem.tail _ (List.Mem.tail _ (List.Mem.head _)), rfl, fun h hp => by xperm_hyp hp⟩
+      · exact ⟨_, List.Mem.tail _ (List.Mem.tail _ (List.Mem.tail _ (List.Mem.head _))), he3.symm, fun h hp => by xperm_hyp hp⟩)
+
+set_option maxHeartbeats 6400000 in
+/-- Phase C spec with pure dispatch facts: each exit postcondition includes
+    the constraint that identifies which branch was taken.
+    Built by composing sub-specs with pure-fact framing. -/
+theorem shr_phase_c_spec_pure (v5 v10 : Word) (base : Addr)
+    (e0 e1 e2 e3 : Addr)
+    (he0 : base + signExtend13 176 = e0)
+    (he1 : (base + 8) + signExtend13 92 = e1)
+    (he2 : (base + 16) + signExtend13 32 = e2)
+    (he3 : base + 20 = e3) :
+    let code := shr_phase_c_code base
+    cpsNBranch base code
+      ((.x5 ↦ᵣ v5) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ v10))
+      [(e0, (.x5 ↦ᵣ v5) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ v10) ** ⌜v5 = 0⌝),
+       (e1, (.x5 ↦ᵣ v5) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ ((0 : Word) + signExtend12 1)) ** ⌜v5 = (0 : Word) + signExtend12 1⌝),
+       (e2, (.x5 ↦ᵣ v5) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ ((0 : Word) + signExtend12 2)) ** ⌜v5 = (0 : Word) + signExtend12 2⌝),
+       (e3, (.x5 ↦ᵣ v5) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ ((0 : Word) + signExtend12 2)) ** ⌜v5 ≠ 0 ∧ v5 ≠ (0 : Word) + signExtend12 1 ∧ v5 ≠ (0 : Word) + signExtend12 2⌝)] := by
+  have hc1 : ((base + 4 : Addr) + 4) + signExtend13 92 = e1 := by
+    rw [show (base + 4 : Addr) + 4 = base + 8 from by bv_omega]; exact he1
+  have hc2 : ((base + 12 : Addr) + 4) + signExtend13 32 = e2 := by
+    rw [show (base + 12 : Addr) + 4 = base + 16 from by bv_omega]; exact he2
+  let cr_beq0 := CodeReq.singleton base (.BEQ .x5 .x0 176)
+  let cr_cs1 := shr_cascade_step_code 1 92 (base + 4)
+  let cr_cs2 := shr_cascade_step_code 2 32 (base + 12)
+  have hd_beq0_cs1 : cr_beq0.Disjoint cr_cs1 :=
+    CodeReq.Disjoint.union_right
+      (CodeReq.Disjoint.singleton (by bv_omega) _ _)
+      (CodeReq.Disjoint.singleton (by bv_omega) _ _)
+  have hd_beq0_cs2 : cr_beq0.Disjoint cr_cs2 :=
+    CodeReq.Disjoint.union_right
+      (CodeReq.Disjoint.singleton (by bv_omega) _ _)
+      (CodeReq.Disjoint.singleton (by bv_omega) _ _)
+  have hd_cs1_cs2 : cr_cs1.Disjoint cr_cs2 :=
+    CodeReq.Disjoint.union_left
+      (CodeReq.Disjoint.union_right
+        (CodeReq.Disjoint.singleton (by bv_omega) _ _)
+        (CodeReq.Disjoint.singleton (by bv_omega) _ _))
+      (CodeReq.Disjoint.union_right
+        (CodeReq.Disjoint.singleton (by bv_omega) _ _)
+        (CodeReq.Disjoint.singleton (by bv_omega) _ _))
+  -- Step 0: BEQ x5 x0 176 — keep ⌜v5 = 0⌝ / ⌜v5 ≠ 0⌝
+  have beq0_raw := beq_spec_gen .x5 .x0 176 v5 (0 : Word) base
+  rw [he0] at beq0_raw
+  have beq0f : cpsBranch base cr_beq0
+      ((.x5 ↦ᵣ v5) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ v10))
+      e0 ((.x5 ↦ᵣ v5) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ v10) ** ⌜v5 = 0⌝)
+      (base + 4) ((.x5 ↦ᵣ v5) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ v10) ** ⌜v5 ≠ 0⌝) :=
+    cpsBranch_consequence _ _ _ _ e0 _ _ (base + 4) _ _
+      (fun h hp => by xperm_hyp hp)
+      (fun h hp => by xperm_hyp hp)
+      (fun h hp => by xperm_hyp hp)
+      (cpsBranch_frame_left _ _ _ _ _ _ _ (.x10 ↦ᵣ v10) (by pcFree) beq0_raw)
+  -- Step 1: cascade step at base+4 with pure facts, framed with ⌜v5 ≠ 0⌝
+  have cs1_raw := shr_cascade_step_spec_pure v5 v10 1 92 (base + 4) e1 hc1
+  rw [show (base + 4 : Addr) + 8 = base + 12 from by bv_omega] at cs1_raw
+  have cs1f := cpsBranch_frame_left _ _ _ _ _ _ _ (⌜v5 ≠ (0 : Word)⌝) (pcFree_pure _) cs1_raw
+  -- cs1f taken: (regs ** ⌜v5 = 1⌝) ** ⌜v5 ≠ 0⌝
+  -- cs1f ntaken: (regs ** ⌜v5 ≠ 1⌝) ** ⌜v5 ≠ 0⌝
+  have cs1_clean : cpsBranch (base + 4) cr_cs1
+      ((.x5 ↦ᵣ v5) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ v10) ** ⌜v5 ≠ (0 : Word)⌝)
+      e1 ((.x5 ↦ᵣ v5) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ ((0 : Word) + signExtend12 1)) ** ⌜v5 = (0 : Word) + signExtend12 1⌝)
+      (base + 12) ((.x5 ↦ᵣ v5) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ ((0 : Word) + signExtend12 1)) ** ⌜v5 ≠ 0 ∧ v5 ≠ (0 : Word) + signExtend12 1⌝) :=
+    cpsBranch_consequence _ _ _ _ e1 _ _ (base + 12) _ _
+      (fun h hp => (congrFun (show _ = _ from by xperm) h).mp hp)
+      -- taken: strip ⌜v5 ≠ 0⌝ frame
+      (fun h hp => (sepConj_pure_right _ _ h).1 hp |>.1)
+      -- ntaken: (regs ** ⌜v5 ≠ 1⌝) ** ⌜v5 ≠ 0⌝ → regs ** ⌜v5 ≠ 0 ∧ v5 ≠ 1⌝
+      (fun h hp => by
+        -- hp : ((x5 ** x0 ** x10 ** ⌜v5 ≠ 1⌝) ** ⌜v5 ≠ 0⌝) h
+        have ⟨hinner, hne0⟩ := (sepConj_pure_right _ _ h).1 hp
+        -- hinner : (x5 ** x0 ** x10 ** ⌜v5 ≠ 1⌝) h
+        have hne1 := sepConj_extract_pure_end3 _ _ _ _ h hinner
+        have hregs := sepConj_strip_pure_end3 _ _ _ _ h hinner
+        -- Reconstruct: regs ** ⌜v5 ≠ 0 ∧ v5 ≠ 1⌝
+        exact (congrFun (show _ = _ from by xperm) h).mp
+          ((sepConj_pure_right _ _ h).2 (And.intro hregs (And.intro hne0 hne1))))
+      cs1f
+  -- Step 2: cascade step at base+12, framed with ⌜v5 ≠ 0 ∧ v5 ≠ 1⌝
+  have cs2_raw := shr_cascade_step_spec_pure v5 ((0 : Word) + signExtend12 1) 2 32 (base + 12) e2 hc2
+  rw [show (base + 12 : Addr) + 8 = base + 20 from by bv_omega] at cs2_raw
+  have cs2f := cpsBranch_frame_left _ _ _ _ _ _ _
+    (⌜v5 ≠ 0 ∧ v5 ≠ (0 : Word) + signExtend12 1⌝) (pcFree_pure _) cs2_raw
+  -- cs2f taken: (regs ** ⌜v5 = 2⌝) ** ⌜v5 ≠ 0 ∧ v5 ≠ 1⌝
+  -- cs2f ntaken: (regs ** ⌜v5 ≠ 2⌝) ** ⌜v5 ≠ 0 ∧ v5 ≠ 1⌝
+  -- cs2_clean: reshape postconditions, use identity for precondition
+  -- cs2f pre: ((.x5 ** .x0 ** .x10) ** ⌜conj⌝), same shape as cs2_clean pre after assoc
+  -- Use sepConj_assoc' to make types match
+  have cs2_clean : cpsBranch (base + 12) cr_cs2
+      ((.x5 ↦ᵣ v5) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ ((0 : Word) + signExtend12 1)) ** ⌜v5 ≠ 0 ∧ v5 ≠ (0 : Word) + signExtend12 1⌝)
+      e2 ((.x5 ↦ᵣ v5) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ ((0 : Word) + signExtend12 2)) ** ⌜v5 = (0 : Word) + signExtend12 2⌝)
+      (base + 20) ((.x5 ↦ᵣ v5) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ ((0 : Word) + signExtend12 2)) ** ⌜v5 ≠ 0 ∧ v5 ≠ (0 : Word) + signExtend12 1 ∧ v5 ≠ (0 : Word) + signExtend12 2⌝) :=
+    cpsBranch_consequence _ _ _ _ e2 _ _ (base + 20) _ _
+      -- pre: right-assoc ↔ left-nested
+      (fun h hp => (congrFun (show _ = _ from by xperm) h).mp hp)
+      -- taken: (regs ** ⌜v5=2⌝) ** ⌜conj⌝ → regs ** ⌜v5=2⌝
+      (fun h hp => (sepConj_pure_right _ _ h).1 hp |>.1)
+      -- ntaken: (regs ** ⌜v5≠2⌝) ** ⌜v5≠0 ∧ v5≠1⌝ → regs ** ⌜v5≠0 ∧ v5≠1 ∧ v5≠2⌝
+      (fun h hp => by
+        -- hp : ((x5 ** x0 ** x10 ** ⌜v5 ≠ 2⌝) ** ⌜v5 ≠ 0 ∧ v5 ≠ 1⌝) h
+        have ⟨hinner, ⟨hne0, hne1⟩⟩ := (sepConj_pure_right _ _ h).1 hp
+        have hne2 := sepConj_extract_pure_end3 _ _ _ _ h hinner
+        have hregs := sepConj_strip_pure_end3 _ _ _ _ h hinner
+        exact (congrFun (show _ = _ from by xperm) h).mp
+          ((sepConj_pure_right _ _ h).2 (And.intro hregs (And.intro hne0 (And.intro hne1 hne2)))))
+      cs2f
+  -- Fallthrough at base+20: trivial cpsNBranch
+  have ft := cpsNBranch_refl (base + 20)
+    ((.x5 ↦ᵣ v5) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ ((0 : Word) + signExtend12 2)) ** ⌜v5 ≠ 0 ∧ v5 ≠ (0 : Word) + signExtend12 1 ∧ v5 ≠ (0 : Word) + signExtend12 2⌝)
+    _ (fun _ hp => hp)
+  have hunion_empty : ∀ (cr : CodeReq), cr.union CodeReq.empty = cr := by
+    intro cr; funext a; simp only [CodeReq.union, CodeReq.empty]; cases cr a <;> rfl
+  -- Chain cs2_clean + ft
+  have n3 := cpsBranch_cons_cpsNBranch (base + 12) cr_cs2 CodeReq.empty
+    (CodeReq.Disjoint.empty_right cr_cs2)
+    _ e2 _ (base + 20) _ _ cs2_clean ft
+  -- Chain cs1_clean + n3
+  have hd_cs1_rest : cr_cs1.Disjoint (cr_cs2.union CodeReq.empty) := by
+    rw [hunion_empty]; exact hd_cs1_cs2
+  have n2 := cpsBranch_cons_cpsNBranch_with_perm (base + 4) cr_cs1 (cr_cs2.union CodeReq.empty)
+    hd_cs1_rest
+    _ e1 _ (base + 12) _ _ _
+    (fun h hp => by xperm_hyp hp) cs1_clean n3
+  -- Chain beq0f + n2
+  have hd_beq0_rest : cr_beq0.Disjoint (cr_cs1.union (cr_cs2.union CodeReq.empty)) := by
+    rw [hunion_empty]; exact CodeReq.Disjoint.union_right hd_beq0_cs1 hd_beq0_cs2
+  have n1 := cpsBranch_cons_cpsNBranch_with_perm base cr_beq0 (cr_cs1.union (cr_cs2.union CodeReq.empty))
+    hd_beq0_rest
+    _ e0 _ (base + 4) _ _ _
+    (fun h hp => by xperm_hyp hp) beq0f n2
+  -- Simplify CR and match goal
+  have hcr_eq : cr_beq0.union (cr_cs1.union (cr_cs2.union CodeReq.empty)) = shr_phase_c_code base := by
+    simp only [hunion_empty]; rfl
   intro code
   have n1_rw := hcr_eq ▸ n1
   exact cpsNBranch_weaken_posts _ _ _ _ _ (cpsNBranch_weaken_pre _ _ _ _ _ (fun h hp => by xperm_hyp hp) n1_rw)
