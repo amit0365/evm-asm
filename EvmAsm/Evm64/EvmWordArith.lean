@@ -768,7 +768,46 @@ theorem slt_result_correct (a b : EvmWord) :
   have hborrow2_iff : borrow2 = (1 : Word) ↔
       a0.toNat + a1.toNat * 2^64 + a2.toNat * 2^128 <
       b0.toNat + b1.toNat * 2^64 + b2.toNat * 2^128 := by
-    sorry -- TODO: 3-limb borrow chain (subset of lt_borrow_chain_correct)
+    -- Same structure as lt_borrow_chain_correct steps 1-3
+    have hb0_nat : borrow0.toNat = if a0.toNat < b0.toNat then 1 else 0 := by
+      simp only [borrow0]; split
+      · rename_i hh; rw [if_pos ((ult_iff _ _).mp hh)]; rfl
+      · rename_i hh; rw [if_neg (fun hlt => hh ((ult_iff _ _).mpr hlt))]; rfl
+    have hb1_cond : (BitVec.ult a1 b1 ∨ BitVec.ult temp1 borrow0) ↔
+        (a0.toNat + a1.toNat * 2^64 < b0.toNat + b1.toNat * 2^64) := by
+      rw [show BitVec.ult a1 b1 ↔ a1.toNat < b1.toNat from ult_iff _ _,
+          show BitVec.ult temp1 borrow0 ↔ temp1.toNat < borrow0.toNat from ult_iff _ _]
+      simp only [temp1, BitVec.toNat_sub]; rw [hb0_nat]
+      convert borrow_step_iff (2^64) a1.isLt b1.isLt a0.isLt b0.isLt using 2; omega
+    have hb1_nat : borrow1.toNat = if (a0.toNat + a1.toNat * 2^64 <
+        b0.toNat + b1.toNat * 2^64) then 1 else 0 := by
+      rw [show borrow1 = _ from borrow_or_iff _ _]; split
+      · rename_i hh; rw [if_pos (hb1_cond.mp hh)]; rfl
+      · rename_i hh; rw [if_neg (fun hlt => hh (hb1_cond.mpr hlt))]; rfl
+    have hb2_cond : (BitVec.ult a2 b2 ∨ BitVec.ult temp2 borrow1) ↔
+        (a0.toNat + a1.toNat * 2^64 + a2.toNat * 2^128 <
+         b0.toNat + b1.toNat * 2^64 + b2.toNat * 2^128) := by
+      rw [show BitVec.ult a2 b2 ↔ a2.toNat < b2.toNat from ult_iff _ _,
+          show BitVec.ult temp2 borrow1 ↔ temp2.toNat < borrow1.toNat from ult_iff _ _]
+      simp only [temp2, BitVec.toNat_sub]; rw [hb1_nat]
+      have ha_bound : a0.toNat + a1.toNat * 2^64 < 2^128 := by
+        have := a0.isLt; have := a1.isLt; nlinarith
+      have hb_bound : b0.toNat + b1.toNat * 2^64 < 2^128 := by
+        have := b0.isLt; have := b1.isLt; nlinarith
+      convert borrow_step_iff (2^128) a2.isLt b2.isLt ha_bound hb_bound using 2
+      congr 1; omega
+    -- borrow2 = borrow2a ||| borrow2b encodes hb2_cond
+    constructor
+    · intro hb2
+      have hb2_or : borrow2 = if (BitVec.ult a2 b2 ∨ BitVec.ult temp2 borrow1)
+          then (1 : Word) else 0 := borrow_or_iff _ _
+      rw [hb2_or] at hb2; split at hb2
+      · exact hb2_cond.mp ‹_›
+      · simp at hb2
+    · intro hlt
+      have hb2_or : borrow2 = if (BitVec.ult a2 b2 ∨ BitVec.ult temp2 borrow1)
+          then (1 : Word) else 0 := borrow_or_iff _ _
+      rw [hb2_or, if_pos (hb2_cond.mpr hlt)]
   by_cases h : a3 = b3
   · -- MSB limbs equal
     simp only [result, h, ite_true]
@@ -797,10 +836,29 @@ theorem slt_result_correct (a b : EvmWord) :
     simp only [result, h, ite_false]
     -- slt a b ↔ slt a3 b3
     have hmsb_neq : a.msb ≠ b.msb ↔ a3.msb ≠ b3.msb := by rw [hmsb_a, hmsb_b]
-    -- When MSBs differ: slt = !ult, and slt a3 b3 = !ult a3 b3
-    -- But also: ult a b ↔ ¬ ult a3 b3 ... this is more complex
-    -- Simpler: use slt_eq_ult for both and relate
-    sorry
+    -- slt = msb_xor ⊕ ult for both 256-bit and 64-bit
+    simp only [slt_msb]
+    rw [BitVec.slt_eq_ult (x := a) (y := b), BitVec.slt_eq_ult (x := a3) (y := b3)]
+    rw [hmsb_a, hmsb_b]
+    -- msb terms now match. Suffices: ult a3 b3 = ult a b
+    congr 1; congr 1; congr 1
+    -- Goal: ult a3 b3 = ult a b (Bool equality)
+    simp only [BitVec.ult, decide_eq_decide]
+    rw [toNat_eq_limb_sum a, toNat_eq_limb_sum b]
+    constructor
+    · intro h3; nlinarith [a0.isLt, b0.isLt, a1.isLt, b1.isLt, a2.isLt, b2.isLt]
+    · intro hab
+      by_contra h3; push_neg at h3
+      have hge : b3.toNat ≤ a3.toNat := h3
+      have hne : a3.toNat ≠ b3.toNat := fun heq => h (BitVec.eq_of_toNat_eq heq)
+      have hgt : a3.toNat ≥ b3.toNat + 1 := by omega
+      -- a3*2^192 ≥ (b3+1)*2^192 = b3*2^192 + 2^192
+      -- lower limbs < 2^192, so a.toNat ≥ a3*2^192 > b.toNat
+      have := a0.isLt; have := b0.isLt; have := a1.isLt; have := b1.isLt
+      have := a2.isLt; have := b2.isLt
+      have h192_bound : a0.toNat + a1.toNat * 2^64 + a2.toNat * 2^128 < 2^192 := by nlinarith
+      have h192_bound' : b0.toNat + b1.toNat * 2^64 + b2.toNat * 2^128 < 2^192 := by nlinarith
+      nlinarith [Nat.mul_le_mul_right (2^192) hgt]
 
 end EvmWord
 
