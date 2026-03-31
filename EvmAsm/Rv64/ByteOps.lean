@@ -113,6 +113,52 @@ theorem generic_lbu_spec (rd rs1 : Reg) (v_addr v_old : Word)
     have h4 := holdsFor_sepConj_pull_second.mpr h3
     exact holdsFor_pcFree_setPC (pcFree_sepConj (by pcFree) hR) _ _ h4
 
+/-! ## LB generic spec
+
+LB reads a byte from memory at an arbitrary byte address and sign-extends it.
+The precondition owns the containing doubleword; the postcondition preserves it unchanged. -/
+
+theorem generic_lb_spec (rd rs1 : Reg) (v_addr v_old : Word)
+    (offset : BitVec 12) (base : Addr)
+    (dwordAddr : Addr) (word_val : Word)
+    (hrd_ne_x0 : rd ≠ .x0)
+    (_hrd_ne_rs1 : rd ≠ rs1)
+    (halign : alignToDword (v_addr + signExtend12 offset) = dwordAddr)
+    (hvalid : isValidByteAccess (v_addr + signExtend12 offset) = true) :
+    cpsTriple base (base + 4)
+      (CodeReq.singleton base (.LB rd rs1 offset))
+      ((rs1 ↦ᵣ v_addr) ** (rd ↦ᵣ v_old) ** (dwordAddr ↦ₘ word_val))
+      ((rs1 ↦ᵣ v_addr) **
+       (rd ↦ᵣ (extractByte word_val (byteOffset (v_addr + signExtend12 offset))).signExtend 64) **
+       (dwordAddr ↦ₘ word_val)) := by
+  intro R hR s hcr hPR hpc; subst hpc
+  have hfetch : s.code s.pc = some (.LB rd rs1 offset) :=
+    (CodeReq.singleton_satisfiedBy s.pc (.LB rd rs1 offset) s).mp hcr
+  have hrs1 : s.getReg rs1 = v_addr :=
+    (holdsFor_regIs _ _ s).mp (holdsFor_sepConj_elim_left
+      (holdsFor_sepConj_elim_left hPR))
+  have hmem : s.getMem dwordAddr = word_val :=
+    (holdsFor_memIs _ _ s).mp (holdsFor_sepConj_elim_right (holdsFor_sepConj_elim_right
+      (holdsFor_sepConj_elim_left hPR)))
+  have hstep' : step s = some (execInstrBr s (.LB rd rs1 offset)) :=
+    step_lb s rd rs1 offset hfetch (hrs1 ▸ hvalid)
+  have hexec' : execInstrBr s (.LB rd rs1 offset) =
+      (s.setReg rd ((extractByte word_val (byteOffset (v_addr + signExtend12 offset))).signExtend 64)).setPC (s.pc + 4) := by
+    simp only [execInstrBr, hrs1, getByte_eq]; rw [halign, hmem]
+  refine ⟨1,
+    (s.setReg rd ((extractByte word_val (byteOffset (v_addr + signExtend12 offset))).signExtend 64)).setPC (s.pc + 4),
+    ?_, rfl, ?_⟩
+  · show (step s).bind (stepN 0) = some _
+    rw [hstep', hexec']; rfl
+  · have h1 := holdsFor_sepConj_pull_second.mp hPR
+    have h1a := holdsFor_sepConj_assoc.mp h1
+    have h2 := holdsFor_sepConj_regIs_setReg
+      (v' := (extractByte word_val (byteOffset (v_addr + signExtend12 offset))).signExtend 64)
+      hrd_ne_x0 h1a
+    have h3 := holdsFor_sepConj_assoc.mpr h2
+    have h4 := holdsFor_sepConj_pull_second.mpr h3
+    exact holdsFor_pcFree_setPC (pcFree_sepConj (by pcFree) hR) _ _ h4
+
 /-! ## SB generic spec
 
 SB writes a byte to memory at an arbitrary byte address. -/

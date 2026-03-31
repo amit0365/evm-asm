@@ -477,6 +477,61 @@ theorem generic_blt_spec (rs1 rs2 : Reg) (offset : BitVec 13) (v1 v2 : Word) (ba
          (sepConj_pure_right _ _ h1b).mpr ⟨hRs2, hlt⟩⟩, hR2⟩
 
 -- ============================================================================
+-- Group 9e: Branch (BGEU) — cpsBranch (unsigned greater or equal)
+-- ============================================================================
+
+/-- Generic spec for BGEU: branch if unsigned greater or equal.
+    Taken (¬ult v1 v2): PC = base + signExtend13 offset
+    Not taken (ult v1 v2): PC = base + 4 -/
+theorem generic_bgeu_spec (rs1 rs2 : Reg) (offset : BitVec 13) (v1 v2 : Word) (base : Addr) :
+    cpsBranch base (CodeReq.singleton base (.BGEU rs1 rs2 offset))
+      ((rs1 ↦ᵣ v1) ** (rs2 ↦ᵣ v2))
+      (base + signExtend13 offset)
+        ((rs1 ↦ᵣ v1) ** (rs2 ↦ᵣ v2) ** ⌜¬BitVec.ult v1 v2⌝)
+      (base + 4)
+        ((rs1 ↦ᵣ v1) ** (rs2 ↦ᵣ v2) ** ⌜BitVec.ult v1 v2⌝) := by
+  intro R hR s hcr hPR hpc; subst hpc
+  have hfetch : s.code s.pc = some (.BGEU rs1 rs2 offset) :=
+    (CodeReq.singleton_satisfiedBy s.pc (.BGEU rs1 rs2 offset) s).mp hcr
+  have hrs1 : s.getReg rs1 = v1 :=
+    (holdsFor_regIs _ _ s).mp (holdsFor_sepConj_elim_left
+      (holdsFor_sepConj_elim_left hPR))
+  have hrs2 : s.getReg rs2 = v2 :=
+    (holdsFor_regIs _ _ s).mp (holdsFor_sepConj_elim_right
+      (holdsFor_sepConj_elim_left hPR))
+  have hstep' : step s = some (execInstrBr s (.BGEU rs1 rs2 offset)) :=
+    step_non_ecall_non_mem s _ hfetch (by nofun) (by nofun) (by rfl)
+  by_cases hlt : BitVec.ult v1 v2
+  · -- Not taken: ult v1 v2 → ¬(¬ult), so BGEU falls through
+    have hexec' : execInstrBr s (.BGEU rs1 rs2 offset) = s.setPC (s.pc + 4) := by
+      simp [execInstrBr, hrs1, hrs2, hlt]
+    refine ⟨1, s.setPC (s.pc + 4), ?_, Or.inr ⟨rfl, ?_⟩⟩
+    · show (step s).bind (stepN 0) = some _
+      rw [hstep', hexec']; rfl
+    · have hpc_free : (((rs1 ↦ᵣ v1) ** (rs2 ↦ᵣ v2)) ** R).pcFree :=
+        pcFree_sepConj (by pcFree) hR
+      have hPR' := holdsFor_pcFree_setPC hpc_free s (s.pc + 4) hPR
+      obtain ⟨hp, hcompat, h1, h2, hd, hu, hP1, hR2⟩ := hPR'
+      obtain ⟨h1a, h1b, hd1, hu1, hRs1, hRs2⟩ := hP1
+      exact ⟨hp, hcompat, h1, h2, hd, hu,
+        ⟨h1a, h1b, hd1, hu1, hRs1,
+         (sepConj_pure_right _ _ h1b).mpr ⟨hRs2, hlt⟩⟩, hR2⟩
+  · -- Taken: ¬ult v1 v2 → BGEU branches
+    have hexec' : execInstrBr s (.BGEU rs1 rs2 offset) = s.setPC (s.pc + signExtend13 offset) := by
+      simp [execInstrBr, hrs1, hrs2, hlt]
+    refine ⟨1, s.setPC (s.pc + signExtend13 offset), ?_, Or.inl ⟨rfl, ?_⟩⟩
+    · show (step s).bind (stepN 0) = some _
+      rw [hstep', hexec']; rfl
+    · have hpc_free : (((rs1 ↦ᵣ v1) ** (rs2 ↦ᵣ v2)) ** R).pcFree :=
+        pcFree_sepConj (by pcFree) hR
+      have hPR' := holdsFor_pcFree_setPC hpc_free s (s.pc + signExtend13 offset) hPR
+      obtain ⟨hp, hcompat, h1, h2, hd, hu, hP1, hR2⟩ := hPR'
+      obtain ⟨h1a, h1b, hd1, hu1, hRs1, hRs2⟩ := hP1
+      exact ⟨hp, hcompat, h1, h2, hd, hu,
+        ⟨h1a, h1b, hd1, hu1, hRs1,
+         (sepConj_pure_right _ _ h1b).mpr ⟨hRs2, hlt⟩⟩, hR2⟩
+
+-- ============================================================================
 -- Group 10: JAL (jump and link)
 -- ============================================================================
 
