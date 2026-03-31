@@ -35,13 +35,6 @@ open EvmAsm.Rv64.Tactics
 namespace EvmAsm.Rv64
 
 -- ============================================================================
--- signExtend12 helper (only -16 is new; 0/8/16 are in Instructions.lean)
--- ============================================================================
-
-@[simp] theorem signExtend12_neg16 :
-    signExtend12 (-16 : BitVec 12) = (-16 : Word) := by native_decide
-
--- ============================================================================
 -- Program snippets
 -- ============================================================================
 
@@ -198,18 +191,13 @@ theorem callNear_function_spec
     ((.x1 ↦ᵣ old_ra) ** P) ((.x1 ↦ᵣ (call_site + 4)) ** P) ((.x1 ↦ᵣ (call_site + 4)) ** Q)
     hcall (hfunc (call_site + 4))
 
-/-- Helper: x &&& ~~~1 = x when x is even (bit 0 is clear).
-    Useful for eliminating the alignment mask from JALR exit addresses,
-    since all return addresses from JAL are 4-byte aligned. -/
-theorem addr_and_not1_eq_self (x : Addr) (h : x &&& ~~~1 = x) :
-    (x &&& ~~~1) = x := h
-
 -- ============================================================================
 -- Prologue-body-epilogue composition
 -- ============================================================================
 
 /-- Compose prologue + body + epilogue for a non-leaf function.
-    The body runs with frame sp (= original sp - 16) and may clobber x1.
+    The body runs with frame sp (= original sp - 16) and must preserve
+    x1 (ra), x2 (frame sp), and the saved-ra slot at mem[sp_val - 8].
     The epilogue restores ra from the stack and returns to the caller.
 
     sp_val: ORIGINAL sp on entry.
