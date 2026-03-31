@@ -23,3 +23,5 @@ import EvmAsm.Rv64.Tactics.SpecDb
 import EvmAsm.Rv64.Tactics.RunBlock
 import EvmAsm.Rv64.Tactics.LiftSpec
 import EvmAsm.Rv64.ByteOps
+import EvmAsm.Rv64.HalfwordOps
+import EvmAsm.Rv64.WordOps

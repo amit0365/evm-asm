@@ -122,6 +122,78 @@ theorem addi_spec_same (rd : Reg) (v : Word) (imm : BitVec 12) (base : Addr)
     (by intro s hfetch; exact step_non_ecall_non_mem s _ hfetch (by nofun) (by nofun) (by rfl))
 
 -- ============================================================================
+-- ALU Instructions (Immediate): ORI
+-- ============================================================================
+
+/-- ORI rd, rs1, imm: rd := rs1 | sext(imm) (registers distinct) -/
+theorem ori_spec (rd rs1 : Reg) (v1 v_old : Word) (imm : BitVec 12) (base : Addr)
+    (hrd_ne_x0 : rd ≠ .x0) :
+    cpsTriple base (base + 4) (CodeReq.singleton base (.ORI rd rs1 imm))
+      ((rs1 ↦ᵣ v1) ** (rd ↦ᵣ v_old))
+      ((rs1 ↦ᵣ v1) ** (rd ↦ᵣ (v1 ||| signExtend12 imm))) :=
+  generic_2reg_spec (.ORI rd rs1 imm) rs1 rd v1 v_old (v1 ||| signExtend12 imm) base hrd_ne_x0
+    (by intro s _ hrs1 _; simp [execInstrBr, hrs1])
+    (by intro s hfetch; exact step_non_ecall_non_mem s _ hfetch (by nofun) (by nofun) (by rfl))
+
+/-- ORI rd, rd, imm: rd := rd | sext(imm) (same register) -/
+theorem ori_spec_same (rd : Reg) (v : Word) (imm : BitVec 12) (base : Addr)
+    (hrd_ne_x0 : rd ≠ .x0) :
+    cpsTriple base (base + 4) (CodeReq.singleton base (.ORI rd rd imm))
+      (rd ↦ᵣ v)
+      (rd ↦ᵣ (v ||| signExtend12 imm)) :=
+  generic_1reg_spec (.ORI rd rd imm) rd v _ base hrd_ne_x0
+    (by intro s _ hrd; simp [execInstrBr, hrd])
+    (by intro s hfetch; exact step_non_ecall_non_mem s _ hfetch (by nofun) (by nofun) (by rfl))
+
+-- ============================================================================
+-- ALU Instructions (Immediate): SLTI
+-- ============================================================================
+
+/-- SLTI rd, rs1, imm: rd := (rs1 <s sext(imm)) ? 1 : 0 (registers distinct) -/
+theorem slti_spec (rd rs1 : Reg) (v1 v_old : Word) (imm : BitVec 12) (base : Addr)
+    (hrd_ne_x0 : rd ≠ .x0) :
+    cpsTriple base (base + 4) (CodeReq.singleton base (.SLTI rd rs1 imm))
+      ((rs1 ↦ᵣ v1) ** (rd ↦ᵣ v_old))
+      ((rs1 ↦ᵣ v1) ** (rd ↦ᵣ (if BitVec.slt v1 (signExtend12 imm) then 1 else 0))) :=
+  generic_2reg_spec (.SLTI rd rs1 imm) rs1 rd v1 v_old _ base hrd_ne_x0
+    (by intro s _ hrs1 _; simp [execInstrBr, hrs1])
+    (by intro s hfetch; exact step_non_ecall_non_mem s _ hfetch (by nofun) (by nofun) (by rfl))
+
+/-- SLTI rd, rd, imm: rd := (rd <s sext(imm)) ? 1 : 0 (same register) -/
+theorem slti_spec_same (rd : Reg) (v : Word) (imm : BitVec 12) (base : Addr)
+    (hrd_ne_x0 : rd ≠ .x0) :
+    cpsTriple base (base + 4) (CodeReq.singleton base (.SLTI rd rd imm))
+      (rd ↦ᵣ v)
+      (rd ↦ᵣ (if BitVec.slt v (signExtend12 imm) then 1 else 0)) :=
+  generic_1reg_spec (.SLTI rd rd imm) rd v _ base hrd_ne_x0
+    (by intro s _ hrd; simp [execInstrBr, hrd])
+    (by intro s hfetch; exact step_non_ecall_non_mem s _ hfetch (by nofun) (by nofun) (by rfl))
+
+-- ============================================================================
+-- RV64I Word Instructions: ADDIW
+-- ============================================================================
+
+/-- ADDIW rd, rs1, imm: rd := signExtend64(truncate32(rs1) + truncate32(sext(imm))) (registers distinct) -/
+theorem addiw_spec (rd rs1 : Reg) (v1 v_old : Word) (imm : BitVec 12) (base : Addr)
+    (hrd_ne_x0 : rd ≠ .x0) :
+    cpsTriple base (base + 4) (CodeReq.singleton base (.ADDIW rd rs1 imm))
+      ((rs1 ↦ᵣ v1) ** (rd ↦ᵣ v_old))
+      ((rs1 ↦ᵣ v1) ** (rd ↦ᵣ ((v1.truncate 32 + (signExtend12 imm).truncate 32 : BitVec 32).signExtend 64))) :=
+  generic_2reg_spec (.ADDIW rd rs1 imm) rs1 rd v1 v_old _ base hrd_ne_x0
+    (by intro s _ hrs1 _; simp [execInstrBr, hrs1])
+    (by intro s hfetch; exact step_non_ecall_non_mem s _ hfetch (by nofun) (by nofun) (by rfl))
+
+/-- ADDIW rd, rd, imm: rd := signExtend64(truncate32(rd) + truncate32(sext(imm))) (same register) -/
+theorem addiw_spec_same (rd : Reg) (v : Word) (imm : BitVec 12) (base : Addr)
+    (hrd_ne_x0 : rd ≠ .x0) :
+    cpsTriple base (base + 4) (CodeReq.singleton base (.ADDIW rd rd imm))
+      (rd ↦ᵣ v)
+      (rd ↦ᵣ ((v.truncate 32 + (signExtend12 imm).truncate 32 : BitVec 32).signExtend 64)) :=
+  generic_1reg_spec (.ADDIW rd rd imm) rd v _ base hrd_ne_x0
+    (by intro s _ hrd; simp [execInstrBr, hrd])
+    (by intro s hfetch; exact step_non_ecall_non_mem s _ hfetch (by nofun) (by nofun) (by rfl))
+
+-- ============================================================================
 -- Upper Immediate Instructions
 -- ============================================================================
 
@@ -280,6 +352,18 @@ theorem bne_spec_same (rs : Reg) (offset : BitVec 13) (v : Word) (base : Addr) :
   · show (step s).bind (stepN 0) = some _
     rw [hstep', hexec']; rfl
   · exact holdsFor_pcFree_setPC (pcFree_sepConj (by pcFree) hR) _ _ hPR
+
+-- ============================================================================
+-- Branch Instructions: BGEU
+-- ============================================================================
+
+/-- BGEU rs1, rs2, offset: branch if rs1 >=u rs2 (registers distinct) -/
+theorem bgeu_spec (rs1 rs2 : Reg) (offset : BitVec 13) (v1 v2 : Word) (base : Addr) :
+    cpsBranch base (CodeReq.singleton base (.BGEU rs1 rs2 offset))
+      ((rs1 ↦ᵣ v1) ** (rs2 ↦ᵣ v2))
+      (base + signExtend13 offset) ((rs1 ↦ᵣ v1) ** (rs2 ↦ᵣ v2) ** ⌜¬BitVec.ult v1 v2⌝)
+      (base + 4) ((rs1 ↦ᵣ v1) ** (rs2 ↦ᵣ v2) ** ⌜BitVec.ult v1 v2⌝) :=
+  generic_bgeu_spec rs1 rs2 offset v1 v2 base
 
 -- ============================================================================
 -- Jump Instructions
