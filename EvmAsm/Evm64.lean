@@ -7,6 +7,7 @@
 -- Foundations
 import EvmAsm.Evm64.Basic
 import EvmAsm.Evm64.Stack
+import EvmAsm.Evm64.CodeRegion
 
 -- Stack operations
 import EvmAsm.Evm64.Pop
