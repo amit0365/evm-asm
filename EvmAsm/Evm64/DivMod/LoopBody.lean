@@ -1005,12 +1005,100 @@ theorem divK_store_loop_spec
     (fun h hp => hp) SQx0 LCp
 
 -- ============================================================================
--- Section 10: Notes on full loop body composition
--- All 9 intermediate building blocks are proved (0 sorry).
--- The full divK_loop_body_spec composition chains them with 2 by_cases (BLTU + BEQ).
--- Composing across let-bound conditional values (borrow from mulsub) requires
--- explicit cpsTriple_consequence with subst/simp to convert between the expanded
--- and abbreviated forms of the conditional expression.
+-- Section 10: Mulsub + correction_skip composition (borrow = 0 path)
+-- Takes borrow as an explicit parameter (not let-bound) to enable rw.
 -- ============================================================================
+
+set_option maxRecDepth 4096 in
+set_option maxHeartbeats 3200000 in
+/-- Mulsub + correction skip: when mulsub produces borrow=0, skip addback.
+    Takes borrow as explicit parameter to avoid let-binding expansion issues.
+    Entry: base+516, Exit: base+880, CodeReq: divCode base. -/
+theorem divK_mulsub_correction_skip_spec
+    (sp q_hat j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word)
+    (v1_old v5_old v6_old v7_old v10_old v2_old : Word)
+    (base : Addr)
+    (hv_j : isValidDwordAccess (sp + signExtend12 3976) = true)
+    (hv_v0 : isValidDwordAccess (sp + signExtend12 32) = true)
+    (hv_u0 : isValidDwordAccess ((sp + signExtend12 4056 - j <<< (3 : BitVec 6).toNat) + signExtend12 0) = true)
+    (hv_v1 : isValidDwordAccess (sp + signExtend12 40) = true)
+    (hv_u1 : isValidDwordAccess ((sp + signExtend12 4056 - j <<< (3 : BitVec 6).toNat) + signExtend12 4088) = true)
+    (hv_v2 : isValidDwordAccess (sp + signExtend12 48) = true)
+    (hv_u2 : isValidDwordAccess ((sp + signExtend12 4056 - j <<< (3 : BitVec 6).toNat) + signExtend12 4080) = true)
+    (hv_v3 : isValidDwordAccess (sp + signExtend12 56) = true)
+    (hv_u3 : isValidDwordAccess ((sp + signExtend12 4056 - j <<< (3 : BitVec 6).toNat) + signExtend12 4072) = true)
+    (hv_u4 : isValidDwordAccess ((sp + signExtend12 4056 - j <<< (3 : BitVec 6).toNat) + signExtend12 4064) = true) :
+    let u_base := sp + signExtend12 4056 - j <<< (3 : BitVec 6).toNat
+    -- Mulsub intermediates
+    let p0_lo := q_hat * v0; let p0_hi := rv64_mulhu q_hat v0
+    let fs0 := p0_lo + (signExtend12 0 : Word)
+    let ba0 := if BitVec.ult fs0 (signExtend12 0 : Word) then (1 : Word) else 0
+    let pc0 := ba0 + p0_hi
+    let bs0 := if BitVec.ult u0 fs0 then (1 : Word) else 0
+    let un0 := u0 - fs0; let c0 := pc0 + bs0
+    let p1_lo := q_hat * v1; let p1_hi := rv64_mulhu q_hat v1
+    let fs1 := p1_lo + c0
+    let ba1 := if BitVec.ult fs1 c0 then (1 : Word) else 0
+    let pc1 := ba1 + p1_hi
+    let bs1 := if BitVec.ult u1 fs1 then (1 : Word) else 0
+    let un1 := u1 - fs1; let c1 := pc1 + bs1
+    let p2_lo := q_hat * v2; let p2_hi := rv64_mulhu q_hat v2
+    let fs2 := p2_lo + c1
+    let ba2 := if BitVec.ult fs2 c1 then (1 : Word) else 0
+    let pc2 := ba2 + p2_hi
+    let bs2 := if BitVec.ult u2 fs2 then (1 : Word) else 0
+    let un2 := u2 - fs2; let c2 := pc2 + bs2
+    let p3_lo := q_hat * v3; let p3_hi := rv64_mulhu q_hat v3
+    let fs3 := p3_lo + c2
+    let ba3 := if BitVec.ult fs3 c2 then (1 : Word) else 0
+    let pc3 := ba3 + p3_hi
+    let bs3 := if BitVec.ult u3 fs3 then (1 : Word) else 0
+    let un3 := u3 - fs3; let c3 := pc3 + bs3
+    let u4_new := u_top - c3
+    -- Hypothesis: mulsub borrow = 0
+    (if BitVec.ult u_top c3 then (1 : Word) else 0) = (0 : Word) →
+    cpsTriple (base + 516) (base + 880) (divCode base)
+      ((.x12 ↦ᵣ sp) ** (.x11 ↦ᵣ q_hat) **
+       (.x1 ↦ᵣ v1_old) ** (.x5 ↦ᵣ v5_old) ** (.x6 ↦ᵣ v6_old) **
+       (.x7 ↦ᵣ v7_old) ** (.x10 ↦ᵣ v10_old) ** (.x2 ↦ᵣ v2_old) **
+       (.x0 ↦ᵣ 0) **
+       (sp + signExtend12 3976 ↦ₘ j) **
+       ((sp + signExtend12 32) ↦ₘ v0) ** ((u_base + signExtend12 0) ↦ₘ u0) **
+       ((sp + signExtend12 40) ↦ₘ v1) ** ((u_base + signExtend12 4088) ↦ₘ u1) **
+       ((sp + signExtend12 48) ↦ₘ v2) ** ((u_base + signExtend12 4080) ↦ₘ u2) **
+       ((sp + signExtend12 56) ↦ₘ v3) ** ((u_base + signExtend12 4072) ↦ₘ u3) **
+       ((u_base + signExtend12 4064) ↦ₘ u_top))
+      ((.x12 ↦ᵣ sp) ** (.x11 ↦ᵣ q_hat) **
+       (.x1 ↦ᵣ j) ** (.x5 ↦ᵣ u4_new) ** (.x6 ↦ᵣ u_base) **
+       (.x7 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ c3) ** (.x2 ↦ᵣ un3) **
+       (.x0 ↦ᵣ 0) **
+       (sp + signExtend12 3976 ↦ₘ j) **
+       ((sp + signExtend12 32) ↦ₘ v0) ** ((u_base + signExtend12 0) ↦ₘ un0) **
+       ((sp + signExtend12 40) ↦ₘ v1) ** ((u_base + signExtend12 4088) ↦ₘ un1) **
+       ((sp + signExtend12 48) ↦ₘ v2) ** ((u_base + signExtend12 4080) ↦ₘ un2) **
+       ((sp + signExtend12 56) ↦ₘ v3) ** ((u_base + signExtend12 4072) ↦ₘ un3) **
+       ((u_base + signExtend12 4064) ↦ₘ u4_new)) := by
+  intro u_base
+        p0_lo p0_hi fs0 ba0 pc0 bs0 un0 c0
+        p1_lo p1_hi fs1 ba1 pc1 bs1 un1 c1
+        p2_lo p2_hi fs2 ba2 pc2 bs2 un2 c2
+        p3_lo p3_hi fs3 ba3 pc3 bs3 un3 c3 u4_new
+        hborrow
+  -- 1. Mulsub full (base+516 → base+728)
+  have MS := divK_mulsub_full_spec sp q_hat j v0 v1 v2 v3 u0 u1 u2 u3 u_top
+    v1_old v5_old v6_old v7_old v10_old v2_old base
+    hv_j hv_v0 hv_u0 hv_v1 hv_u1 hv_v2 hv_u2 hv_v3 hv_u3 hv_u4
+  dsimp only [] at MS hborrow
+  -- 2. Rewrite borrow to 0 in mulsub postcondition
+  rw [hborrow] at MS
+  -- 3. Correction skip (base+728 → base+880)
+  have CS := divK_correction_skip_spec sp u_base q_hat v0 v1 v2 v3 un0 un1 un2 un3 u4_new
+    u4_new un3 base
+  -- 4. Compose mulsub(borrow=0) + correction_skip
+  seqFrame MS CS
+  exact cpsTriple_consequence _ _ _ _ _ _ _
+    (fun h hp => by xperm_hyp hp)
+    (fun h hq => by xperm_hyp hq)
+    MSCS
 
 end EvmAsm.Rv64
