@@ -1475,14 +1475,139 @@ theorem divK_normA_full_spec (sp a0 a1 a2 a3 v5 v7 v10 shift anti_shift : Word)
        ((sp + signExtend12 4024) ↦ₘ u4_old) ** ((sp + signExtend12 4032) ↦ₘ u3_old) **
        ((sp + signExtend12 4040) ↦ₘ u2_old) ** ((sp + signExtend12 4048) ↦ₘ u1_old) **
        ((sp + signExtend12 4056) ↦ₘ u0_old))
-      ((.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ a0) ** (.x7 ↦ᵣ u0) ** (.x10 ↦ᵣ (a0 >>> (anti_shift.toNat % 64))) **
+      ((.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ u1) ** (.x7 ↦ᵣ u0) ** (.x10 ↦ᵣ (a0 >>> (anti_shift.toNat % 64))) **
        (.x6 ↦ᵣ shift) ** (.x2 ↦ᵣ anti_shift) **
        ((sp + 0) ↦ₘ a0) ** ((sp + 8) ↦ₘ a1) **
        ((sp + 16) ↦ₘ a2) ** ((sp + 24) ↦ₘ a3) **
        ((sp + signExtend12 4024) ↦ₘ u4) ** ((sp + signExtend12 4032) ↦ₘ u3) **
        ((sp + signExtend12 4040) ↦ₘ u2) ** ((sp + signExtend12 4048) ↦ₘ u1) **
        ((sp + signExtend12 4056) ↦ₘ u0)) := by
-  intro u4 u3 u2 u1 u0; sorry
+  intro u4 u3 u2 u1 u0
+  -- Top: LD a[3], SRL→u[4], SD u[4] (base+312 → base+324)
+  have htop := divK_normA_top_spec 24 4024 sp a3 v5 v7 anti_shift u4_old (base + 312)
+    (by rw [se12_24]; exact hvalid.get (show 3 < 8 from by omega)) hv_u4
+  simp only [se12_24] at htop
+  rw [show (base + 312 : Addr) + 12 = base + 324 from by bv_omega] at htop
+  have htope := cpsTriple_extend_code (hmono := fun a i h =>
+    divK_normA_code_sub_divCode base a i
+      (CodeReq.ofProg_mono_sub (base + 312) (base + 312) (divK_normA 40)
+        (divK_normA_top_prog 24 4024) 0
+        (by bv_omega) (by native_decide) (by native_decide) (by native_decide) a i h)) htop
+  -- Frame top with x6, x10, a[0..2], u[0..3]
+  have htopef := cpsTriple_frame_left _ _ _ _ _
+    ((.x10 ↦ᵣ v10) ** (.x6 ↦ᵣ shift) **
+     ((sp + 0) ↦ₘ a0) ** ((sp + 8) ↦ₘ a1) ** ((sp + 16) ↦ₘ a2) **
+     ((sp + signExtend12 4032) ↦ₘ u3_old) **
+     ((sp + signExtend12 4040) ↦ₘ u2_old) ** ((sp + signExtend12 4048) ↦ₘ u1_old) **
+     ((sp + signExtend12 4056) ↦ₘ u0_old))
+    (by pcFree) htope
+  -- MergeA 1: u[3] = (a[3]<<<shift) | (a[2]>>>anti) (base+324 → base+344)
+  have hma1 := divK_normA_mergeA_spec 16 4032 sp a3 a2 u4 v10 shift anti_shift u3_old (base + 324)
+    (by rw [se12_16]; exact hvalid.get (show 2 < 8 from by omega)) hv_u3
+  simp only [se12_16] at hma1
+  rw [show (base + 324 : Addr) + 20 = base + 344 from by bv_omega] at hma1
+  have hma1e := cpsTriple_extend_code (hmono := fun a i h =>
+    divK_normA_code_sub_divCode base a i
+      (CodeReq.ofProg_mono_sub (base + 312) (base + 324) (divK_normA 40)
+        (divK_normA_mergeA_prog 16 4032) 3
+        (by bv_omega) (by native_decide) (by native_decide) (by native_decide) a i h)) hma1
+  have hma1ef := cpsTriple_frame_left _ _ _ _ _
+    (((sp + 0) ↦ₘ a0) ** ((sp + 8) ↦ₘ a1) ** ((sp + 24) ↦ₘ a3) **
+     ((sp + signExtend12 4024) ↦ₘ u4) **
+     ((sp + signExtend12 4040) ↦ₘ u2_old) ** ((sp + signExtend12 4048) ↦ₘ u1_old) **
+     ((sp + signExtend12 4056) ↦ₘ u0_old))
+    (by pcFree) hma1e
+  have h12 := cpsTriple_seq_with_perm_same_cr _ _ _ _ _ _ _ _
+    (fun h hp => by xperm_hyp hp) htopef hma1ef
+  -- MergeB: u[2] = (a[2]<<<shift) | (a[1]>>>anti) (base+344 → base+364)
+  have hmb := divK_normA_mergeB_spec 8 4040 sp a2 a1 u3 (a2 >>> (anti_shift.toNat % 64))
+    shift anti_shift u2_old (base + 344)
+    (by rw [se12_8]; exact hvalid.get (show 1 < 8 from by omega)) hv_u2
+  simp only [se12_8] at hmb
+  rw [show (base + 344 : Addr) + 20 = base + 364 from by bv_omega] at hmb
+  have hmbe := cpsTriple_extend_code (hmono := fun a i h =>
+    divK_normA_code_sub_divCode base a i
+      (CodeReq.ofProg_mono_sub (base + 312) (base + 344) (divK_normA 40)
+        (divK_normA_mergeB_prog 8 4040) 8
+        (by bv_omega) (by native_decide) (by native_decide) (by native_decide) a i h)) hmb
+  have hmbef := cpsTriple_frame_left _ _ _ _ _
+    (((sp + 0) ↦ₘ a0) ** ((sp + 16) ↦ₘ a2) ** ((sp + 24) ↦ₘ a3) **
+     ((sp + signExtend12 4024) ↦ₘ u4) ** ((sp + signExtend12 4032) ↦ₘ u3) **
+     ((sp + signExtend12 4048) ↦ₘ u1_old) ** ((sp + signExtend12 4056) ↦ₘ u0_old))
+    (by pcFree) hmbe
+  have h123 := cpsTriple_seq_with_perm_same_cr _ _ _ _ _ _ _ _
+    (fun h hp => by xperm_hyp hp) h12 hmbef
+  -- MergeA 2: u[1] = (a[1]<<<shift) | (a[0]>>>anti) (base+364 → base+384)
+  have hma2 := divK_normA_mergeA_spec 0 4048 sp a1 a0 u2 (a1 >>> (anti_shift.toNat % 64))
+    shift anti_shift u1_old (base + 364)
+    (by rw [se12_0]; exact hvalid.get (show 0 < 8 from by omega)) hv_u1
+  simp only [se12_0] at hma2
+  rw [show (base + 364 : Addr) + 20 = base + 384 from by bv_omega] at hma2
+  have hma2e := cpsTriple_extend_code (hmono := fun a i h =>
+    divK_normA_code_sub_divCode base a i
+      (CodeReq.ofProg_mono_sub (base + 312) (base + 364) (divK_normA 40)
+        (divK_normA_mergeA_prog 0 4048) 13
+        (by bv_omega) (by native_decide) (by native_decide) (by native_decide) a i h)) hma2
+  have hma2ef := cpsTriple_frame_left _ _ _ _ _
+    (((sp + 8) ↦ₘ a1) ** ((sp + 16) ↦ₘ a2) ** ((sp + 24) ↦ₘ a3) **
+     ((sp + signExtend12 4024) ↦ₘ u4) ** ((sp + signExtend12 4032) ↦ₘ u3) **
+     ((sp + signExtend12 4040) ↦ₘ u2) ** ((sp + signExtend12 4056) ↦ₘ u0_old))
+    (by pcFree) hma2e
+  have h1234 := cpsTriple_seq_with_perm_same_cr _ _ _ _ _ _ _ _
+    (fun h hp => by xperm_hyp hp) h123 hma2ef
+  -- Last: u[0] = a[0]<<<shift (base+384 → base+392)
+  have hlast := divK_normA_last_spec 4056 sp a0 shift u0_old (base + 384) hv_u0
+  rw [show (base + 384 : Addr) + 8 = base + 392 from by bv_omega] at hlast
+  have hlaste := cpsTriple_extend_code (hmono := fun a i h =>
+    divK_normA_code_sub_divCode base a i
+      (CodeReq.ofProg_mono_sub (base + 312) (base + 384) (divK_normA 40)
+        (divK_normA_last_prog 4056) 18
+        (by bv_omega) (by native_decide) (by native_decide) (by native_decide) a i h)) hlast
+  have hlastef := cpsTriple_frame_left _ _ _ _ _
+    ((.x5 ↦ᵣ u1) ** (.x10 ↦ᵣ (a0 >>> (anti_shift.toNat % 64))) ** (.x2 ↦ᵣ anti_shift) **
+     ((sp + 0) ↦ₘ a0) ** ((sp + 8) ↦ₘ a1) **
+     ((sp + 16) ↦ₘ a2) ** ((sp + 24) ↦ₘ a3) **
+     ((sp + signExtend12 4024) ↦ₘ u4) ** ((sp + signExtend12 4032) ↦ₘ u3) **
+     ((sp + signExtend12 4040) ↦ₘ u2) ** ((sp + signExtend12 4048) ↦ₘ u1))
+    (by pcFree) hlaste
+  have h12345 := cpsTriple_seq_with_perm_same_cr _ _ _ _ _ _ _ _
+    (fun h hp => by xperm_hyp hp) h1234 hlastef
+  -- JAL x0 40 at base+392 → base+432 (1 instruction, empAssertion pre/post)
+  have hjal := jal_x0_spec_gen 40 (base + 392)
+  rw [show (base + 392 : Addr) + signExtend21 40 = base + 432 from by
+        rw [signExtend21_40]; bv_omega] at hjal
+  have hjale := cpsTriple_extend_code (hmono := by
+    intro a i h
+    exact divK_normA_code_sub_divCode base a i
+      (CodeReq.singleton_mono (by
+        have hlookup := CodeReq.ofProg_lookup (base + 312) (divK_normA 40) 20
+          (by native_decide) (by native_decide)
+        rw [show (base + 312 : Addr) + BitVec.ofNat 64 (4 * 20) = base + 392 from by bv_omega]
+          at hlookup
+        exact hlookup) a i h)) hjal
+  -- Frame JAL with everything, then strip empAssertion via consequence
+  let postAll := (.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ u1) ** (.x7 ↦ᵣ u0) **
+    (.x10 ↦ᵣ (a0 >>> (anti_shift.toNat % 64))) **
+    (.x6 ↦ᵣ shift) ** (.x2 ↦ᵣ anti_shift) **
+    ((sp + 0) ↦ₘ a0) ** ((sp + 8) ↦ₘ a1) ** ((sp + 16) ↦ₘ a2) ** ((sp + 24) ↦ₘ a3) **
+    ((sp + signExtend12 4024) ↦ₘ u4) ** ((sp + signExtend12 4032) ↦ₘ u3) **
+    ((sp + signExtend12 4040) ↦ₘ u2) ** ((sp + signExtend12 4048) ↦ₘ u1) **
+    ((sp + signExtend12 4056) ↦ₘ u0)
+  have hjalef := cpsTriple_frame_left _ _ _ _ _ postAll (by pcFree) hjale
+  -- Compose h12345 with JAL by consequence (empAssertion → postAll → postAll)
+  -- Since JAL has empAssertion pre/post and frame is postAll, the result is (empAssertion ** postAll).
+  -- Use consequence to strip empAssertion from both sides.
+  have hjal_clean : cpsTriple (base + 392) (base + 432) (divCode base) postAll postAll :=
+    cpsTriple_consequence _ _ _ _ _ _ _
+      (fun h hp => by show (empAssertion ** postAll) h; rw [sepConj_emp_left']; exact hp)
+      (fun h hp => by rw [sepConj_emp_left'] at hp; exact hp)
+      hjalef
+  have h123456 := cpsTriple_seq_with_perm_same_cr _ _ _ _ _ _ _ _
+    (fun h hp => by xperm_hyp hp) h12345 hjal_clean
+  exact cpsTriple_consequence _ _ _ _ _ _ _
+    (fun h hp => by xperm_hyp hp)
+    (fun h hq => by xperm_hyp hq)
+    h123456
 
 -- ============================================================================
 -- Section 10j: CopyAU composition (copy a[] to u[], 9 instructions)
