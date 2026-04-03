@@ -1004,4 +1004,13 @@ theorem divK_store_loop_spec
   exact cpsTriple_seq_cpsBranch_with_perm_same_cr _ _ _ _ _ _ _ _ _ _
     (fun h hp => hp) SQx0 LCp
 
+-- ============================================================================
+-- Section 10: Notes on full loop body composition
+-- All 9 intermediate building blocks are proved (0 sorry).
+-- The full divK_loop_body_spec composition chains them with 2 by_cases (BLTU + BEQ).
+-- Composing across let-bound conditional values (borrow from mulsub) requires
+-- explicit cpsTriple_consequence with subst/simp to convert between the expanded
+-- and abbreviated forms of the conditional expression.
+-- ============================================================================
+
 end EvmAsm.Rv64
