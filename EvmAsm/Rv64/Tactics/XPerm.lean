@@ -267,6 +267,19 @@ where
       let pf ← mkEqTrans pickProof step2
       return (pf, rhs)
 
+/-- Check if two sepConj chains are eligible for AC normalization.
+    Requires: both are sepConj chains with ≥2 atoms, and sorted atom hashes match. -/
+private def checkACEligible (lhs rhs : Expr) : MetaM Bool := do
+  let lAtoms ← flattenSepConj lhs
+  let rAtoms ← flattenSepConj rhs
+  if lAtoms.length != rAtoms.length then return false
+  if lAtoms.length < 2 then return false
+  let lHashes := lAtoms.map (·.hash) |>.toArray |>.insertionSort (· < ·)
+  let rHashes := rAtoms.map (·.hash) |>.toArray |>.insertionSort (· < ·)
+  for i in [:lHashes.size] do
+    if lHashes[i]! != rHashes[i]! then return false
+  return true
+
 /-- The main permutation proof builder.
 
     Given LHS and RHS as sepConj chains with the same atoms
@@ -276,31 +289,44 @@ where
     then falls back to seps_pick (O(n) tactic, O(n²) kernel), then to pick-chain (O(n²) both). -/
 partial def buildPermProof (lhs rhs : Expr) : MetaM Expr :=
   withTraceNode `runBlock.perf.perm (fun _ => return m!"perm") do
-  -- Fast path: O(1) proof term via AC normalization (no simp, no side effects).
-  -- Uses Lean.Meta.AC.buildNormProof directly to build a reflection-based proof.
-  try
+  -- Fast path: O(n log n) kernel proof via AC normalization (no simp).
+  -- Pre-check: flatten both sides and verify atoms have identical sorted hashes.
+  -- This guarantees buildNormProof will succeed, avoiding any side effects from failure.
+  let acEligible ← checkACEligible lhs rhs
+  if acEligible then
     let op := mkConst ``EvmAsm.Rv64.sepConj
     let some pc ← Lean.Meta.AC.preContext op
-      | throwError "buildPermProof: sepConj has no AC instance"
-    let (proof, _) ← Lean.Meta.AC.buildNormProof pc lhs rhs
-    -- Eagerly type-check the proof to catch kernel mismatches before returning.
-    -- Without this, kernel errors surface after the tactic completes and can't be caught.
-    let proofType ← inferType proof
-    let expectedType ← mkEq lhs rhs
-    unless ← isDefEq proofType expectedType do
-      throwError "buildACPermProof: proof type mismatch"
-    return proof
-  catch _ =>
-  -- Fall back: reassociate + pick-based permutation
-  let (lhsRA, lhsPf) ← reassocProof lhs
-  let (rhsRA, rhsPf) ← reassocProof rhs
-  let lhsAtoms := (← flattenSepConj lhsRA).toArray
-  let rhsAtoms := (← flattenSepConj rhsRA).toArray
-  let permPf ← buildPermProofAux lhsRA lhsAtoms rhsAtoms
-  -- Chain: lhs = lhsRA = rhsRA = rhs
-  let step1 ← mkEqTrans lhsPf permPf
-  let rhsPfSymm ← mkEqSymm rhsPf
-  mkEqTrans step1 rhsPfSymm
+      | throwError "AC: no instance"
+    let some (lHead, lTail) ← parseSepConj? lhs
+      | throwError "AC: lhs not sepConj"
+    let some (rHead, rTail) ← parseSepConj? rhs
+      | throwError "AC: rhs not sepConj"
+    let (lPf, lNorm) ← withTheReader Core.Context (fun c => { c with maxRecDepth := 1024 }) do
+      Lean.Meta.AC.buildNormProof pc lHead lTail
+    let (rPf, rNorm) ← withTheReader Core.Context (fun c => { c with maxRecDepth := 1024 }) do
+      Lean.Meta.AC.buildNormProof pc rHead rTail
+    if ← isDefEq lNorm rNorm then
+      mkEqTrans lPf (← mkEqSymm rPf)
+    else
+      -- Normal forms differ (atoms not syntactically identical) → slow path
+      let (lhsRA, lhsPf) ← reassocProof lhs
+      let (rhsRA, rhsPf) ← reassocProof rhs
+      let lhsAtoms := (← flattenSepConj lhsRA).toArray
+      let rhsAtoms := (← flattenSepConj rhsRA).toArray
+      let permPf ← buildPermProofAux lhsRA lhsAtoms rhsAtoms
+      let step1 ← mkEqTrans lhsPf permPf
+      let rhsPfSymm ← mkEqSymm rhsPf
+      mkEqTrans step1 rhsPfSymm
+  else
+    -- Not AC-eligible → slow path
+    let (lhsRA, lhsPf) ← reassocProof lhs
+    let (rhsRA, rhsPf) ← reassocProof rhs
+    let lhsAtoms := (← flattenSepConj lhsRA).toArray
+    let rhsAtoms := (← flattenSepConj rhsRA).toArray
+    let permPf ← buildPermProofAux lhsRA lhsAtoms rhsAtoms
+    let step1 ← mkEqTrans lhsPf permPf
+    let rhsPfSymm ← mkEqSymm rhsPf
+    mkEqTrans step1 rhsPfSymm
 where
   /-- Inner loop: pick each RHS atom from the LHS chain.
       `lhsAtoms` is the cached atom array (updated by erasing matched elements). -/
