@@ -267,26 +267,15 @@ where
       let pf ← mkEqTrans pickProof step2
       return (pf, rhs)
 
-/-- Canonicalize `Word` → `BitVec 64` in an expression so that atoms elaborated
-    with different type-alias choices become syntactically identical.
-    Pure structural replacement, no MetaM/whnf needed. -/
-private partial def canonicalizeWordType (e : Expr) : Expr :=
-  let bv64 := mkApp (mkConst ``BitVec) (mkNatLit 64)
-  if e == mkConst ``EvmAsm.Rv64.Word then bv64
-  else match e with
-  | .app f a => .app (canonicalizeWordType f) (canonicalizeWordType a)
-  | _ => e
-
 /-- Check if two sepConj chains are eligible for AC normalization.
-    Requires: both are sepConj chains with ≥2 atoms, and sorted atom hashes match
-    after canonicalizing Word → BitVec 64. -/
+    Requires: both are sepConj chains with ≥2 atoms, and sorted atom hashes match. -/
 private def checkACEligible (lhs rhs : Expr) : MetaM Bool := do
   let lAtoms ← flattenSepConj lhs
   let rAtoms ← flattenSepConj rhs
   if lAtoms.length != rAtoms.length then return false
   if lAtoms.length < 2 then return false
-  let lHashes := lAtoms.map (canonicalizeWordType · |>.hash) |>.toArray |>.insertionSort (· < ·)
-  let rHashes := rAtoms.map (canonicalizeWordType · |>.hash) |>.toArray |>.insertionSort (· < ·)
+  let lHashes := lAtoms.map (·.hash) |>.toArray |>.insertionSort (· < ·)
+  let rHashes := rAtoms.map (·.hash) |>.toArray |>.insertionSort (· < ·)
   for i in [:lHashes.size] do
     if lHashes[i]! != rHashes[i]! then return false
   return true
@@ -337,15 +326,13 @@ partial def buildPermProof (lhs rhs : Expr) : MetaM Expr :=
       Mismatching atoms:\n{diffs}\n\n\
       Hint: ensure both sides use the same representation for addresses \
       (e.g., normalize signExtend12 before calling xperm)."
-  -- AC reflection: canonicalize Word→BitVec 64, then normalize each side
-  let lhsC := canonicalizeWordType lhs
-  let rhsC := canonicalizeWordType rhs
+  -- AC reflection: normalize each side, check normal forms match
   let op := mkConst ``EvmAsm.Rv64.sepConj
   let some pc ← Lean.Meta.AC.preContext op
     | throwError "xperm: sepConj has no Associative/Commutative instances"
-  let some (lHead, lTail) ← parseSepConj? lhsC
+  let some (lHead, lTail) ← parseSepConj? lhs
     | throwError "xperm: LHS is not a sepConj chain"
-  let some (rHead, rTail) ← parseSepConj? rhsC
+  let some (rHead, rTail) ← parseSepConj? rhs
     | throwError "xperm: RHS is not a sepConj chain"
   let (lPf, lNorm) ← withTheReader Core.Context (fun c => { c with maxRecDepth := 1024 }) do
     Lean.Meta.AC.buildNormProof pc lHead lTail

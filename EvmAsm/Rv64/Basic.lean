@@ -50,8 +50,11 @@ end Reg
 -- Word type (64-bit bitvectors)
 -- ============================================================================
 
-/-- We use 64-bit words as our machine word size. -/
-abbrev Word := BitVec 64
+/-- We use 64-bit words as our machine word size.
+    Defined as `notation` (not `abbrev`) so the elaborator always produces `BitVec 64`
+    in Expr output, giving identical Expr.hash regardless of whether `Word` or `BitVec 64`
+    was written in source. This is required for the xperm AC reflection fast path. -/
+notation "Word" => BitVec 64
 
 -- Note: Addr was previously a separate abbrev but has been unified with Word
 -- to avoid Expr.hash mismatches in the xperm tactic (Addr vs Word vs BitVec 64).

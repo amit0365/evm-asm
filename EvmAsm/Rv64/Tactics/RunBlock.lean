@@ -196,8 +196,8 @@ private def trySimplifyTop (e : Expr) : MetaM (Expr × Option Expr) := do
     -- Check for BitVec n / Word / Word directly, avoiding inferType + whnf.
     let γType := args[2]!
     if γType.isAppOfArity ``BitVec 1 ||
-       γType == mkConst ``EvmAsm.Rv64.Word ||
-       γType == mkConst ``EvmAsm.Rv64.Word then
+       γType == mkApp (mkConst ``BitVec) (mkNatLit 64) ||
+       γType == mkApp (mkConst ``BitVec) (mkNatLit 64) then
       -- e + 0 → e (common after signExtend12 0 normalization)
       if let some 0 := getBvLitVal? rhs then
         -- Fast path: use addr_add_zero_bv (avoids bv_omega overhead)

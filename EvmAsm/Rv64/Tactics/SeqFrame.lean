@@ -182,7 +182,7 @@ private def extractBaseAndOffset (e : Expr) : Option (Expr × Option Expr × Nat
     Falls back to `bv_omega` when the pattern doesn't match.
     ~100x faster than bv_omega for the common case (base + k1 ≠ base + k2). -/
 private def proveAddrNe (a1 a2 : Expr) : MetaM Expr := do
-  let addrType := mkConst ``EvmAsm.Rv64.Word
+  let addrType := mkApp (mkConst ``BitVec) (mkNatLit 64)
   -- Try offset-based fast path
   if let some (base1, off1, k1) := extractBaseAndOffset a1 then
     if let some (base2, off2, k2) := extractBaseAndOffset a2 then

@@ -2685,7 +2685,7 @@ theorem seps_pick (xs : List Assertion) (n : Nat) (hn : n < xs.length) :
 syntax "sep_perm" ident : tactic
 macro_rules
   | `(tactic| sep_perm $hyp) =>
-    `(tactic| exact (congrFun (show _ = _ by delta Word Word; dsimp (config := { failIfUnchanged := false }) only []; all_goals ac_rfl) _).mp $hyp)
+    `(tactic| exact (congrFun (show _ = _ by dsimp (config := { failIfUnchanged := false }) only []; all_goals ac_rfl) _).mp $hyp)
 
 /-- `sep_eq` closes a goal of the form `⊢ f x = g x` where `f` and `g` are AC-equivalent
     `sepConj` chains. Decomposes the function application with `congrFun` and proves
