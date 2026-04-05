@@ -22,8 +22,6 @@ namespace EvmAsm.Rv64
 -- Phase AB(n=4) → CLZ composition: base → base+212
 -- ============================================================================
 
-set_option maxHeartbeats 12800000 in
-set_option maxRecDepth 4096 in
 /-- PhaseAB(n=4) + CLZ: b≠0, b[3]≠0.
     base → base+212. After CLZ, x6 = shift count, x5 = shifted leading limb. -/
 theorem evm_div_phaseAB_n4_clz_spec (sp base : Word)
@@ -84,8 +82,6 @@ theorem evm_div_phaseAB_n4_clz_spec (sp base : Word)
 -- PhaseAB(n=4) → CLZ → PhaseC2(ntaken) → NormB: base → base+312
 -- ============================================================================
 
-set_option maxHeartbeats 25600000 in
-set_option maxRecDepth 4096 in
 /-- PhaseAB(n=4) + CLZ + PhaseC2(shift≠0) + NormB: full normalization path.
     base → base+312. b[0..3] normalized in-place. -/
 theorem evm_div_n4_to_normB_spec (sp base : Word)
@@ -184,8 +180,6 @@ theorem evm_div_n4_to_normB_spec (sp base : Word)
 -- Composes: PhaseAB → CLZ → PhaseC2(ntaken) → NormB → NormA → LoopSetup(ntaken)
 -- ============================================================================
 
-set_option maxHeartbeats 25600000 in
-set_option maxRecDepth 4096 in
 /-- Full n=4 path from entry to loop body start (shift ≠ 0 case).
     base → base+448. Normalizes b[] and a[], sets up loop parameters. -/
 theorem evm_div_n4_to_loopSetup_spec (sp base : Word)
@@ -325,8 +319,6 @@ theorem evm_div_n4_to_loopSetup_spec (sp base : Word)
 -- Skips NormB/NormA since b[] is already normalized when shift=0.
 -- ============================================================================
 
-set_option maxHeartbeats 25600000 in
-set_option maxRecDepth 4096 in
 /-- Full n=4 path from entry to loop body start (shift = 0 case).
     base → base+448. b[] already normalized, u[] = copy of a[]. -/
 theorem evm_div_n4_shift0_to_loopSetup_spec (sp base : Word)
@@ -480,8 +472,6 @@ theorem evm_div_n4_shift0_to_loopSetup_spec (sp base : Word)
 -- Denormalize u[] then load q[] to output.
 -- ============================================================================
 
-set_option maxHeartbeats 25600000 in
-set_option maxRecDepth 4096 in
 /-- Post-loop chain for DIV: denormalize u[], then load q[] to output.
     base+912 → base+1064. Shift ≠ 0 case (denorm body executed). -/
 theorem evm_div_denorm_epilogue_spec (sp base : Word)
@@ -555,8 +545,6 @@ theorem evm_div_denorm_epilogue_spec (sp base : Word)
 -- Denormalize u[] then load u'[] (remainder) to output.
 -- ============================================================================
 
-set_option maxHeartbeats 25600000 in
-set_option maxRecDepth 4096 in
 /-- Post-loop chain for MOD: denormalize u[], then load u'[] to output.
     base+912 → base+1064. Shift ≠ 0 case (denorm body executed). -/
 theorem evm_mod_denorm_epilogue_spec (sp base : Word)

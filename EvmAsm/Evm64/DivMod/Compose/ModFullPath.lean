@@ -20,7 +20,6 @@ namespace EvmAsm.Rv64
 -- Phase A(ntaken) + Phase B(n=4): base → base+116
 -- ============================================================================
 
-set_option maxRecDepth 4096 in
 /-- MOD Phase A (b≠0, fall-through) + Phase B (b[3]≠0, n=4).
     base → base+116. Zeroes q[], u5..u7, stores n=4, loads b[1..3]. -/
 theorem evm_mod_phaseAB_n4_spec (sp base : Word)
@@ -79,8 +78,6 @@ theorem evm_mod_phaseAB_n4_spec (sp base : Word)
 -- Phase AB(n=4) → CLZ: base → base+212
 -- ============================================================================
 
-set_option maxHeartbeats 12800000 in
-set_option maxRecDepth 4096 in
 /-- MOD PhaseAB(n=4) + CLZ: b≠0, b[3]≠0.
     base → base+212. After CLZ, x6 = shift count, x5 = shifted leading limb. -/
 theorem evm_mod_phaseAB_n4_clz_spec (sp base : Word)
@@ -137,8 +134,6 @@ theorem evm_mod_phaseAB_n4_clz_spec (sp base : Word)
 -- PhaseAB(n=4) → CLZ → PhaseC2(ntaken) → NormB: base → base+312
 -- ============================================================================
 
-set_option maxHeartbeats 25600000 in
-set_option maxRecDepth 4096 in
 /-- MOD PhaseAB(n=4) + CLZ + PhaseC2(shift≠0) + NormB: full normalization path.
     base → base+312. b[0..3] normalized in-place. -/
 theorem evm_mod_n4_to_normB_spec (sp base : Word)
@@ -229,8 +224,6 @@ theorem evm_mod_n4_to_normB_spec (sp base : Word)
 -- Full n=4 path to LoopSetup (shift ≠ 0): base → base+448
 -- ============================================================================
 
-set_option maxHeartbeats 25600000 in
-set_option maxRecDepth 4096 in
 /-- MOD full n=4 path from entry to loop body start (shift ≠ 0 case).
     base → base+448. Normalizes b[] and a[], sets up loop parameters. -/
 theorem evm_mod_n4_to_loopSetup_spec (sp base : Word)
@@ -360,8 +353,6 @@ theorem evm_mod_n4_to_loopSetup_spec (sp base : Word)
 -- Full n=4 path to LoopSetup (shift = 0): base → base+448
 -- ============================================================================
 
-set_option maxHeartbeats 25600000 in
-set_option maxRecDepth 4096 in
 /-- MOD full n=4 path from entry to loop body start (shift = 0 case).
     base → base+448. b[] already normalized, u[] = copy of a[]. -/
 theorem evm_mod_n4_shift0_to_loopSetup_spec (sp base : Word)
