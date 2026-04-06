@@ -23,6 +23,9 @@ private theorem j0_u_base_eq (sp : Word) :
   simp only [show (3 : BitVec 6).toNat = 3 from by native_decide]
   bv_omega
 
+/-- Simplify x + 0 for Word (matches after signExtend12_0/j0_shl3_eq rewrites) -/
+private theorem word_add_zero (x : Word) : x + (0 : Word) = x := by bv_omega
+
 /-- q_addr for j=0: sp + signExtend12 4088 - 0<<<3 = sp + signExtend12 4088 -/
 private theorem j0_q_addr_eq (sp : Word) :
     sp + signExtend12 4088 - (0 : Word) <<< (3 : BitVec 6).toNat = sp + signExtend12 4088 := by
@@ -105,6 +108,14 @@ private theorem se12_4_sub_4 :
 /-- x5 in loop body post for j=0: 0<<<3 = 0 -/
 private theorem j0_shl3_eq :
     (0 : Word) <<< (3 : BitVec 6).toNat = (0 : Word) := by native_decide
+
+/-- u_base for j=0 after shl3: sp + SE12(4056) - 0 = sp + SE12(4056) -/
+private theorem j0_sub_zero (sp : Word) :
+    sp + signExtend12 4056 - (0 : Word) = sp + signExtend12 4056 := by bv_omega
+
+/-- q_addr for j=0 after shl3: sp + SE12(4088) - 0 = sp + SE12(4088) -/
+private theorem j0_q_sub_zero (sp : Word) :
+    sp + signExtend12 4088 - (0 : Word) = sp + signExtend12 4088 := by bv_omega
 
 /-- j' for j=0: 0 + signExtend12 4095 -/
 private theorem j0_j'_eq :
@@ -378,10 +389,17 @@ theorem evm_div_n4_full_spec (sp base : Word)
   obtain ⟨h_lp, h_frame, heq_inner, hdisj_inner, hLP, hFrame⟩ := hQFrame
   -- Expand loopBodyPostN4
   change loopBodyPostN4 sp (0 : Word) b0' b1' b2' b3' h_lp at hLP
-  dsimp only [loopBodyPostN4] at hLP
-  simp only [j0_u_base_eq, j0_q_addr_eq, j0_u0_addr_eq, j0_u1_addr_eq,
-    j0_u2_addr_eq, j0_u3_addr_eq, j0_u4_addr_eq, j0_shl3_eq, j0_j'_eq,
-    signExtend12_32, signExtend12_40, signExtend12_48, signExtend12_56] at hLP
+  -- Unfold loopBodyPostN4 WITHOUT unfolding signExtend12 (which would destroy atom identity)
+  unfold loopBodyPostN4 at hLP
+  -- Simplify let-bindings and address expressions
+  -- First: canonicalize compound addresses (u0-u4, q) that use the full u_base/q_addr patterns
+  -- These must fire BEFORE j0_u_base_eq which partially simplifies
+  simp only [j0_u0_addr_eq, j0_u1_addr_eq, j0_u2_addr_eq, j0_u3_addr_eq, j0_u4_addr_eq,
+    j0_q_addr_eq] at hLP
+  -- Second: simplify remaining expressions (u_base in registers, j', signExtend12, etc.)
+  simp only [j0_u_base_eq, j0_shl3_eq, j0_j'_eq, j0_sub_zero, j0_q_sub_zero,
+    signExtend12_0, signExtend12_32, signExtend12_40, signExtend12_48, signExtend12_56,
+    word_add_zero] at hLP
   obtain ⟨x2v, x10v, x11v, un0v, un1v, un2v, un3v, u4v, qv,
     retv, dv, dlov, sunv, hLP_atoms⟩ := hLP
   -- Get post-loop chain with concrete values
@@ -425,7 +443,7 @@ theorem evm_div_n4_full_spec (sp base : Word)
      ((sp + signExtend12 3984) ↦ₘ (4 : Word)) ** ((sp + signExtend12 3976) ↦ₘ (0 : Word)) **
      (sp + signExtend12 3968 ↦ₘ retv) ** (sp + signExtend12 3960 ↦ₘ dv) **
      (sp + signExtend12 3952 ↦ₘ dlov) ** (sp + signExtend12 3944 ↦ₘ sunv)) ** F)) h_full := by
-    sorry -- xperm_hyp hAll
+    xperm_hyp hAll
   have hQ2F : (POST_LOOP_PRE ** (((.x1 ↦ᵣ signExtend12 (4095 : BitVec 12)) ** (.x11 ↦ᵣ x11v) **
      ((sp + 0) ↦ₘ a0) ** ((sp + 8) ↦ₘ a1) **
      ((sp + 16) ↦ₘ a2) ** ((sp + 24) ↦ₘ a3) **
