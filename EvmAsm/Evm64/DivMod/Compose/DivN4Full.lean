@@ -256,4 +256,112 @@ theorem evm_div_n4_preloop_loopbody_spec (sp base : Word)
     (fun h hp => by xperm_hyp hp)
     hComp
 
+-- ============================================================================
+-- Helper: sequential composition with existential intermediate assertion
+-- ============================================================================
+
+/-- Sequential composition where the intermediate has existentials.
+    For each value v, the second triple maps Q v to R. -/
+private theorem cpsTriple_seq_ex_same_cr {V : Type} (s m e : Word) (cr : CodeReq)
+    (P : Assertion) (Q : V → Assertion) (R : Assertion)
+    (h1 : cpsTriple s m cr P (fun h => ∃ v, Q v h))
+    (h2 : ∀ v, cpsTriple m e cr (Q v) R) :
+    cpsTriple s e cr P R := by
+  intro F hF st hcr hPF hpc
+  obtain ⟨k1, s1, hstep1, hpc1, hQF⟩ := h1 F hF st hcr hPF hpc
+  obtain ⟨h_heap, hcompat, h_q, h_f, heq, hdisj, ⟨v, hQv⟩, hFv⟩ := hQF
+  have hQvF : (Q v ** F).holdsFor s1 := ⟨h_heap, hcompat, h_q, h_f, heq, hdisj, hQv, hFv⟩
+  obtain ⟨k2, s2, hstep2, hpc2, hRF⟩ :=
+    h2 v F hF s1 (CodeReq.SatisfiedBy_preserved cr k1 _ _ hstep1 hcr) hQvF hpc1
+  exact ⟨k1 + k2, s2, stepN_add_eq k1 k2 st s1 s2 hstep1 hstep2, hpc2, hRF⟩
+
+-- ============================================================================
+-- Full end-to-end: base → base+1064 for n=4 DIV (shift≠0)
+-- ============================================================================
+
+set_option maxRecDepth 4096 in
+set_option maxHeartbeats 6400000 in
+/-- Full n=4 DIV spec (shift≠0): base → base+1064.
+    Composes pre-loop + loop body (base→base+904) with
+    preamble + denorm + epilogue (base+904→base+1064). -/
+theorem evm_div_n4_full_spec (sp base : Word)
+    (a0 a1 a2 a3 b0 b1 b2 b3 v5 v6 v7 v10 v11 : Word)
+    (q0 q1 q2 q3 u0_old u1_old u2_old u3_old u4_old u5 u6 u7 : Word)
+    (n_mem shift_mem j_old ret_mem d_mem dlo_mem scratch_un0 : Word)
+    (hbnz : b0 ||| b1 ||| b2 ||| b3 ≠ 0)
+    (hb3nz : b3 ≠ 0)
+    (hshift_nz : (clzResult b3).1 ≠ 0)
+    (hvalid : ValidMemRange sp 8)
+    (halign : ((base + 516) + signExtend12 (0 : BitVec 12)) &&& ~~~(1 : Word) = base + 516)
+    (hv_q0 : isValidDwordAccess (sp + signExtend12 4088) = true)
+    (hv_q1 : isValidDwordAccess (sp + signExtend12 4080) = true)
+    (hv_q2 : isValidDwordAccess (sp + signExtend12 4072) = true)
+    (hv_q3 : isValidDwordAccess (sp + signExtend12 4064) = true)
+    (hv_u0 : isValidDwordAccess (sp + signExtend12 4056) = true)
+    (hv_u1 : isValidDwordAccess (sp + signExtend12 4048) = true)
+    (hv_u2 : isValidDwordAccess (sp + signExtend12 4040) = true)
+    (hv_u3 : isValidDwordAccess (sp + signExtend12 4032) = true)
+    (hv_u4 : isValidDwordAccess (sp + signExtend12 4024) = true)
+    (hv_u5 : isValidDwordAccess (sp + signExtend12 4016) = true)
+    (hv_u6 : isValidDwordAccess (sp + signExtend12 4008) = true)
+    (hv_u7 : isValidDwordAccess (sp + signExtend12 4000) = true)
+    (hv_n  : isValidDwordAccess (sp + signExtend12 3984) = true)
+    (hv_shift : isValidDwordAccess (sp + signExtend12 3992) = true)
+    (hv_j  : isValidDwordAccess (sp + signExtend12 3976) = true)
+    (hv_ret : isValidDwordAccess (sp + signExtend12 3968) = true)
+    (hv_d   : isValidDwordAccess (sp + signExtend12 3960) = true)
+    (hv_dlo : isValidDwordAccess (sp + signExtend12 3952) = true)
+    (hv_scratch : isValidDwordAccess (sp + signExtend12 3944) = true) :
+    let shift := (clzResult b3).1
+    let anti_shift := signExtend12 (0 : BitVec 12) - shift
+    let b3' := (b3 <<< (shift.toNat % 64)) ||| (b2 >>> (anti_shift.toNat % 64))
+    let b2' := (b2 <<< (shift.toNat % 64)) ||| (b1 >>> (anti_shift.toNat % 64))
+    let b1' := (b1 <<< (shift.toNat % 64)) ||| (b0 >>> (anti_shift.toNat % 64))
+    let b0' := b0 <<< (shift.toNat % 64)
+    cpsTriple base (base + 1064) (divCode base)
+      ((.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ v5) ** (.x10 ↦ᵣ v10) ** (.x0 ↦ᵣ (0 : Word)) **
+       (.x6 ↦ᵣ v6) ** (.x7 ↦ᵣ v7) ** (.x2 ↦ᵣ (clzResult b3).2 >>> (63 : Nat)) **
+       (.x1 ↦ᵣ (0 : Word)) ** (.x11 ↦ᵣ v11) **
+       ((sp + 0) ↦ₘ a0) ** ((sp + 8) ↦ₘ a1) **
+       ((sp + 16) ↦ₘ a2) ** ((sp + 24) ↦ₘ a3) **
+       ((sp + 32) ↦ₘ b0) ** ((sp + 40) ↦ₘ b1) **
+       ((sp + 48) ↦ₘ b2) ** ((sp + 56) ↦ₘ b3) **
+       ((sp + signExtend12 4088) ↦ₘ q0) ** ((sp + signExtend12 4080) ↦ₘ q1) **
+       ((sp + signExtend12 4072) ↦ₘ q2) ** ((sp + signExtend12 4064) ↦ₘ q3) **
+       ((sp + signExtend12 4056) ↦ₘ u0_old) ** ((sp + signExtend12 4048) ↦ₘ u1_old) **
+       ((sp + signExtend12 4040) ↦ₘ u2_old) ** ((sp + signExtend12 4032) ↦ₘ u3_old) **
+       ((sp + signExtend12 4024) ↦ₘ u4_old) **
+       ((sp + signExtend12 4016) ↦ₘ u5) ** ((sp + signExtend12 4008) ↦ₘ u6) **
+       ((sp + signExtend12 4000) ↦ₘ u7) ** ((sp + signExtend12 3992) ↦ₘ shift_mem) **
+       ((sp + signExtend12 3984) ↦ₘ n_mem) **
+       ((sp + signExtend12 3976) ↦ₘ j_old) **
+       ((sp + signExtend12 3968) ↦ₘ ret_mem) ** ((sp + signExtend12 3960) ↦ₘ d_mem) **
+       ((sp + signExtend12 3952) ↦ₘ dlo_mem) ** ((sp + signExtend12 3944) ↦ₘ scratch_un0))
+      (fun h => ∃ (qv0 qv1 qv2 qv3 : Word),
+        ((.x12 ↦ᵣ (sp + 32)) ** (.x5 ↦ᵣ qv0) ** (.x6 ↦ᵣ qv1) ** (.x7 ↦ᵣ qv2) **
+         (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ qv3) **
+         ((sp + 32) ↦ₘ qv0) ** ((sp + 40) ↦ₘ qv1) **
+         ((sp + 48) ↦ₘ qv2) ** ((sp + 56) ↦ₘ qv3)) h) := by
+  intro shift anti_shift b3' b2' b1' b0'
+  -- Step 1: Pre-loop + loop body (base → base+904)
+  have hPLLB := evm_div_n4_preloop_loopbody_spec sp base
+    a0 a1 a2 a3 b0 b1 b2 b3 v5 v6 v7 v10 v11
+    q0 q1 q2 q3 u0_old u1_old u2_old u3_old u4_old u5 u6 u7
+    n_mem shift_mem j_old ret_mem d_mem dlo_mem scratch_un0
+    hbnz hb3nz hshift_nz hvalid halign
+    hv_q0 hv_q1 hv_q2 hv_q3 hv_u0 hv_u1 hv_u2 hv_u3 hv_u4
+    hv_u5 hv_u6 hv_u7 hv_n hv_shift hv_j hv_ret hv_d hv_dlo hv_scratch
+  intro_lets at hPLLB
+  -- Step 2: Compose via cpsTriple definition to handle existential intermediate
+  show cpsTriple base (base + 1064) (divCode base) _ _
+  intro F hF st hcr hPF hpc
+  -- Execute first half: base → base+904
+  obtain ⟨k1, s1, hstep1, hpc1, hQF⟩ := hPLLB F hF st hcr hPF hpc
+  -- TODO: Complete the end-to-end composition by:
+  -- 1. Destructuring loopBodyPostN4 existentials from the intermediate state
+  -- 2. Applying evm_div_preamble_denorm_epilogue_spec with the concrete values
+  -- 3. Chaining the execution steps
+  -- The approach is proven correct by cpsTriple_seq_ex_same_cr above.
+  sorry
+
 end EvmAsm.Rv64
