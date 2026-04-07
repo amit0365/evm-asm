@@ -118,6 +118,28 @@ theorem runSail_rX_bits_x12 (s : SailState) (v : BitVec 64)
     get, MonadState.get, getThe, MonadStateOf.get]
 
 -- ============================================================================
+-- Bridge lemma: rX_bits from StateRel
+-- ============================================================================
+
+/-- If StateRel holds, reading any Rv64 register from the SAIL state via rX_bits
+    returns the same value as getReg, without modifying state. -/
+theorem runSail_rX_bits_of_stateRel (s_rv : MachineState) (s_sail : SailState)
+    (hrel : StateRel s_rv s_sail) (r : Reg) :
+    runSail (rX_bits (regToRegidx r)) s_sail = some (s_rv.getReg r, s_sail) := by
+  have ha := hrel.reg_agree r
+  cases r <;> simp [regToRegidx, sailRegVal, MachineState.getReg] at ha ⊢ <;>
+  · first
+      | exact runSail_rX_bits_x0 s_sail
+      | exact runSail_rX_bits_x1 s_sail _ ha
+      | exact runSail_rX_bits_x2 s_sail _ ha
+      | exact runSail_rX_bits_x5 s_sail _ ha
+      | exact runSail_rX_bits_x6 s_sail _ ha
+      | exact runSail_rX_bits_x7 s_sail _ ha
+      | exact runSail_rX_bits_x10 s_sail _ ha
+      | exact runSail_rX_bits_x11 s_sail _ ha
+      | exact runSail_rX_bits_x12 s_sail _ ha
+
+-- ============================================================================
 -- wX_bits — register write
 -- ============================================================================
 
