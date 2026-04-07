@@ -1,14 +1,14 @@
 /-
-  EvmAsm.Evm64.DivMod.Compose.DivN3Full
+  EvmAsm.Evm64.DivMod.Compose.ModN3Full
 
-  End-to-end composition for n=3 DIV (b[3]=0, b[2]≠0, shift≠0).
+  End-to-end composition for n=3 MOD (b[3]=0, b[2]≠0, shift≠0).
   Composes: pre-loop (base→base+448) + loop body j=1 (cpsBranch at base+448) +
             loop body j=0 (base+448→base+904) + post-loop (base+904→base+1064).
   For n=3, the loop runs 2 iterations: j=1 (loops back) then j=0 (exits).
 -/
 
 import EvmAsm.Evm64.DivMod.LoopBodyN3
-import EvmAsm.Evm64.DivMod.Compose.FullPathN3
+import EvmAsm.Evm64.DivMod.Compose.ModFullPathN3
 import EvmAsm.Evm64.DivMod.Compose.FullPath
 
 open EvmAsm.Rv64.Tactics
@@ -281,11 +281,11 @@ private theorem cpsTriple_seq_ex_same_cr {V : Type} (s m e : Word) (cr : CodeReq
 
 set_option maxRecDepth 4096 in
 set_option maxHeartbeats 12800000 in
-/-- Pre-loop + two-iteration loop body for n=3 DIV (shift≠0).
+/-- Pre-loop + two-iteration loop body for n=3 MOD (shift≠0).
     Composes base→base+448 (normalization) with two iterations of loop body
     at base+448: j=1 (cpsBranch, loops back) then j=0 (cpsTriple, exits to base+904).
     Postcondition uses loopBodyPostN3 with existentials for computed values. -/
-theorem evm_div_n3_preloop_loopbody_spec (sp base : Word)
+theorem evm_mod_n3_preloop_loopbody_spec (sp base : Word)
     (a0 a1 a2 a3 b0 b1 b2 b3 v5 v6 v7 v10 v11 : Word)
     (q0 q1 q2 q3 u0_old u1_old u2_old u3_old u4_old u5 u6 u7 : Word)
     (n_mem shift_mem j_old ret_mem d_mem dlo_mem scratch_un0 : Word)
@@ -324,7 +324,7 @@ theorem evm_div_n3_preloop_loopbody_spec (sp base : Word)
     let u2 := (a2 <<< (shift.toNat % 64)) ||| (a1 >>> (anti_shift.toNat % 64))
     let u1 := (a1 <<< (shift.toNat % 64)) ||| (a0 >>> (anti_shift.toNat % 64))
     let u0 := a0 <<< (shift.toNat % 64)
-    cpsTriple base (base + 904) (divCode base)
+    cpsTriple base (base + 904) (modCode base)
       ((.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ v5) ** (.x10 ↦ᵣ v10) ** (.x0 ↦ᵣ (0 : Word)) **
        (.x6 ↦ᵣ v6) ** (.x7 ↦ᵣ v7) ** (.x2 ↦ᵣ (clzResult b2).2 >>> (63 : Nat)) **
        (.x1 ↦ᵣ signExtend12 (4 : BitVec 12) - (4 : Word)) ** (.x11 ↦ᵣ v11) **
@@ -375,7 +375,7 @@ theorem evm_div_n3_preloop_loopbody_spec (sp base : Word)
         ((sp + signExtend12 3992) ↦ₘ shift)) h) := by
   intro shift anti_shift b3' b2' b1' b0' u4 u3 u2 u1 u0
   -- Step 1: Pre-loop (base → base+448)
-  have hPL := evm_div_n3_to_loopSetup_spec sp base a0 a1 a2 a3 b0 b1 b2 b3 v5 v6 v7 v10
+  have hPL := evm_mod_n3_to_loopSetup_spec sp base a0 a1 a2 a3 b0 b1 b2 b3 v5 v6 v7 v10
     q0 q1 q2 q3 u0_old u1_old u2_old u3_old u4_old u5 u6 u7 n_mem shift_mem
     hbnz hb3z hb2nz hshift_nz hvalid hv_q0 hv_q1 hv_q2 hv_q3
     hv_u0 hv_u1 hv_u2 hv_u3 hv_u4 hv_u5 hv_u6 hv_u7 hv_n hv_shift
@@ -424,8 +424,8 @@ theorem evm_div_n3_preloop_loopbody_spec (sp base : Word)
   simp only [j1_u0_addr_eq, j1_q_addr_eq, j1_u1_addr_eq,
     j1_u2_addr_eq, j1_u3_addr_eq, j1_u4_addr_eq,
     signExtend12_32, signExtend12_40, signExtend12_48, signExtend12_56] at hJ1
-  -- Lift j=1 from sharedDivModCode to divCode
-  have hJ1d := cpsBranch_extend_code (sharedDivModCode_sub_divCode base) hJ1
+  -- Lift j=1 from sharedDivModCode to modCode
+  have hJ1d := cpsBranch_extend_code (sharedDivModCode_sub_modCode base) hJ1
   -- Frame j=1 with cells for j=0 window that j=1 doesn't touch
   have hJ1f := cpsBranch_frame_left _ _ _ _ _ _ _
     (((sp + signExtend12 4056) ↦ₘ u0) **
@@ -439,20 +439,20 @@ theorem evm_div_n3_preloop_loopbody_spec (sp base : Word)
      ((sp + signExtend12 3992) ↦ₘ shift))
     (by pcFree) hJ1d
   -- Step 3: Compose pre-loop + two loop iterations at holdsFor level
-  show cpsTriple base (base + 904) (divCode base) _ _
+  show cpsTriple base (base + 904) (modCode base) _ _
   intro F hF st hcr hPF hpc
   -- Execute pre-loop: base → base+448
   -- Rearrange precondition to match hPLf's expected format (pre-loop ** frame)
   obtain ⟨h_pre, hcompat_pre, hSep_pre⟩ := hPF
   obtain ⟨k1, s1, hstep1, hpc1, hQ1F⟩ := hPLf F hF st hcr
     ⟨h_pre, hcompat_pre, by xperm_hyp hSep_pre⟩ hpc
-  have hcr1 := CodeReq.SatisfiedBy_preserved (divCode base) k1 st s1 hstep1 hcr
+  have hcr1 := CodeReq.SatisfiedBy_preserved (modCode base) k1 st s1 hstep1 hcr
   -- Rearrange pre-loop postcondition to match j=1 cpsBranch precondition
   obtain ⟨h_f1, hc1, hSep1⟩ := hQ1F
   -- Execute j=1 cpsBranch: base+448 → base+448 (loop back) or base+904 (exit)
   obtain ⟨k2, s2, hstep2, hcase⟩ := hJ1f F hF s1 hcr1
     ⟨h_f1, hc1, by xperm_hyp hSep1⟩ hpc1
-  have hcr2 := CodeReq.SatisfiedBy_preserved (divCode base) k2 s1 s2 hstep2 hcr1
+  have hcr2 := CodeReq.SatisfiedBy_preserved (modCode base) k2 s1 s2 hstep2 hcr1
   -- Case split: loop-back (base+448) vs exit (base+904)
   rcases hcase with ⟨hpc2, hQ2F⟩ | ⟨hpc2, hQ2F⟩
   · -- Loop-back case: j=1 looped back to base+448, now execute j=0
@@ -499,7 +499,7 @@ theorem evm_div_n3_preloop_loopbody_spec (sp base : Word)
     simp only [j0_u0_addr_eq, j0_q_addr_eq, j0_u1_addr_eq,
       j0_u2_addr_eq, j0_u3_addr_eq, j0_u4_addr_eq,
       signExtend12_32, signExtend12_40, signExtend12_48, signExtend12_56] at hLB0
-    have hLB0d := cpsTriple_extend_code (sharedDivModCode_sub_divCode base) hLB0
+    have hLB0d := cpsTriple_extend_code (sharedDivModCode_sub_modCode base) hLB0
     have hLB0f := cpsTriple_frame_left _ _ _ _ _
       (((sp + signExtend12 4016) ↦ₘ u4v_j1) **
        ((sp + signExtend12 4080) ↦ₘ qv_j1) **
@@ -560,16 +560,16 @@ theorem evm_div_n3_preloop_loopbody_spec (sp base : Word)
       by xperm_hyp hCombined2⟩
 
 -- ============================================================================
--- Full n=3 DIV spec: base → base+1064
+-- Full n=3 MOD spec: base → base+1064
 -- Composes preloop+loopbody (base→base+904) with denorm+epilogue (base+904→base+1064)
 -- ============================================================================
 
 set_option maxRecDepth 4096 in
 set_option maxHeartbeats 6400000 in
-/-- Full n=3 DIV spec (b[3]=0, b[2]≠0, shift≠0): base → base+1064.
+/-- Full n=3 MOD spec (b[3]=0, b[2]≠0, shift≠0): base → base+1064.
     Composes pre-loop + two-iteration loop body (base→base+904) with
     preamble + denorm + epilogue (base+904→base+1064). -/
-theorem evm_div_n3_full_spec (sp base : Word)
+theorem evm_mod_n3_full_spec (sp base : Word)
     (a0 a1 a2 a3 b0 b1 b2 b3 v5 v6 v7 v10 v11 : Word)
     (q0 q1 q2 q3 u0_old u1_old u2_old u3_old u4_old u5 u6 u7 : Word)
     (n_mem shift_mem j_old ret_mem d_mem dlo_mem scratch_un0 : Word)
@@ -603,7 +603,7 @@ theorem evm_div_n3_full_spec (sp base : Word)
     let b2' := (b2 <<< (shift.toNat % 64)) ||| (b1 >>> (anti_shift.toNat % 64))
     let b1' := (b1 <<< (shift.toNat % 64)) ||| (b0 >>> (anti_shift.toNat % 64))
     let b0' := b0 <<< (shift.toNat % 64)
-    cpsTriple base (base + 1064) (divCode base)
+    cpsTriple base (base + 1064) (modCode base)
       ((.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ v5) ** (.x10 ↦ᵣ v10) ** (.x0 ↦ᵣ (0 : Word)) **
        (.x6 ↦ᵣ v6) ** (.x7 ↦ᵣ v7) ** (.x2 ↦ᵣ (clzResult b2).2 >>> (63 : Nat)) **
        (.x1 ↦ᵣ signExtend12 (4 : BitVec 12) - (4 : Word)) ** (.x11 ↦ᵣ v11) **
@@ -622,21 +622,22 @@ theorem evm_div_n3_full_spec (sp base : Word)
        ((sp + signExtend12 3976) ↦ₘ j_old) **
        ((sp + signExtend12 3968) ↦ₘ ret_mem) ** ((sp + signExtend12 3960) ↦ₘ d_mem) **
        ((sp + signExtend12 3952) ↦ₘ dlo_mem) ** ((sp + signExtend12 3944) ↦ₘ scratch_un0))
-      (fun h => ∃ (q0v q1v x2out x1out x11out : Word)
+      (fun h => ∃ (qv0 qv1 x2out x1out x11out : Word)
         (u0out u1out u2out u3out u4out u5out : Word)
         (j_mem_out : Word)
         (retout dout dlout scout : Word),
-        ((.x12 ↦ᵣ (sp + 32)) ** (.x5 ↦ᵣ q0v) ** (.x6 ↦ᵣ q1v) ** (.x7 ↦ᵣ (0 : Word)) **
-         (.x2 ↦ᵣ x2out) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ (0 : Word)) **
+        ((.x12 ↦ᵣ (sp + 32)) ** (.x5 ↦ᵣ u0out) ** (.x6 ↦ᵣ u1out) ** (.x7 ↦ᵣ u2out) **
+         (.x2 ↦ᵣ x2out) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ u3out) **
          (.x1 ↦ᵣ x1out) ** (.x11 ↦ᵣ x11out) **
          ((sp + 0) ↦ₘ a0) ** ((sp + 8) ↦ₘ a1) **
          ((sp + 16) ↦ₘ a2) ** ((sp + 24) ↦ₘ a3) **
-         ((sp + 32) ↦ₘ q0v) ** ((sp + 40) ↦ₘ q1v) **
-         ((sp + 48) ↦ₘ (0 : Word)) ** ((sp + 56) ↦ₘ (0 : Word)) **
+         ((sp + 32) ↦ₘ u0out) ** ((sp + 40) ↦ₘ u1out) **
+         ((sp + 48) ↦ₘ u2out) ** ((sp + 56) ↦ₘ u3out) **
          ((sp + signExtend12 3992) ↦ₘ shift) **
          ((sp + signExtend12 4056) ↦ₘ u0out) ** ((sp + signExtend12 4048) ↦ₘ u1out) **
          ((sp + signExtend12 4040) ↦ₘ u2out) ** ((sp + signExtend12 4032) ↦ₘ u3out) **
-         ((sp + signExtend12 4088) ↦ₘ q0v) ** ((sp + signExtend12 4080) ↦ₘ q1v) **
+         ((sp + signExtend12 4088) ↦ₘ qv0) **
+         ((sp + signExtend12 4080) ↦ₘ qv1) **
          ((sp + signExtend12 4072) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4064) ↦ₘ (0 : Word)) **
          ((sp + signExtend12 4024) ↦ₘ u4out) **
          ((sp + signExtend12 4016) ↦ₘ u5out) ** ((sp + signExtend12 4008) ↦ₘ (0 : Word)) **
@@ -646,7 +647,7 @@ theorem evm_div_n3_full_spec (sp base : Word)
          ((sp + signExtend12 3952) ↦ₘ dlout) ** ((sp + signExtend12 3944) ↦ₘ scout)) h) := by
   intro shift anti_shift b3' b2' b1' b0'
   -- Step 1: Pre-loop + loop body (base → base+904)
-  have hPLLB := evm_div_n3_preloop_loopbody_spec sp base
+  have hPLLB := evm_mod_n3_preloop_loopbody_spec sp base
     a0 a1 a2 a3 b0 b1 b2 b3 v5 v6 v7 v10 v11
     q0 q1 q2 q3 u0_old u1_old u2_old u3_old u4_old u5 u6 u7
     n_mem shift_mem j_old ret_mem d_mem dlo_mem scratch_un0
@@ -655,7 +656,7 @@ theorem evm_div_n3_full_spec (sp base : Word)
     hv_u5 hv_u6 hv_u7 hv_n hv_shift hv_j hv_ret hv_d hv_dlo hv_scratch
   intro_lets at hPLLB
   -- Step 2: Compose via cpsTriple definition to handle existential intermediate
-  show cpsTriple base (base + 1064) (divCode base) _ _
+  show cpsTriple base (base + 1064) (modCode base) _ _
   intro F hF st hcr hPF hpc
   -- Execute first half: base → base+904
   obtain ⟨k1, s1, hstep1, hpc1, hQF⟩ := hPLLB F hF st hcr hPF hpc
@@ -665,29 +666,28 @@ theorem evm_div_n3_full_spec (sp base : Word)
      u0v, u1v, u2v, u3v, u4v, q0v,
      u5v, q1v, j_v,
      retv, dv, dlov, sunv, hQ_atoms⟩, hF_heap⟩ := hQF
-  -- Get post-loop chain: denorm + epilogue (base+904 → base+1064)
-  have hDE := evm_div_preamble_denorm_epilogue_spec sp base
+  -- Get post-loop chain for MOD: denorm + epilogue (base+904 → base+1064)
+  -- x5v = j=0 shl3 = 0, x6v = sp+SE12(4056), x7v = sp+SE12(4088)
+  have hDE := evm_mod_preamble_denorm_epilogue_spec sp base
     u0v u1v u2v u3v shift
     x2v x5v x6v x7v x10v
-    q0v q1v (0 : Word) (0 : Word) b0' b1' b2' b3'
-    hshift_nz hvalid hv_shift hv_q0 hv_q1 hv_q2 hv_q3 hv_u0 hv_u1 hv_u2 hv_u3
+    b0' b1' b2' b3'
+    hshift_nz hvalid hv_shift hv_u0 hv_u1 hv_u2 hv_u3
   intro_lets at hDE
   -- Recombine heaps: Q_atoms ** F
   have hAll : sepConj _ _ h_full :=
     ⟨h_q, h_f, hdisj_qf, heq_qf, hQ_atoms, hF_heap⟩
   -- Rearrange atoms to match POST_LOOP_PRE ** (LEFTOVER ** F)
-  -- POST_LOOP_PRE = epilogue precondition (20 atoms)
+  -- POST_LOOP_PRE = epilogue precondition (16 atoms: registers + shift_mem + u[] + output)
   let POST_LOOP_PRE :=
     (.x12 ↦ᵣ sp) ** (.x6 ↦ᵣ x6v) ** (.x0 ↦ᵣ (0 : Word)) **
     (.x5 ↦ᵣ x5v) ** (.x7 ↦ᵣ x7v) ** (.x2 ↦ᵣ x2v) ** (.x10 ↦ᵣ x10v) **
     ((sp + signExtend12 3992) ↦ₘ shift) **
     ((sp + signExtend12 4056) ↦ₘ u0v) ** ((sp + signExtend12 4048) ↦ₘ u1v) **
     ((sp + signExtend12 4040) ↦ₘ u2v) ** ((sp + signExtend12 4032) ↦ₘ u3v) **
-    ((sp + signExtend12 4088) ↦ₘ q0v) ** ((sp + signExtend12 4080) ↦ₘ q1v) **
-    ((sp + signExtend12 4072) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4064) ↦ₘ (0 : Word)) **
     ((sp + 32) ↦ₘ b0') ** ((sp + 40) ↦ₘ b1') **
     ((sp + 48) ↦ₘ b2') ** ((sp + 56) ↦ₘ b3')
-  -- LEFTOVER = 16 atoms carried through: x1, x11, j, n, u4, u5, a0-a3, u6(=0), u7(=0), ret, d, dlo, scratch
+  -- LEFTOVER = 16 atoms carried through: x1, x11, j, n, u4, u5, a0-a3, q[], zeroed u6-u7, ret, d, dlo, scratch
   have hRearranged : (POST_LOOP_PRE ** (((.x1 ↦ᵣ x1v) ** (.x11 ↦ᵣ x11v) **
      (sp + signExtend12 3976 ↦ₘ j_v) **
      (sp + signExtend12 3984 ↦ₘ (3 : Word)) **
@@ -695,6 +695,10 @@ theorem evm_div_n3_full_spec (sp base : Word)
      ((sp + signExtend12 4016) ↦ₘ u5v) **
      ((sp + 0) ↦ₘ a0) ** ((sp + 8) ↦ₘ a1) **
      ((sp + 16) ↦ₘ a2) ** ((sp + 24) ↦ₘ a3) **
+     ((sp + signExtend12 4088) ↦ₘ q0v) **
+     ((sp + signExtend12 4080) ↦ₘ q1v) **
+     ((sp + signExtend12 4072) ↦ₘ (0 : Word)) **
+     ((sp + signExtend12 4064) ↦ₘ (0 : Word)) **
      ((sp + signExtend12 4008) ↦ₘ (0 : Word)) **
      ((sp + signExtend12 4000) ↦ₘ (0 : Word)) **
      (sp + signExtend12 3968 ↦ₘ retv) ** (sp + signExtend12 3960 ↦ₘ dv) **
@@ -707,6 +711,10 @@ theorem evm_div_n3_full_spec (sp base : Word)
      ((sp + signExtend12 4016) ↦ₘ u5v) **
      ((sp + 0) ↦ₘ a0) ** ((sp + 8) ↦ₘ a1) **
      ((sp + 16) ↦ₘ a2) ** ((sp + 24) ↦ₘ a3) **
+     ((sp + signExtend12 4088) ↦ₘ q0v) **
+     ((sp + signExtend12 4080) ↦ₘ q1v) **
+     ((sp + signExtend12 4072) ↦ₘ (0 : Word)) **
+     ((sp + signExtend12 4064) ↦ₘ (0 : Word)) **
      ((sp + signExtend12 4008) ↦ₘ (0 : Word)) **
      ((sp + signExtend12 4000) ↦ₘ (0 : Word)) **
      (sp + signExtend12 3968 ↦ₘ retv) ** (sp + signExtend12 3960 ↦ₘ dv) **
@@ -720,6 +728,10 @@ theorem evm_div_n3_full_spec (sp base : Word)
      ((sp + signExtend12 4016) ↦ₘ u5v) **
      ((sp + 0) ↦ₘ a0) ** ((sp + 8) ↦ₘ a1) **
      ((sp + 16) ↦ₘ a2) ** ((sp + 24) ↦ₘ a3) **
+     ((sp + signExtend12 4088) ↦ₘ q0v) **
+     ((sp + signExtend12 4080) ↦ₘ q1v) **
+     ((sp + signExtend12 4072) ↦ₘ (0 : Word)) **
+     ((sp + signExtend12 4064) ↦ₘ (0 : Word)) **
      ((sp + signExtend12 4008) ↦ₘ (0 : Word)) **
      ((sp + signExtend12 4000) ↦ₘ (0 : Word)) **
      (sp + signExtend12 3968 ↦ₘ retv) ** (sp + signExtend12 3960 ↦ₘ dv) **
@@ -734,11 +746,15 @@ theorem evm_div_n3_full_spec (sp base : Word)
      ((sp + signExtend12 4016) ↦ₘ u5v) **
      ((sp + 0) ↦ₘ a0) ** ((sp + 8) ↦ₘ a1) **
      ((sp + 16) ↦ₘ a2) ** ((sp + 24) ↦ₘ a3) **
+     ((sp + signExtend12 4088) ↦ₘ q0v) **
+     ((sp + signExtend12 4080) ↦ₘ q1v) **
+     ((sp + signExtend12 4072) ↦ₘ (0 : Word)) **
+     ((sp + signExtend12 4064) ↦ₘ (0 : Word)) **
      ((sp + signExtend12 4008) ↦ₘ (0 : Word)) **
      ((sp + signExtend12 4000) ↦ₘ (0 : Word)) **
      (sp + signExtend12 3968 ↦ₘ retv) ** (sp + signExtend12 3960 ↦ₘ dv) **
      (sp + signExtend12 3952 ↦ₘ dlov) ** (sp + signExtend12 3944 ↦ₘ sunv)) ** F) hLOF_pcFree s1
-      (CodeReq.SatisfiedBy_preserved (divCode base) k1 _ _ hstep1 hcr) hQ2F hpc1
+      (CodeReq.SatisfiedBy_preserved (modCode base) k1 _ _ hstep1 hcr) hQ2F hpc1
   -- Chain the steps
   refine ⟨k1 + k2, s2, stepN_add_eq k1 k2 st s1 s2 hstep1 hstep2, hpc2, ?_⟩
   -- Convert: (POST_LOOP_POST ** LEFTOVER ** F).holdsFor → (declared_post ** F).holdsFor
