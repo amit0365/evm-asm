@@ -257,4 +257,16 @@ theorem runSail_xreg_write_callback (reg : regidx) (v : BitVec 64) (s : SailStat
     xreg_full_write_callback, LeanRV64D.Functions.not,
     bind, EStateM.bind, pure, EStateM.pure]
 
+-- ============================================================================
+-- PC access
+-- ============================================================================
+
+/-- get_arch_pc reads the PC register without modifying state. -/
+theorem runSail_get_arch_pc (s : SailState) (pc : BitVec 64)
+    (h : s.regs.get? Register.PC = some pc) :
+    runSail (get_arch_pc ()) s = some (pc, s) := by
+  simp [runSail, get_arch_pc, PreSail.readReg, h,
+    pure, EStateM.pure, bind, EStateM.bind, EStateM.get,
+    get, MonadState.get, getThe, MonadStateOf.get]
+
 end EvmAsm.Rv64.SailEquiv
