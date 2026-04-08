@@ -20,12 +20,9 @@ namespace EvmWord
 /-- Normalization preserves the quotient: `(a * 2^s) / (b * 2^s) = a / b`. -/
 theorem norm_div_eq (a b s : Nat) :
     (a * 2^s) / (b * 2^s) = a / b := by
-  rcases Nat.eq_zero_or_pos b with hb | hb
-  · subst hb; simp
-  · rcases Nat.eq_zero_or_pos s with hs | hs
-    · subst hs; simp
-    · conv_rhs => rw [show a / b = a * 2^s / (b * 2^s) from by
-        rw [Nat.mul_comm a, Nat.mul_comm b, Nat.mul_div_mul_left a b (by positivity)]]
+  rcases Nat.eq_zero_or_pos b with rfl | hb
+  · simp
+  · rw [Nat.mul_comm a, Nat.mul_comm b, Nat.mul_div_mul_left _ _ (by positivity)]
 
 /-- Normalization scales the remainder: `(a * 2^s) % (b * 2^s) = (a % b) * 2^s`. -/
 theorem norm_mod_eq (a b s : Nat) :
