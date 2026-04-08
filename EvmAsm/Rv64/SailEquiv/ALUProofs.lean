@@ -1,11 +1,27 @@
 /-
   EvmAsm.Rv64.SailEquiv.ALUProofs
 
-  Per-instruction equivalence theorems for ALU register-register instructions:
-  ADD, SUB, AND, OR, XOR.
+  Per-instruction equivalence theorems for RTYPE and UTYPE instructions.
 
-  Each theorem proves StateRel is preserved: given StateRel before execution,
-  StateRel holds between the Rv64 result and the SAIL result.
+  ## Bidirectionality
+
+  Each theorem has the form:
+    Given StateRel s_rv s_sail,
+    ∃ s_sail', runSail (execute_*) s_sail = some (RETIRE_SUCCESS, s_sail')
+              ∧ StateRel (execInstrBr s_rv instr) s_sail'
+
+  This is **bidirectional** for total instructions:
+
+  - **Safety (Rv64 → SAIL):** The SAIL spec can execute and produces a matching
+    state. Every Rv64 behavior is a valid SAIL behavior.
+
+  - **Liveness (SAIL → Rv64):** The `some` witness proves SAIL succeeds. Since
+    `execInstrBr` is total (pure function, always returns), the Rv64 model also
+    "succeeds." `StateRel` ensures they agree. The Rv64 model doesn't get stuck
+    on any instruction that SAIL accepts.
+
+  Both directions hold because `execInstrBr` is total and `runSail` is
+  deterministic for these instructions (no `choose`, no external state).
 -/
 
 import EvmAsm.Rv64.Execution
@@ -549,6 +565,51 @@ theorem lui_sail_equiv (s_rv : MachineState) (s_sail : SailState)
     | exact ⟨_, rfl, ⟨fun r => by simpa [execInstrBr, MachineState.setPC, ← lui_equiv] using reg_agree_after_insert s_sail s_rv hrel .x11 _ r,
         fun a => by simpa [execInstrBr, MachineState.setPC] using hrel.mem_agree a⟩⟩
     | exact ⟨_, rfl, ⟨fun r => by simpa [execInstrBr, MachineState.setPC, ← lui_equiv] using reg_agree_after_insert s_sail s_rv hrel .x12 _ r,
+        fun a => by simpa [execInstrBr, MachineState.setPC] using hrel.mem_agree a⟩⟩
+
+-- ============================================================================
+-- ADDIW helper + proof
+-- ============================================================================
+
+/-- SAIL's sign_extend(extractLsb (rs1 + sign_extend imm) 31 0) equals
+    Rv64's ((rs1.truncate 32 + (signExtend12 imm).truncate 32) : BitVec 32).signExtend 64. -/
+theorem addiw_equiv (rs1 : BitVec 64) (imm : BitVec 12) :
+    (Sail.BitVec.signExtend (Sail.BitVec.extractLsb (rs1 + sign_extend (m := 64) imm) 31 0) 64 : BitVec 64) =
+    ((rs1.truncate 32 + (imm.signExtend 64).truncate 32 : BitVec 32).signExtend 64 : BitVec 64) := by
+  simp only [sign_extend, Sail.BitVec.signExtend, Sail.BitVec.extractLsb]; bv_decide
+
+theorem addiw_sail_equiv (s_rv : MachineState) (s_sail : SailState)
+    (hrel : StateRel s_rv s_sail) (rd rs1 : Reg) (imm : BitVec 12) :
+    ∃ s_sail',
+      runSail (execute_ADDIW imm (regToRegidx rs1) (regToRegidx rd)) s_sail
+        = some (RETIRE_SUCCESS, s_sail') ∧
+      StateRel (execInstrBr s_rv (.ADDIW rd rs1 imm)) s_sail' := by
+  unfold execute_ADDIW
+  simp only [runSail_bind, runSail_rX_bits_of_stateRel s_rv s_sail hrel, runSail_pure,
+    addiw_equiv]
+  cases rd <;>
+    simp only [regToRegidx,
+      runSail_wX_bits_x0, runSail_wX_bits_x1, runSail_wX_bits_x2,
+      runSail_wX_bits_x5, runSail_wX_bits_x6, runSail_wX_bits_x7,
+      runSail_wX_bits_x10, runSail_wX_bits_x11, runSail_wX_bits_x12]
+  all_goals first
+    | exact ⟨_, rfl, ⟨fun r => by simpa [execInstrBr, MachineState.setPC, signExtend12, ← addiw_equiv] using reg_agree_after_insert s_sail s_rv hrel .x0 _ r,
+        fun a => by simpa [execInstrBr, MachineState.setPC] using hrel.mem_agree a⟩⟩
+    | exact ⟨_, rfl, ⟨fun r => by simpa [execInstrBr, MachineState.setPC, signExtend12, ← addiw_equiv] using reg_agree_after_insert s_sail s_rv hrel .x1 _ r,
+        fun a => by simpa [execInstrBr, MachineState.setPC] using hrel.mem_agree a⟩⟩
+    | exact ⟨_, rfl, ⟨fun r => by simpa [execInstrBr, MachineState.setPC, signExtend12, ← addiw_equiv] using reg_agree_after_insert s_sail s_rv hrel .x2 _ r,
+        fun a => by simpa [execInstrBr, MachineState.setPC] using hrel.mem_agree a⟩⟩
+    | exact ⟨_, rfl, ⟨fun r => by simpa [execInstrBr, MachineState.setPC, signExtend12, ← addiw_equiv] using reg_agree_after_insert s_sail s_rv hrel .x5 _ r,
+        fun a => by simpa [execInstrBr, MachineState.setPC] using hrel.mem_agree a⟩⟩
+    | exact ⟨_, rfl, ⟨fun r => by simpa [execInstrBr, MachineState.setPC, signExtend12, ← addiw_equiv] using reg_agree_after_insert s_sail s_rv hrel .x6 _ r,
+        fun a => by simpa [execInstrBr, MachineState.setPC] using hrel.mem_agree a⟩⟩
+    | exact ⟨_, rfl, ⟨fun r => by simpa [execInstrBr, MachineState.setPC, signExtend12, ← addiw_equiv] using reg_agree_after_insert s_sail s_rv hrel .x7 _ r,
+        fun a => by simpa [execInstrBr, MachineState.setPC] using hrel.mem_agree a⟩⟩
+    | exact ⟨_, rfl, ⟨fun r => by simpa [execInstrBr, MachineState.setPC, signExtend12, ← addiw_equiv] using reg_agree_after_insert s_sail s_rv hrel .x10 _ r,
+        fun a => by simpa [execInstrBr, MachineState.setPC] using hrel.mem_agree a⟩⟩
+    | exact ⟨_, rfl, ⟨fun r => by simpa [execInstrBr, MachineState.setPC, signExtend12, ← addiw_equiv] using reg_agree_after_insert s_sail s_rv hrel .x11 _ r,
+        fun a => by simpa [execInstrBr, MachineState.setPC] using hrel.mem_agree a⟩⟩
+    | exact ⟨_, rfl, ⟨fun r => by simpa [execInstrBr, MachineState.setPC, signExtend12, ← addiw_equiv] using reg_agree_after_insert s_sail s_rv hrel .x12 _ r,
         fun a => by simpa [execInstrBr, MachineState.setPC] using hrel.mem_agree a⟩⟩
 
 end EvmAsm.Rv64.SailEquiv
