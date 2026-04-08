@@ -26,15 +26,22 @@ set_option maxHeartbeats 1600000
 -- Shift rewrite lemmas: normalize SAIL shift expression to Rv64 form
 -- ============================================================================
 
+private theorem extractLsb_bv6_id (shamt : BitVec 6) :
+    BitVec.extractLsb (↑(6 : Nat) - 1 : Int).toNat 0 shamt = shamt := by
+  show BitVec.extractLsb 5 0 shamt = shamt
+  apply BitVec.eq_of_toNat_eq; simp; omega
+
 private theorem sll_extractLsb_bv6 (v : BitVec 64) (shamt : BitVec 6) :
     shift_bits_left v (Sail.BitVec.extractLsb shamt (LeanRV64D.Functions.log2_xlen -i 1) 0) =
     v <<< shamt.toNat := by
-  simp only [shift_bits_left, Sail.BitVec.extractLsb, LeanRV64D.Functions.log2_xlen]; bv_decide
+  simp only [shift_bits_left, Sail.BitVec.extractLsb, LeanRV64D.Functions.log2_xlen]
+  rw [extractLsb_bv6_id]; rfl
 
 private theorem srl_extractLsb_bv6 (v : BitVec 64) (shamt : BitVec 6) :
     shift_bits_right v (Sail.BitVec.extractLsb shamt (LeanRV64D.Functions.log2_xlen -i 1) 0) =
     v >>> shamt.toNat := by
-  simp only [shift_bits_right, Sail.BitVec.extractLsb, LeanRV64D.Functions.log2_xlen]; bv_decide
+  simp only [shift_bits_right, Sail.BitVec.extractLsb, LeanRV64D.Functions.log2_xlen]
+  rw [extractLsb_bv6_id]; rfl
 
 private theorem sra_extractLsb_bv6 (v : BitVec 64) (shamt : BitVec 6) :
     shift_bits_right_arith v (Sail.BitVec.extractLsb shamt (LeanRV64D.Functions.log2_xlen -i 1) 0) =

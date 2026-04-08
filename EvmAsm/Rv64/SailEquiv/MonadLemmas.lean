@@ -37,14 +37,14 @@ theorem runSail_bind (m : SailM α) (f : α → SailM β) (s : SailState) :
 -- BitVec.toNat reduction for register indices
 -- ============================================================================
 
-private theorem bv5_toNat_1 : BitVec.toNat (1 : BitVec 5) = 1 := by native_decide
-private theorem bv5_toNat_2 : BitVec.toNat (2 : BitVec 5) = 2 := by native_decide
-private theorem bv5_toNat_5 : BitVec.toNat (5 : BitVec 5) = 5 := by native_decide
-private theorem bv5_toNat_6 : BitVec.toNat (6 : BitVec 5) = 6 := by native_decide
-private theorem bv5_toNat_7 : BitVec.toNat (7 : BitVec 5) = 7 := by native_decide
-private theorem bv5_toNat_10 : BitVec.toNat (10 : BitVec 5) = 10 := by native_decide
-private theorem bv5_toNat_11 : BitVec.toNat (11 : BitVec 5) = 11 := by native_decide
-private theorem bv5_toNat_12 : BitVec.toNat (12 : BitVec 5) = 12 := by native_decide
+private theorem bv5_toNat_1 : BitVec.toNat (1 : BitVec 5) = 1 := by decide
+private theorem bv5_toNat_2 : BitVec.toNat (2 : BitVec 5) = 2 := by decide
+private theorem bv5_toNat_5 : BitVec.toNat (5 : BitVec 5) = 5 := by decide
+private theorem bv5_toNat_6 : BitVec.toNat (6 : BitVec 5) = 6 := by decide
+private theorem bv5_toNat_7 : BitVec.toNat (7 : BitVec 5) = 7 := by decide
+private theorem bv5_toNat_10 : BitVec.toNat (10 : BitVec 5) = 10 := by decide
+private theorem bv5_toNat_11 : BitVec.toNat (11 : BitVec 5) = 11 := by decide
+private theorem bv5_toNat_12 : BitVec.toNat (12 : BitVec 5) = 12 := by decide
 
 -- Common simp arguments for rX_bits proofs
 -- We unfold: runSail, rX_bits, rX, BitVec.toNatInt, regval_from_reg

@@ -38,65 +38,65 @@ set_option maxHeartbeats 1600000
 set_option maxRecDepth 1000
 
 -- ============================================================================
--- Register inequality facts (pre-proved via native_decide)
+-- Register inequality facts (pre-proved via decide)
 -- ============================================================================
 
-private theorem reg_ne_x1_x2 : (Register.x1 == Register.x2) = false := by native_decide
-private theorem reg_ne_x1_x5 : (Register.x1 == Register.x5) = false := by native_decide
-private theorem reg_ne_x1_x6 : (Register.x1 == Register.x6) = false := by native_decide
-private theorem reg_ne_x1_x7 : (Register.x1 == Register.x7) = false := by native_decide
-private theorem reg_ne_x1_x10 : (Register.x1 == Register.x10) = false := by native_decide
-private theorem reg_ne_x1_x11 : (Register.x1 == Register.x11) = false := by native_decide
-private theorem reg_ne_x1_x12 : (Register.x1 == Register.x12) = false := by native_decide
-private theorem reg_ne_x2_x1 : (Register.x2 == Register.x1) = false := by native_decide
-private theorem reg_ne_x2_x5 : (Register.x2 == Register.x5) = false := by native_decide
-private theorem reg_ne_x2_x6 : (Register.x2 == Register.x6) = false := by native_decide
-private theorem reg_ne_x2_x7 : (Register.x2 == Register.x7) = false := by native_decide
-private theorem reg_ne_x2_x10 : (Register.x2 == Register.x10) = false := by native_decide
-private theorem reg_ne_x2_x11 : (Register.x2 == Register.x11) = false := by native_decide
-private theorem reg_ne_x2_x12 : (Register.x2 == Register.x12) = false := by native_decide
-private theorem reg_ne_x5_x1 : (Register.x5 == Register.x1) = false := by native_decide
-private theorem reg_ne_x5_x2 : (Register.x5 == Register.x2) = false := by native_decide
-private theorem reg_ne_x5_x6 : (Register.x5 == Register.x6) = false := by native_decide
-private theorem reg_ne_x5_x7 : (Register.x5 == Register.x7) = false := by native_decide
-private theorem reg_ne_x5_x10 : (Register.x5 == Register.x10) = false := by native_decide
-private theorem reg_ne_x5_x11 : (Register.x5 == Register.x11) = false := by native_decide
-private theorem reg_ne_x5_x12 : (Register.x5 == Register.x12) = false := by native_decide
-private theorem reg_ne_x6_x1 : (Register.x6 == Register.x1) = false := by native_decide
-private theorem reg_ne_x6_x2 : (Register.x6 == Register.x2) = false := by native_decide
-private theorem reg_ne_x6_x5 : (Register.x6 == Register.x5) = false := by native_decide
-private theorem reg_ne_x6_x7 : (Register.x6 == Register.x7) = false := by native_decide
-private theorem reg_ne_x6_x10 : (Register.x6 == Register.x10) = false := by native_decide
-private theorem reg_ne_x6_x11 : (Register.x6 == Register.x11) = false := by native_decide
-private theorem reg_ne_x6_x12 : (Register.x6 == Register.x12) = false := by native_decide
-private theorem reg_ne_x7_x1 : (Register.x7 == Register.x1) = false := by native_decide
-private theorem reg_ne_x7_x2 : (Register.x7 == Register.x2) = false := by native_decide
-private theorem reg_ne_x7_x5 : (Register.x7 == Register.x5) = false := by native_decide
-private theorem reg_ne_x7_x6 : (Register.x7 == Register.x6) = false := by native_decide
-private theorem reg_ne_x7_x10 : (Register.x7 == Register.x10) = false := by native_decide
-private theorem reg_ne_x7_x11 : (Register.x7 == Register.x11) = false := by native_decide
-private theorem reg_ne_x7_x12 : (Register.x7 == Register.x12) = false := by native_decide
-private theorem reg_ne_x10_x1 : (Register.x10 == Register.x1) = false := by native_decide
-private theorem reg_ne_x10_x2 : (Register.x10 == Register.x2) = false := by native_decide
-private theorem reg_ne_x10_x5 : (Register.x10 == Register.x5) = false := by native_decide
-private theorem reg_ne_x10_x6 : (Register.x10 == Register.x6) = false := by native_decide
-private theorem reg_ne_x10_x7 : (Register.x10 == Register.x7) = false := by native_decide
-private theorem reg_ne_x10_x11 : (Register.x10 == Register.x11) = false := by native_decide
-private theorem reg_ne_x10_x12 : (Register.x10 == Register.x12) = false := by native_decide
-private theorem reg_ne_x11_x1 : (Register.x11 == Register.x1) = false := by native_decide
-private theorem reg_ne_x11_x2 : (Register.x11 == Register.x2) = false := by native_decide
-private theorem reg_ne_x11_x5 : (Register.x11 == Register.x5) = false := by native_decide
-private theorem reg_ne_x11_x6 : (Register.x11 == Register.x6) = false := by native_decide
-private theorem reg_ne_x11_x7 : (Register.x11 == Register.x7) = false := by native_decide
-private theorem reg_ne_x11_x10 : (Register.x11 == Register.x10) = false := by native_decide
-private theorem reg_ne_x11_x12 : (Register.x11 == Register.x12) = false := by native_decide
-private theorem reg_ne_x12_x1 : (Register.x12 == Register.x1) = false := by native_decide
-private theorem reg_ne_x12_x2 : (Register.x12 == Register.x2) = false := by native_decide
-private theorem reg_ne_x12_x5 : (Register.x12 == Register.x5) = false := by native_decide
-private theorem reg_ne_x12_x6 : (Register.x12 == Register.x6) = false := by native_decide
-private theorem reg_ne_x12_x7 : (Register.x12 == Register.x7) = false := by native_decide
-private theorem reg_ne_x12_x10 : (Register.x12 == Register.x10) = false := by native_decide
-private theorem reg_ne_x12_x11 : (Register.x12 == Register.x11) = false := by native_decide
+private theorem reg_ne_x1_x2 : (Register.x1 == Register.x2) = false := by decide
+private theorem reg_ne_x1_x5 : (Register.x1 == Register.x5) = false := by decide
+private theorem reg_ne_x1_x6 : (Register.x1 == Register.x6) = false := by decide
+private theorem reg_ne_x1_x7 : (Register.x1 == Register.x7) = false := by decide
+private theorem reg_ne_x1_x10 : (Register.x1 == Register.x10) = false := by decide
+private theorem reg_ne_x1_x11 : (Register.x1 == Register.x11) = false := by decide
+private theorem reg_ne_x1_x12 : (Register.x1 == Register.x12) = false := by decide
+private theorem reg_ne_x2_x1 : (Register.x2 == Register.x1) = false := by decide
+private theorem reg_ne_x2_x5 : (Register.x2 == Register.x5) = false := by decide
+private theorem reg_ne_x2_x6 : (Register.x2 == Register.x6) = false := by decide
+private theorem reg_ne_x2_x7 : (Register.x2 == Register.x7) = false := by decide
+private theorem reg_ne_x2_x10 : (Register.x2 == Register.x10) = false := by decide
+private theorem reg_ne_x2_x11 : (Register.x2 == Register.x11) = false := by decide
+private theorem reg_ne_x2_x12 : (Register.x2 == Register.x12) = false := by decide
+private theorem reg_ne_x5_x1 : (Register.x5 == Register.x1) = false := by decide
+private theorem reg_ne_x5_x2 : (Register.x5 == Register.x2) = false := by decide
+private theorem reg_ne_x5_x6 : (Register.x5 == Register.x6) = false := by decide
+private theorem reg_ne_x5_x7 : (Register.x5 == Register.x7) = false := by decide
+private theorem reg_ne_x5_x10 : (Register.x5 == Register.x10) = false := by decide
+private theorem reg_ne_x5_x11 : (Register.x5 == Register.x11) = false := by decide
+private theorem reg_ne_x5_x12 : (Register.x5 == Register.x12) = false := by decide
+private theorem reg_ne_x6_x1 : (Register.x6 == Register.x1) = false := by decide
+private theorem reg_ne_x6_x2 : (Register.x6 == Register.x2) = false := by decide
+private theorem reg_ne_x6_x5 : (Register.x6 == Register.x5) = false := by decide
+private theorem reg_ne_x6_x7 : (Register.x6 == Register.x7) = false := by decide
+private theorem reg_ne_x6_x10 : (Register.x6 == Register.x10) = false := by decide
+private theorem reg_ne_x6_x11 : (Register.x6 == Register.x11) = false := by decide
+private theorem reg_ne_x6_x12 : (Register.x6 == Register.x12) = false := by decide
+private theorem reg_ne_x7_x1 : (Register.x7 == Register.x1) = false := by decide
+private theorem reg_ne_x7_x2 : (Register.x7 == Register.x2) = false := by decide
+private theorem reg_ne_x7_x5 : (Register.x7 == Register.x5) = false := by decide
+private theorem reg_ne_x7_x6 : (Register.x7 == Register.x6) = false := by decide
+private theorem reg_ne_x7_x10 : (Register.x7 == Register.x10) = false := by decide
+private theorem reg_ne_x7_x11 : (Register.x7 == Register.x11) = false := by decide
+private theorem reg_ne_x7_x12 : (Register.x7 == Register.x12) = false := by decide
+private theorem reg_ne_x10_x1 : (Register.x10 == Register.x1) = false := by decide
+private theorem reg_ne_x10_x2 : (Register.x10 == Register.x2) = false := by decide
+private theorem reg_ne_x10_x5 : (Register.x10 == Register.x5) = false := by decide
+private theorem reg_ne_x10_x6 : (Register.x10 == Register.x6) = false := by decide
+private theorem reg_ne_x10_x7 : (Register.x10 == Register.x7) = false := by decide
+private theorem reg_ne_x10_x11 : (Register.x10 == Register.x11) = false := by decide
+private theorem reg_ne_x10_x12 : (Register.x10 == Register.x12) = false := by decide
+private theorem reg_ne_x11_x1 : (Register.x11 == Register.x1) = false := by decide
+private theorem reg_ne_x11_x2 : (Register.x11 == Register.x2) = false := by decide
+private theorem reg_ne_x11_x5 : (Register.x11 == Register.x5) = false := by decide
+private theorem reg_ne_x11_x6 : (Register.x11 == Register.x6) = false := by decide
+private theorem reg_ne_x11_x7 : (Register.x11 == Register.x7) = false := by decide
+private theorem reg_ne_x11_x10 : (Register.x11 == Register.x10) = false := by decide
+private theorem reg_ne_x11_x12 : (Register.x11 == Register.x12) = false := by decide
+private theorem reg_ne_x12_x1 : (Register.x12 == Register.x1) = false := by decide
+private theorem reg_ne_x12_x2 : (Register.x12 == Register.x2) = false := by decide
+private theorem reg_ne_x12_x5 : (Register.x12 == Register.x5) = false := by decide
+private theorem reg_ne_x12_x6 : (Register.x12 == Register.x6) = false := by decide
+private theorem reg_ne_x12_x7 : (Register.x12 == Register.x7) = false := by decide
+private theorem reg_ne_x12_x10 : (Register.x12 == Register.x10) = false := by decide
+private theorem reg_ne_x12_x11 : (Register.x12 == Register.x11) = false := by decide
 
 -- ============================================================================
 -- Bridge: reg_agree after a register insert (9x9 case split)
@@ -333,14 +333,14 @@ theorem slt_value_equiv (a b : BitVec 64) :
     zero_extend (m := 64) (bool_to_bit (zopz0zI_s a b)) =
     if BitVec.slt a b then (1 : BitVec 64) else 0 := by
   unfold zopz0zI_s bool_to_bit bool_bit_forwards zero_extend Sail.BitVec.zeroExtend
-  cases h : (a.toInt <b b.toInt) <;> simp [h, BitVec.slt] <;> native_decide
+  cases h : (a.toInt <b b.toInt) <;> simp [h, BitVec.slt] <;> decide
 
 /-- SAIL's unsigned comparison value matches Rv64's SLTU result. -/
 theorem sltu_value_equiv (a b : BitVec 64) :
     zero_extend (m := 64) (bool_to_bit (zopz0zI_u a b)) =
     if BitVec.ult a b then (1 : BitVec 64) else 0 := by
   unfold zopz0zI_u bool_to_bit bool_bit_forwards zero_extend Sail.BitVec.zeroExtend BitVec.toNatInt
-  cases h : (↑a.toNat <b ↑b.toNat) <;> simp [h, BitVec.ult] <;> native_decide
+  cases h : (↑a.toNat <b ↑b.toNat) <;> simp [h, BitVec.ult] <;> decide
 
 -- ============================================================================
 -- SLT, SLTU
@@ -530,10 +530,15 @@ theorem sra_sail_equiv (s_rv : MachineState) (s_sail : SailState)
 -- ============================================================================
 
 /-- SAIL's sign_extend(imm ++ 0x000) equals Rv64's (imm.zeroExtend 32 <<< 12).signExtend 64. -/
+private theorem lui_inner (imm : BitVec 20) :
+    (imm ++ (0 : BitVec 12) : BitVec 32) = (imm.zeroExtend 32 <<< 12 : BitVec 32) := by
+  apply BitVec.eq_of_toNat_eq; rw [BitVec.toNat_append]
+  simp [BitVec.toNat_shiftLeft, BitVec.toNat_setWidth]; omega
+
 theorem lui_equiv (imm : BitVec 20) :
     sign_extend (m := 64) (imm ++ (0 : BitVec 12)) =
     (imm.zeroExtend 32 <<< 12).signExtend 64 := by
-  simp only [sign_extend, Sail.BitVec.signExtend]; bv_decide
+  simp only [sign_extend, Sail.BitVec.signExtend]; rw [lui_inner]
 
 theorem lui_sail_equiv (s_rv : MachineState) (s_sail : SailState)
     (hrel : StateRel s_rv s_sail) (rd : Reg) (imm : BitVec 20) :
@@ -577,7 +582,8 @@ theorem lui_sail_equiv (s_rv : MachineState) (s_sail : SailState)
 theorem addiw_equiv (rs1 : BitVec 64) (imm : BitVec 12) :
     (Sail.BitVec.signExtend (Sail.BitVec.extractLsb (rs1 + sign_extend (m := 64) imm) 31 0) 64 : BitVec 64) =
     ((rs1.truncate 32 + (imm.signExtend 64).truncate 32 : BitVec 32).signExtend 64 : BitVec 64) := by
-  simp only [sign_extend, Sail.BitVec.signExtend, Sail.BitVec.extractLsb]; bv_decide
+  simp only [sign_extend, Sail.BitVec.signExtend, Sail.BitVec.extractLsb]
+  congr 1; apply BitVec.eq_of_toNat_eq; simp [BitVec.toNat_setWidth]
 
 theorem addiw_sail_equiv (s_rv : MachineState) (s_sail : SailState)
     (hrel : StateRel s_rv s_sail) (rd rs1 : Reg) (imm : BitVec 12) :
@@ -674,7 +680,7 @@ theorem mul_low_equiv (a b : BitVec 64) :
   rw [h_reduce]
   have h1 : a.toInt % (2^64 : Int) = ↑a.toNat := by simp [BitVec.toInt]; split <;> omega
   have h2 : b.toInt % (2^64 : Int) = ↑b.toNat := by simp [BitVec.toInt]; split <;> omega
-  rw [show (18446744073709551616 : Int) = 2 ^ 64 from by native_decide]
+  rw [show (18446744073709551616 : Int) = 2 ^ 64 from by decide]
   rw [Int.mul_emod, h1, h2]
   exact_mod_cast rfl
 
