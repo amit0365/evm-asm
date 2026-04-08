@@ -172,4 +172,119 @@ theorem add_sail_equiv (s_rv : MachineState) (s_sail : SailState)
     | exact ⟨_, rfl, sailRegVal_after_wX_bits s_sail s_rv hrel .x11 _, rfl⟩
     | exact ⟨_, rfl, sailRegVal_after_wX_bits s_sail s_rv hrel .x12 _, rfl⟩
 
+-- ============================================================================
+-- SUB
+-- ============================================================================
+
+/-- SUB rd rs1 rs2: the SAIL execute_RTYPE for rop.SUB produces a state
+    that agrees with Rv64's execInstrBr on registers and memory. -/
+theorem sub_sail_equiv (s_rv : MachineState) (s_sail : SailState)
+    (hrel : StateRel s_rv s_sail)
+    (rd rs1 rs2 : Reg) :
+    ∃ s_sail',
+      runSail (execute_RTYPE (regToRegidx rs2) (regToRegidx rs1) (regToRegidx rd) rop.SUB) s_sail
+        = some (RETIRE_SUCCESS, s_sail') ∧
+      (∀ r : Reg, sailRegVal s_sail' r =
+        some ((execInstrBr s_rv (.SUB rd rs1 rs2)).getReg r)) ∧
+      s_sail'.mem = s_sail.mem := by
+  unfold execute_RTYPE
+  simp only [runSail_bind, runSail_rX_bits_of_stateRel s_rv s_sail hrel, runSail_pure]
+  cases rd <;>
+    simp only [regToRegidx,
+      runSail_wX_bits_x0, runSail_wX_bits_x1, runSail_wX_bits_x2,
+      runSail_wX_bits_x5, runSail_wX_bits_x6, runSail_wX_bits_x7,
+      runSail_wX_bits_x10, runSail_wX_bits_x11, runSail_wX_bits_x12]
+  all_goals first
+    | exact ⟨_, rfl, sailRegVal_after_wX_bits s_sail s_rv hrel .x0 _, rfl⟩
+    | exact ⟨_, rfl, sailRegVal_after_wX_bits s_sail s_rv hrel .x1 _, rfl⟩
+    | exact ⟨_, rfl, sailRegVal_after_wX_bits s_sail s_rv hrel .x2 _, rfl⟩
+    | exact ⟨_, rfl, sailRegVal_after_wX_bits s_sail s_rv hrel .x5 _, rfl⟩
+    | exact ⟨_, rfl, sailRegVal_after_wX_bits s_sail s_rv hrel .x6 _, rfl⟩
+    | exact ⟨_, rfl, sailRegVal_after_wX_bits s_sail s_rv hrel .x7 _, rfl⟩
+    | exact ⟨_, rfl, sailRegVal_after_wX_bits s_sail s_rv hrel .x10 _, rfl⟩
+    | exact ⟨_, rfl, sailRegVal_after_wX_bits s_sail s_rv hrel .x11 _, rfl⟩
+    | exact ⟨_, rfl, sailRegVal_after_wX_bits s_sail s_rv hrel .x12 _, rfl⟩
+
+-- ============================================================================
+-- AND, OR, XOR — identical proof pattern to ADD/SUB
+-- ============================================================================
+
+theorem and_sail_equiv (s_rv : MachineState) (s_sail : SailState)
+    (hrel : StateRel s_rv s_sail) (rd rs1 rs2 : Reg) :
+    ∃ s_sail',
+      runSail (execute_RTYPE (regToRegidx rs2) (regToRegidx rs1) (regToRegidx rd) rop.AND) s_sail
+        = some (RETIRE_SUCCESS, s_sail') ∧
+      (∀ r : Reg, sailRegVal s_sail' r =
+        some ((execInstrBr s_rv (.AND rd rs1 rs2)).getReg r)) ∧
+      s_sail'.mem = s_sail.mem := by
+  unfold execute_RTYPE
+  simp only [runSail_bind, runSail_rX_bits_of_stateRel s_rv s_sail hrel, runSail_pure]
+  cases rd <;>
+    simp only [regToRegidx,
+      runSail_wX_bits_x0, runSail_wX_bits_x1, runSail_wX_bits_x2,
+      runSail_wX_bits_x5, runSail_wX_bits_x6, runSail_wX_bits_x7,
+      runSail_wX_bits_x10, runSail_wX_bits_x11, runSail_wX_bits_x12]
+  all_goals first
+    | exact ⟨_, rfl, sailRegVal_after_wX_bits s_sail s_rv hrel .x0 _, rfl⟩
+    | exact ⟨_, rfl, sailRegVal_after_wX_bits s_sail s_rv hrel .x1 _, rfl⟩
+    | exact ⟨_, rfl, sailRegVal_after_wX_bits s_sail s_rv hrel .x2 _, rfl⟩
+    | exact ⟨_, rfl, sailRegVal_after_wX_bits s_sail s_rv hrel .x5 _, rfl⟩
+    | exact ⟨_, rfl, sailRegVal_after_wX_bits s_sail s_rv hrel .x6 _, rfl⟩
+    | exact ⟨_, rfl, sailRegVal_after_wX_bits s_sail s_rv hrel .x7 _, rfl⟩
+    | exact ⟨_, rfl, sailRegVal_after_wX_bits s_sail s_rv hrel .x10 _, rfl⟩
+    | exact ⟨_, rfl, sailRegVal_after_wX_bits s_sail s_rv hrel .x11 _, rfl⟩
+    | exact ⟨_, rfl, sailRegVal_after_wX_bits s_sail s_rv hrel .x12 _, rfl⟩
+
+theorem or_sail_equiv (s_rv : MachineState) (s_sail : SailState)
+    (hrel : StateRel s_rv s_sail) (rd rs1 rs2 : Reg) :
+    ∃ s_sail',
+      runSail (execute_RTYPE (regToRegidx rs2) (regToRegidx rs1) (regToRegidx rd) rop.OR) s_sail
+        = some (RETIRE_SUCCESS, s_sail') ∧
+      (∀ r : Reg, sailRegVal s_sail' r =
+        some ((execInstrBr s_rv (.OR rd rs1 rs2)).getReg r)) ∧
+      s_sail'.mem = s_sail.mem := by
+  unfold execute_RTYPE
+  simp only [runSail_bind, runSail_rX_bits_of_stateRel s_rv s_sail hrel, runSail_pure]
+  cases rd <;>
+    simp only [regToRegidx,
+      runSail_wX_bits_x0, runSail_wX_bits_x1, runSail_wX_bits_x2,
+      runSail_wX_bits_x5, runSail_wX_bits_x6, runSail_wX_bits_x7,
+      runSail_wX_bits_x10, runSail_wX_bits_x11, runSail_wX_bits_x12]
+  all_goals first
+    | exact ⟨_, rfl, sailRegVal_after_wX_bits s_sail s_rv hrel .x0 _, rfl⟩
+    | exact ⟨_, rfl, sailRegVal_after_wX_bits s_sail s_rv hrel .x1 _, rfl⟩
+    | exact ⟨_, rfl, sailRegVal_after_wX_bits s_sail s_rv hrel .x2 _, rfl⟩
+    | exact ⟨_, rfl, sailRegVal_after_wX_bits s_sail s_rv hrel .x5 _, rfl⟩
+    | exact ⟨_, rfl, sailRegVal_after_wX_bits s_sail s_rv hrel .x6 _, rfl⟩
+    | exact ⟨_, rfl, sailRegVal_after_wX_bits s_sail s_rv hrel .x7 _, rfl⟩
+    | exact ⟨_, rfl, sailRegVal_after_wX_bits s_sail s_rv hrel .x10 _, rfl⟩
+    | exact ⟨_, rfl, sailRegVal_after_wX_bits s_sail s_rv hrel .x11 _, rfl⟩
+    | exact ⟨_, rfl, sailRegVal_after_wX_bits s_sail s_rv hrel .x12 _, rfl⟩
+
+theorem xor_sail_equiv (s_rv : MachineState) (s_sail : SailState)
+    (hrel : StateRel s_rv s_sail) (rd rs1 rs2 : Reg) :
+    ∃ s_sail',
+      runSail (execute_RTYPE (regToRegidx rs2) (regToRegidx rs1) (regToRegidx rd) rop.XOR) s_sail
+        = some (RETIRE_SUCCESS, s_sail') ∧
+      (∀ r : Reg, sailRegVal s_sail' r =
+        some ((execInstrBr s_rv (.XOR rd rs1 rs2)).getReg r)) ∧
+      s_sail'.mem = s_sail.mem := by
+  unfold execute_RTYPE
+  simp only [runSail_bind, runSail_rX_bits_of_stateRel s_rv s_sail hrel, runSail_pure]
+  cases rd <;>
+    simp only [regToRegidx,
+      runSail_wX_bits_x0, runSail_wX_bits_x1, runSail_wX_bits_x2,
+      runSail_wX_bits_x5, runSail_wX_bits_x6, runSail_wX_bits_x7,
+      runSail_wX_bits_x10, runSail_wX_bits_x11, runSail_wX_bits_x12]
+  all_goals first
+    | exact ⟨_, rfl, sailRegVal_after_wX_bits s_sail s_rv hrel .x0 _, rfl⟩
+    | exact ⟨_, rfl, sailRegVal_after_wX_bits s_sail s_rv hrel .x1 _, rfl⟩
+    | exact ⟨_, rfl, sailRegVal_after_wX_bits s_sail s_rv hrel .x2 _, rfl⟩
+    | exact ⟨_, rfl, sailRegVal_after_wX_bits s_sail s_rv hrel .x5 _, rfl⟩
+    | exact ⟨_, rfl, sailRegVal_after_wX_bits s_sail s_rv hrel .x6 _, rfl⟩
+    | exact ⟨_, rfl, sailRegVal_after_wX_bits s_sail s_rv hrel .x7 _, rfl⟩
+    | exact ⟨_, rfl, sailRegVal_after_wX_bits s_sail s_rv hrel .x10 _, rfl⟩
+    | exact ⟨_, rfl, sailRegVal_after_wX_bits s_sail s_rv hrel .x11 _, rfl⟩
+    | exact ⟨_, rfl, sailRegVal_after_wX_bits s_sail s_rv hrel .x12 _, rfl⟩
+
 end EvmAsm.Rv64.SailEquiv
