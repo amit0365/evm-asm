@@ -100,9 +100,10 @@ theorem trial_quotient_ge (u_hi un1 d_hi d_lo : Nat)
     This is the key bound from Knuth's analysis. The normalization condition ensures
     `q̂ ≤ B + 1`, so `q̂ * d_lo < B² ≤ 2d`, giving `q̂ * d ≤ u_hi * B + 2d`. -/
 theorem trial_quotient_le (u_hi un1 d_hi d_lo : Nat)
-    (hd_hi : 0 < d_hi) (hd_hi_bound : d_hi < 2^32) (hd_lo : d_lo < 2^32)
+    (hd_hi_bound : d_hi < 2^32) (hd_lo : d_lo < 2^32)
     (hun1 : un1 < 2^32) (hu : u_hi < d_hi * 2^32 + d_lo) (hnorm : d_hi ≥ 2^31) :
     u_hi / d_hi ≤ (u_hi * 2^32 + un1) / (d_hi * 2^32 + d_lo) + 2 := by
+  have hd_hi : 0 < d_hi := by omega
   set d := d_hi * 2^32 + d_lo
   set q_hat := u_hi / d_hi
   have hd_pos : 0 < d := by positivity
@@ -120,7 +121,7 @@ theorem trial_quotient_le (u_hi un1 d_hi d_lo : Nat)
     have : q_hat * d_lo ≤ (2^32 + 1) * (2^32 - 1) := Nat.mul_le_mul hq_bound this
     norm_num at this ⊢; omega
   have h2d_ge : 2 * d ≥ 2^64 := by
-    show 2 * (d_hi * 2^32 + d_lo) ≥ _; nlinarith [show 2 * d_hi ≥ 2^32 from by omega]
+    show 2 * (d_hi * 2^32 + d_lo) ≥ _; omega
   have hq_d_eq : q_hat * d = q_hat * d_hi * 2^32 + q_hat * d_lo := by
     show q_hat * (d_hi * 2^32 + d_lo) = _; ring
   -- Key: q̂ * d ≤ u_hi * B + 2d ≤ X + 2d where X = u_hi * B + un1
@@ -143,13 +144,13 @@ theorem trial_quotient_le (u_hi un1 d_hi d_lo : Nat)
 /-- Combined: the trial quotient is within 2 of the true value.
     `q_true ≤ q̂ ≤ q_true + 2` when `d_hi ≥ B/2` (normalization condition). -/
 theorem trial_quotient_range (u_hi un1 d_hi d_lo : Nat)
-    (hd_hi : 0 < d_hi) (hd_hi_bound : d_hi < 2^32) (hd_lo : d_lo < 2^32)
+    (hd_hi_bound : d_hi < 2^32) (hd_lo : d_lo < 2^32)
     (hun1 : un1 < 2^32) (hu : u_hi < d_hi * 2^32 + d_lo) (hnorm : d_hi ≥ 2^31) :
     let q_hat := u_hi / d_hi
     let q_true := (u_hi * 2^32 + un1) / (d_hi * 2^32 + d_lo)
     q_true ≤ q_hat ∧ q_hat ≤ q_true + 2 :=
-  ⟨trial_quotient_ge u_hi un1 d_hi d_lo hd_hi hun1,
-   trial_quotient_le u_hi un1 d_hi d_lo hd_hi hd_hi_bound hd_lo hun1 hu hnorm⟩
+  ⟨trial_quotient_ge u_hi un1 d_hi d_lo (by omega) hun1,
+   trial_quotient_le u_hi un1 d_hi d_lo hd_hi_bound hd_lo hun1 hu hnorm⟩
 
 end EvmWord
 
