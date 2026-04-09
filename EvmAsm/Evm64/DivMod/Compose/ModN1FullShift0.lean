@@ -854,9 +854,6 @@ theorem evm_mod_n1_shift0_preloop_loopbody_spec (sp base : Word)
       refine ⟨k1 + k2 + k3, s3, stepN_add_eq _ _ _ _ _ (stepN_add_eq _ _ _ _ _ hstep1 hstep2) hstep3, hpc3, ?_⟩
       refine ⟨h_full3, hcompat3, h_qf3, h_f3, hdisj3, heq3, ?_, hF3⟩
       obtain ⟨h_lp3, h_frame3, hdisj_i3, heq_i3, hLP3, hFrame3⟩ := hQF3
-      change (∃ (x2v x10v x11v : Word) (un0v un1v un2v un3v u4v qv : Word)
-        (retv dv dlov sunv : Word),
-        loopBodyPostN1 sp (2 : Word) b0 b1 b2 b3 x2v x10v x11v un0v un1v un2v un3v u4v qv retv dv dlov sunv h_lp3) at hLP3
       obtain ⟨x2v_j2, x10v_j2, x11v_j2, un0v_j2, un1v_j2, un2v_j2, un3v_j2, u4v_j2, qv_j2,
         retv_j2, dv_j2, dlov_j2, sunv_j2, hLP3_atoms⟩ := hLP3
       unfold loopBodyPostN1 at hLP3_atoms
@@ -874,9 +871,6 @@ theorem evm_mod_n1_shift0_preloop_loopbody_spec (sp base : Word)
     refine ⟨k1 + k2, s2, stepN_add_eq _ _ _ _ _ hstep1 hstep2, hpc2, ?_⟩
     refine ⟨h_full2, hcompat2, h_qf2, h_f2, hdisj2, heq2, ?_, hF2⟩
     obtain ⟨h_lp2, h_frame2, hdisj_i2, heq_i2, hLP2, hFrame2⟩ := hQF2
-    change (∃ (x2v x10v x11v : Word) (un0v un1v un2v un3v u4v qv : Word)
-      (retv dv dlov sunv : Word),
-      loopBodyPostN1 sp (3 : Word) b0 b1 b2 b3 x2v x10v x11v un0v un1v un2v un3v u4v qv retv dv dlov sunv h_lp2) at hLP2
     obtain ⟨x2v_j3, x10v_j3, x11v_j3, un0v_j3, un1v_j3, un2v_j3, un3v_j3, u4v_j3, qv_j3,
       retv_j3, dv_j3, dlov_j3, sunv_j3, hLP2_atoms⟩ := hLP2
     unfold loopBodyPostN1 at hLP2_atoms
