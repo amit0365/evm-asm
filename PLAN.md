@@ -404,6 +404,10 @@ All phases below target **Evm64** primarily. Files are under `EvmAsm/Evm64/`.
     `div_quotient_of_normalized` / `mod_remainder_of_normalized` (shift bridge),
     `div_of_val256_eq_div` / `mod_of_val256_eq_mod` (val256 → EvmWord),
     `div_correct_normalized` / `mod_correct_normalized` (combined normalization bridge) (done)
+  - Mulsub carry strict bound: `DivMulSubCarry.lean` — `mulsub_limb_carry_strict_lt` (per-limb carry
+    always < 2^64, proven via case analysis on MULHU maximum), `mulsub_limb_word_carry_eq` (Word carry
+    = Nat carry, unconditional), `mulsub_limb_nat_word_eq` (per-limb equation with Word carry_out),
+    `mulsub_register_4limb_val256` (4-limb register ops → val256 Euclidean equation) (done)
   - Remaining: prove algorithm output satisfies Nat-level Euclidean property
     (carry chain analysis connecting specific register expressions to val256 equations)
   - Stack-level specs with `evmWordIs (sp+32) (EvmWord.div a b)` / `(EvmWord.mod a b)` in postcondition
