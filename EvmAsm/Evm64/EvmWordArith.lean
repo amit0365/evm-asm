@@ -27,3 +27,4 @@ import EvmAsm.Evm64.EvmWordArith.DivMulSubLimb
 import EvmAsm.Evm64.EvmWordArith.DivAddbackLimb
 import EvmAsm.Evm64.EvmWordArith.DivRemainderBound
 import EvmAsm.Evm64.EvmWordArith.DivAccumulate
+import EvmAsm.Evm64.EvmWordArith.DivMulSubCarry
