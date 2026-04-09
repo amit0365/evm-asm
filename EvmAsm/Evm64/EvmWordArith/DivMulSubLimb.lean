@@ -37,8 +37,7 @@ theorem mulhu_toNat_le (a b : Word) : (rv64_mulhu a b).toNat ≤ 2^64 - 2 := by
   have h3 : a.toNat * b.toNat ≤ (2^64 - 1) * (2^64 - 1) := Nat.mul_le_mul h1 h2
   suffices (2^64 - 1) * (2^64 - 1) / 2^64 = 2^64 - 2 by
     exact Nat.le_trans (Nat.div_le_div_right h3) (Nat.le_of_eq this)
-  show (18446744073709551615 * 18446744073709551615) / 18446744073709551616 = 18446744073709551614
-  omega
+  norm_num
 
 -- ============================================================================
 -- Per-limb multiply-subtract: Nat-level carry equation
@@ -97,13 +96,13 @@ theorem mulsub_limb_nat_eq (q v_i u_i carry_in : Word) :
     · simp [BitVec.ult, show ¬(u_i.toNat < full_sub.toNat) from h]
   -- u_new via sub
   have hu := u_i.isLt; have hfs := full_sub.isLt
-  have h_un : u_new.toNat = if u_i.toNat ≥ full_sub.toNat
+  have h_un : u_new.toNat = if full_sub.toNat ≤ u_i.toNat
     then u_i.toNat - full_sub.toNat
     else u_i.toNat + 2^64 - full_sub.toNat := by
     show (u_i - full_sub).toNat = _; rw [BitVec.toNat_sub]
-    by_cases h : u_i.toNat ≥ full_sub.toNat
+    by_cases h : full_sub.toNat ≤ u_i.toNat
     · simp [h]; omega
-    · push Not at h; simp [show ¬(u_i.toNat ≥ full_sub.toNat) from by omega]; omega
+    · push Not at h; simp [show ¬(full_sub.toNat ≤ u_i.toNat) from by omega]; omega
   -- div_add_mod for the add carry
   have hdm := Nat.div_add_mod (prod_lo.toNat + carry_in.toNat) (2^64)
   -- Combine: normalize 2^64 to the literal everywhere
@@ -127,12 +126,13 @@ theorem mulsub_limb_nat_eq (q v_i u_i carry_in : Word) :
   -- Eliminate the nonlinear q*v_i term by replacing with prod_hi*B + prod_lo (linear!)
   rw [show q.toNat * v_i.toNat = prod_hi.toNat * B + prod_lo.toNat from h_prod'.symm]
   -- Now everything is linear in div, prod_hi, B, prod_lo, carry_in, full_sub, u_i
-  by_cases hcmp : u_i.toNat ≥ full_sub.toNat
+  by_cases hcmp : full_sub.toNat ≤ u_i.toNat
   · simp only [hcmp, show ¬(u_i.toNat < full_sub.toNat) from by omega, ite_true, ite_false]
     have h1 := Nat.add_mul ((prod_lo.toNat + carry_in.toNat) / B) prod_hi.toNat B
     omega
   · push Not at hcmp
-    simp only [show ¬(u_i.toNat ≥ full_sub.toNat) from by omega, hcmp, ite_false, ite_true]
+    simp only [show ¬(full_sub.toNat ≤ u_i.toNat) from by omega,
+      show u_i.toNat < full_sub.toNat from by omega, ite_false, ite_true]
     have h1 := Nat.add_mul ((prod_lo.toNat + carry_in.toNat) / B) prod_hi.toNat B
     have h2 := Nat.add_mul ((prod_lo.toNat + carry_in.toNat) / B + prod_hi.toNat) 1 B
     omega
