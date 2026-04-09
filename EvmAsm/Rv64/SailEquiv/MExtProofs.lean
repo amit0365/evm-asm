@@ -5,12 +5,6 @@
   MULH, MULHSU, MULHU, DIV, DIVU, REM, REMU.
 
   MUL (low 64 bits) is already proved in ALUProofs.lean.
-
-  Helper lemmas for unsigned division/remainder (to_bits_truncate_neg1,
-  to_bits_truncate_natCast, unsigned_div_equiv, unsigned_rem_equiv)
-  are proved below. The instruction-level proofs for DIVU/REMU need
-  these helpers applied within the monadic expression before wX_bits
-  captures the value — this integration is still in progress.
 -/
 
 import EvmAsm.Rv64.Execution
@@ -28,7 +22,7 @@ set_option maxHeartbeats 1600000
 set_option maxRecDepth 2000
 
 -- ============================================================================
--- Proved helper lemmas for unsigned division/remainder
+-- Proved helper lemmas for division/remainder
 -- ============================================================================
 
 /-- to_bits_truncate on a non-negative integer = BitVec.ofNat. -/
@@ -41,6 +35,12 @@ theorem to_bits_truncate_neg1 :
     to_bits_truncate (l := 64) (-1 : Int) = BitVec.allOnes 64 := by
   simp [to_bits_truncate, get_slice_int, BitVec.allOnes]
 
+/-- to_bits_truncate roundtrips through toNatInt (unsigned interpretation). -/
+theorem to_bits_truncate_toNatInt (a : BitVec 64) :
+    to_bits_truncate (l := 64) (BitVec.toNatInt a) = a := by
+  simp [BitVec.toNatInt, to_bits_truncate, get_slice_int]
+  apply BitVec.eq_of_toNat_eq; simp; omega
+
 /-- BEq bridge: Int.ofNat b.toNat == 0 ↔ b == 0#64. -/
 theorem int_ofNat_beq_zero (b : BitVec 64) :
     (Int.ofNat b.toNat == (0 : Int)) = (b == 0#64) := by
@@ -52,25 +52,28 @@ theorem int_ofNat_beq_zero (b : BitVec 64) :
 /-- Unsigned division: SAIL's Int.tdiv on non-negative = BitVec udiv. -/
 theorem unsigned_div_equiv (a b : BitVec 64) (hb : b ≠ 0#64) :
     to_bits_truncate (l := 64) ((↑a.toNat : Int).tdiv (↑b.toNat : Int)) = a / b := by
-  rw [show (↑a.toNat : Int).tdiv (↑b.toNat : Int) = ↑(a.toNat / b.toNat) from
-    (Int.ofNat_tdiv a.toNat b.toNat).symm]
-  rw [to_bits_truncate_natCast]; apply BitVec.eq_of_toNat_eq
-  simp [BitVec.toNat_udiv]
+  rw [(Int.ofNat_tdiv a.toNat b.toNat).symm, to_bits_truncate_natCast]
+  apply BitVec.eq_of_toNat_eq; simp [BitVec.toNat_udiv]
   exact Nat.lt_of_le_of_lt (Nat.div_le_self _ _) a.isLt
 
 /-- Unsigned remainder: SAIL's Int.tmod on non-negative = BitVec umod. -/
 theorem unsigned_rem_equiv (a b : BitVec 64) (hb : b ≠ 0#64) :
     to_bits_truncate (l := 64) ((↑a.toNat : Int).tmod (↑b.toNat : Int)) = a % b := by
   have hbn : b.toNat ≠ 0 := by intro h; exact hb (BitVec.eq_of_toNat_eq (by simp [h]))
-  rw [show (↑a.toNat : Int).tmod (↑b.toNat : Int) = ↑(a.toNat % b.toNat) from
-    (Int.ofNat_tmod a.toNat b.toNat).symm]
-  rw [to_bits_truncate_natCast]; apply BitVec.eq_of_toNat_eq
-  simp [BitVec.toNat_umod]
+  rw [(Int.ofNat_tmod a.toNat b.toNat).symm, to_bits_truncate_natCast]
+  apply BitVec.eq_of_toNat_eq; simp [BitVec.toNat_umod]
   have : a.toNat % b.toNat < b.toNat := Nat.mod_lt _ (by omega)
   omega
 
 -- ============================================================================
--- Instruction proofs — all sorry pending helper integration
+-- Instruction proofs — sorry stubs
+--
+-- The DIVU/REMU proofs need the helpers above integrated into the monadic
+-- proof. The challenge: after `unfold execute_DIV`, simp produces a term
+-- with `to_bits_truncate (if BitVec.toNatInt b = 0 then -1 else ...)`
+-- which has a Prop `= 0` (not BEq `== 0`), and `BitVec.ofInt` in the
+-- value (not `BitVec.ofNat`). The helpers prove the equivalence but
+-- matching them inside the monadic context requires careful simp ordering.
 -- ============================================================================
 
 theorem mulh_sail_equiv (s_rv : MachineState) (s_sail : SailState)
