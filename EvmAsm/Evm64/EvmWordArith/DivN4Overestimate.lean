@@ -57,30 +57,30 @@ theorem max_trial_overestimate_n4 (a0 a1 a2 a3 b0 b1 b2 b3 : Word) (hb3nz : b3 �
 theorem n4_max_skip_correct (a0 a1 a2 a3 b0 b1 b2 b3 : Word)
     (hb3nz : b3 ≠ 0)
     (hc3_zero : (mulsubN4 (signExtend12 4095) b0 b1 b2 b3 a0 a1 a2 a3).2.2.2.2 = 0) :
-    let q_hat : Word := signExtend12 4095
-    let ms := mulsubN4 q_hat b0 b1 b2 b3 a0 a1 a2 a3
-    let q := fromLimbs fun i : Fin 4 =>
-      match i with | 0 => q_hat | 1 => (0 : Word) | 2 => (0 : Word) | 3 => (0 : Word)
-    let r := fromLimbs fun i : Fin 4 =>
-      match i with | 0 => ms.1 | 1 => ms.2.1 | 2 => ms.2.2.1 | 3 => ms.2.2.2.1
+    let ms := mulsubN4 (signExtend12 4095) b0 b1 b2 b3 a0 a1 a2 a3
     let a := fromLimbs fun i : Fin 4 =>
       match i with | 0 => a0 | 1 => a1 | 2 => a2 | 3 => a3
     let b := fromLimbs fun i : Fin 4 =>
       match i with | 0 => b0 | 1 => b1 | 2 => b2 | 3 => b3
+    let q := fromLimbs fun i : Fin 4 =>
+      match i with | 0 => (signExtend12 4095 : Word) | 1 => 0 | 2 => 0 | 3 => 0
+    let r := fromLimbs fun i : Fin 4 =>
+      match i with | 0 => ms.1 | 1 => ms.2.1 | 2 => ms.2.2.1 | 3 => ms.2.2.2.1
     q = EvmWord.div a b ∧ r = EvmWord.mod a b := by
-  intro q_hat ms q r a b
+  intro ms a b q r
   -- Derive hbnz from hb3nz
   have hbnz : b0 ||| b1 ||| b2 ||| b3 ≠ 0 := by
     intro h; exact hb3nz (BitVec.or_eq_zero_iff.mp h).2
   -- From mulsubN4_val256_eq: val256(u) + c3 * 2^256 = val256(un) + q * val256(v)
-  have hmulsub_raw := mulsubN4_val256_eq q_hat b0 b1 b2 b3 a0 a1 a2 a3
+  have hmulsub_raw := mulsubN4_val256_eq (signExtend12 4095) b0 b1 b2 b3 a0 a1 a2 a3
   simp only [] at hmulsub_raw
   -- c3 = 0, so val256(u) = val256(un) + q * val256(v)
   rw [show ms.2.2.2.2 = (0 : Word) from hc3_zero] at hmulsub_raw
   have : (0 : Word).toNat = 0 := by decide
   rw [this, Nat.zero_mul, Nat.add_zero] at hmulsub_raw
   -- Rearrange: val256 a = q.toNat * val256 b + val256 r
-  have hmulsub : val256 a0 a1 a2 a3 = q_hat.toNat * val256 b0 b1 b2 b3 +
+  have hmulsub : val256 a0 a1 a2 a3 =
+      (signExtend12 (4095 : BitVec 12) : Word).toNat * val256 b0 b1 b2 b3 +
       val256 ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 := by linarith
   -- Overestimate: val256(a)/val256(b) ≤ q_hat.toNat
   have hge := max_trial_overestimate_n4 a0 a1 a2 a3 b0 b1 b2 b3 hb3nz
