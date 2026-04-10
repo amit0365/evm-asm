@@ -341,6 +341,35 @@ theorem preloopMaxSkipPostN4_unfold (sp a0 a1 a2 a3 b0 b1 b2 b3 : Word) :
 -- Full n=4 DIV path (max+skip, shift≠0): base → base+1064
 -- ============================================================================
 
+/-- Full path postcondition for n=4 DIV (shift ≠ 0, max+skip).
+    Computes normalized b[], u[], runs mulsub, then denormalizes remainder
+    and outputs quotient. Includes frame atoms carried through the composition. -/
+@[irreducible]
+def fullDivN4MaxSkipPost (sp a0 a1 a2 a3 b0 b1 b2 b3 : Word) : Assertion :=
+  let shift := (clzResult b3).1
+  let anti_shift := signExtend12 (0 : BitVec 12) - shift
+  let b3' := (b3 <<< (shift.toNat % 64)) ||| (b2 >>> (anti_shift.toNat % 64))
+  let b2' := (b2 <<< (shift.toNat % 64)) ||| (b1 >>> (anti_shift.toNat % 64))
+  let b1' := (b1 <<< (shift.toNat % 64)) ||| (b0 >>> (anti_shift.toNat % 64))
+  let b0' := b0 <<< (shift.toNat % 64)
+  let u3 := (a3 <<< (shift.toNat % 64)) ||| (a2 >>> (anti_shift.toNat % 64))
+  let u2 := (a2 <<< (shift.toNat % 64)) ||| (a1 >>> (anti_shift.toNat % 64))
+  let u1 := (a1 <<< (shift.toNat % 64)) ||| (a0 >>> (anti_shift.toNat % 64))
+  let u0 := a0 <<< (shift.toNat % 64)
+  let q_hat : Word := signExtend12 4095
+  let ms := mulsubN4 q_hat b0' b1' b2' b3' u0 u1 u2 u3
+  denormDivPost sp shift ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 q_hat 0 0 0 **
+  ((sp + signExtend12 3992) ↦ₘ shift) **
+  ((sp + 0) ↦ₘ a0) ** ((sp + 8) ↦ₘ a1) **
+  ((sp + 16) ↦ₘ a2) ** ((sp + 24) ↦ₘ a3) **
+  ((sp + signExtend12 4024) ↦ₘ (a3 >>> (anti_shift.toNat % 64)) - ms.2.2.2.2) **
+  ((sp + signExtend12 4016) ↦ₘ (0 : Word)) **
+  ((sp + signExtend12 4008) ↦ₘ (0 : Word)) **
+  ((sp + signExtend12 4000) ↦ₘ (0 : Word)) **
+  (sp + signExtend12 3984 ↦ₘ (4 : Word)) **
+  (sp + signExtend12 3976 ↦ₘ (0 : Word)) **
+  (.x1 ↦ᵣ signExtend12 4095) ** (.x11 ↦ᵣ q_hat)
+
 /-- Full n=4 DIV path: base → base+1064 (shift ≠ 0, max+skip).
     Composes pre-loop + loop body + denorm + epilogue. -/
 theorem evm_div_n4_full_max_skip_spec (sp base : Word)
@@ -370,18 +399,6 @@ theorem evm_div_n4_full_max_skip_spec (sp base : Word)
     (hv_vtop : isValidDwordAccess (sp + ((4 : Word) + signExtend12 4095) <<< (3 : BitVec 6).toNat + signExtend12 32) = true)
     (hbltu : isMaxTrialN4 a3 b2 b3)
     (hborrow : isSkipBorrowN4Max a0 a1 a2 a3 b0 b1 b2 b3) :
-    let shift := (clzResult b3).1
-    let anti_shift := signExtend12 (0 : BitVec 12) - shift
-    let b3' := (b3 <<< (shift.toNat % 64)) ||| (b2 >>> (anti_shift.toNat % 64))
-    let b2' := (b2 <<< (shift.toNat % 64)) ||| (b1 >>> (anti_shift.toNat % 64))
-    let b1' := (b1 <<< (shift.toNat % 64)) ||| (b0 >>> (anti_shift.toNat % 64))
-    let b0' := b0 <<< (shift.toNat % 64)
-    let u3 := (a3 <<< (shift.toNat % 64)) ||| (a2 >>> (anti_shift.toNat % 64))
-    let u2 := (a2 <<< (shift.toNat % 64)) ||| (a1 >>> (anti_shift.toNat % 64))
-    let u1 := (a1 <<< (shift.toNat % 64)) ||| (a0 >>> (anti_shift.toNat % 64))
-    let u0 := a0 <<< (shift.toNat % 64)
-    let q_hat : Word := signExtend12 4095
-    let ms := mulsubN4 q_hat b0' b1' b2' b3' u0 u1 u2 u3
     cpsTriple base (base + 1064) (divCode base)
       ((.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ v5) ** (.x10 ↦ᵣ v10) ** (.x0 ↦ᵣ (0 : Word)) **
        (.x6 ↦ᵣ v6) ** (.x7 ↦ᵣ v7) ** (.x2 ↦ᵣ (clzResult b3).2 >>> (63 : Nat)) **
@@ -400,18 +417,19 @@ theorem evm_div_n4_full_max_skip_spec (sp base : Word)
        ((sp + signExtend12 4000) ↦ₘ u7) ** ((sp + signExtend12 3984) ↦ₘ n_mem) **
        ((sp + signExtend12 3992) ↦ₘ shift_mem) **
        ((sp + signExtend12 3976) ↦ₘ j_mem))
-      (denormDivPost sp shift ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 q_hat 0 0 0 **
-       ((sp + signExtend12 3992) ↦ₘ shift) **
-       ((sp + 0) ↦ₘ a0) ** ((sp + 8) ↦ₘ a1) **
-       ((sp + 16) ↦ₘ a2) ** ((sp + 24) ↦ₘ a3) **
-       ((sp + signExtend12 4024) ↦ₘ (a3 >>> (anti_shift.toNat % 64)) - ms.2.2.2.2) **
-       ((sp + signExtend12 4016) ↦ₘ (0 : Word)) **
-       ((sp + signExtend12 4008) ↦ₘ (0 : Word)) **
-       ((sp + signExtend12 4000) ↦ₘ (0 : Word)) **
-       (sp + signExtend12 3984 ↦ₘ (4 : Word)) **
-       (sp + signExtend12 3976 ↦ₘ (0 : Word)) **
-       (.x1 ↦ᵣ signExtend12 4095) ** (.x11 ↦ᵣ q_hat)) := by
-  intro shift anti_shift b3' b2' b1' b0' u3 u2 u1 u0 q_hat ms
+      (fullDivN4MaxSkipPost sp a0 a1 a2 a3 b0 b1 b2 b3) := by
+  let shift := (clzResult b3).1
+  let anti_shift := signExtend12 (0 : BitVec 12) - shift
+  let b3' := (b3 <<< (shift.toNat % 64)) ||| (b2 >>> (anti_shift.toNat % 64))
+  let b2' := (b2 <<< (shift.toNat % 64)) ||| (b1 >>> (anti_shift.toNat % 64))
+  let b1' := (b1 <<< (shift.toNat % 64)) ||| (b0 >>> (anti_shift.toNat % 64))
+  let b0' := b0 <<< (shift.toNat % 64)
+  let u3 := (a3 <<< (shift.toNat % 64)) ||| (a2 >>> (anti_shift.toNat % 64))
+  let u2 := (a2 <<< (shift.toNat % 64)) ||| (a1 >>> (anti_shift.toNat % 64))
+  let u1 := (a1 <<< (shift.toNat % 64)) ||| (a0 >>> (anti_shift.toNat % 64))
+  let u0 := a0 <<< (shift.toNat % 64)
+  let q_hat : Word := signExtend12 4095
+  let ms := mulsubN4 q_hat b0' b1' b2' b3' u0 u1 u2 u3
   -- 1. Pre-loop + loop body: base → base+904
   have hA := evm_div_n4_preloop_max_skip_spec sp base
     a0 a1 a2 a3 b0 b1 b2 b3 v5 v6 v7 v10 v11_old
@@ -446,7 +464,7 @@ theorem evm_div_n4_full_max_skip_spec (sp base : Word)
       xperm_hyp hp) hA hBF
   exact cpsTriple_consequence _ _ _ _ _ _ _
     (fun h hp => by xperm_hyp hp)
-    (fun h hq => by rw [sepConj_assoc'] at hq; xperm_hyp hq)
+    (fun h hq => by delta fullDivN4MaxSkipPost; rw [sepConj_assoc'] at hq; xperm_hyp hq)
     hFull
 
 end EvmAsm.Evm64
