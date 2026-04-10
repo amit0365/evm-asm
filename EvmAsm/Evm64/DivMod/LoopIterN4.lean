@@ -63,7 +63,7 @@ theorem divK_loop_body_n4_max_skip_j0_spec
       (loopBodyN4SkipPost sp (0 : Word) q_hat v0 v1 v2 v3 u0 u1 u2 u3 u_top) := by
   intro u_base q_hat q_addr hborrow
   -- Expand mulsub computation locally
-  let ms := mulsubN4 q_hat v0 v1 v2 v3 u0 u1 u2 u3
+
   let p0_lo := q_hat * v0; let p0_hi := rv64_mulhu q_hat v0
   let fs0 := p0_lo + (signExtend12 0 : Word)
   let ba0 := if BitVec.ult fs0 (signExtend12 0 : Word) then (1 : Word) else 0
@@ -89,7 +89,7 @@ theorem divK_loop_body_n4_max_skip_j0_spec
   let bs3 := if BitVec.ult u3 fs3 then (1 : Word) else 0
   let un3 := u3 - fs3; let c3 := pc3 + bs3
   let u4_new := u_top - c3
-  let j' := (0 : Word) + signExtend12 4095
+
   let vtop_base := sp + ((4 : Word) + signExtend12 4095) <<< (3 : BitVec 6).toNat
   -- 1. Trial max full (base+448 → base+516)
   have TF := divK_trial_max_full_spec sp (0 : Word) (4 : Word) j_old v5_old v6_old v7_old v10_old v11_old
@@ -184,7 +184,7 @@ theorem divK_loop_body_n4_max_addback_j0_spec
        (q_addr ↦ₘ q_old))
       (loopBodyN4AddbackPost sp (0 : Word) q_hat v0 v1 v2 v3 u0 u1 u2 u3 u_top) := by
   intro u_base q_hat q_addr hborrow
-  let ms := mulsubN4 q_hat v0 v1 v2 v3 u0 u1 u2 u3
+
   let p0_lo := q_hat * v0; let p0_hi := rv64_mulhu q_hat v0
   let fs0 := p0_lo + (signExtend12 0 : Word)
   let ba0 := if BitVec.ult fs0 (signExtend12 0 : Word) then (1 : Word) else 0
@@ -233,7 +233,7 @@ theorem divK_loop_body_n4_max_addback_j0_spec
   let aco3 := ac1_3 ||| ac2_3
   let aun4 := u4_new + aco3
   let q_hat' := q_hat + signExtend12 4095
-  let j' := (0 : Word) + signExtend12 4095
+
   let vtop_base := sp + ((4 : Word) + signExtend12 4095) <<< (3 : BitVec 6).toNat
   -- 1. Trial max full (base+448 → base+516)
   have TF := divK_trial_max_full_spec sp (0 : Word) (4 : Word) j_old v5_old v6_old v7_old v10_old v11_old
@@ -370,7 +370,7 @@ theorem divK_loop_body_n4_call_skip_j0_spec
         d_hi d_lo div_un1 div_un0 q1 rhat hi1 q1c rhatc q_dlo rhat_un1 q1' rhat'
         cu_rhat_un1 cu_q1_dlo un21 q0 rhat2 hi2 q0c rhat2c q0_dlo rhat2_un0 q0' q_hat
         q_addr hborrow
-  let ms := mulsubN4 q_hat v0 v1 v2 v3 u0 u1 u2 u3
+
   let p0_lo := q_hat * v0; let p0_hi := rv64_mulhu q_hat v0
   let fs0 := p0_lo + (signExtend12 0 : Word)
   let ba0 := if BitVec.ult fs0 (signExtend12 0 : Word) then (1 : Word) else 0
@@ -389,7 +389,7 @@ theorem divK_loop_body_n4_call_skip_j0_spec
   let pc3 := ba3 + p3_hi; let bs3 := if BitVec.ult u3 fs3 then (1 : Word) else 0
   let un3 := u3 - fs3; let c3 := pc3 + bs3
   let u4_new := u_top - c3
-  let j' := (0 : Word) + signExtend12 4095
+
   let vtop_base := sp + ((4 : Word) + signExtend12 4095) <<< (3 : BitVec 6).toNat
   -- 1. Trial call full (base+448 → base+516)
   have TF := divK_trial_call_full_spec sp (0 : Word) (4 : Word) j_old v5_old v6_old v7_old v10_old v11_old v2_old
@@ -529,7 +529,7 @@ theorem divK_loop_body_n4_call_addback_j0_spec
         d_hi d_lo div_un1 div_un0 q1 rhat hi1 q1c rhatc q_dlo rhat_un1 q1' rhat'
         cu_rhat_un1 cu_q1_dlo un21 q0 rhat2 hi2 q0c rhat2c q0_dlo rhat2_un0 q0' q_hat
         q_addr hborrow
-  let ms := mulsubN4 q_hat v0 v1 v2 v3 u0 u1 u2 u3
+
   let p0_lo := q_hat * v0; let p0_hi := rv64_mulhu q_hat v0
   let fs0 := p0_lo + (signExtend12 0 : Word)
   let ba0 := if BitVec.ult fs0 (signExtend12 0 : Word) then (1 : Word) else 0
@@ -564,7 +564,7 @@ theorem divK_loop_body_n4_call_addback_j0_spec
   let aco3 := ac1_3 ||| ac2_3
   let aun4 := u4_new + aco3
   let q_hat' := q_hat + signExtend12 4095
-  let j' := (0 : Word) + signExtend12 4095
+
   let vtop_base := sp + ((4 : Word) + signExtend12 4095) <<< (3 : BitVec 6).toNat
   -- 1. Trial call full (base+448 → base+516)
   have TF := divK_trial_call_full_spec sp (0 : Word) (4 : Word) j_old v5_old v6_old v7_old v10_old v11_old v2_old
