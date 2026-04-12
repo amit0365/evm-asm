@@ -1606,7 +1606,7 @@ def fullDivN3CallMaxPost (sp base a0 a1 a2 a3 b0 b1 b2 b3 : Word) : Assertion :=
   (sp + signExtend12 3968 ↦ₘ (base + 516)) **
   (sp + signExtend12 3960 ↦ₘ b2') **
   (sp + signExtend12 3952 ↦ₘ div128DLo b2') **
-  (sp + signExtend12 3944 ↦ₘ div128Un0 u2)
+  (sp + signExtend12 3944 ↦ₘ div128Un0 u3)
 
 -- ============================================================================
 -- Helper infrastructure for call×max (WHNF timeout with direct 14-let chain).
@@ -1614,9 +1614,10 @@ def fullDivN3CallMaxPost (sp base a0 a1 a2 a3 b0 b1 b2 b3 : Word) : Assertion :=
 -- its own heartbeat budget. The main theorem just chains opaque defs.
 -- ============================================================================
 
-/-- Denorm epilogue helper for call×max (moved before denorm_comp for dependency order).
-    Takes r0/r1 components as explicit params (no iterN3Call/iterN3Max chain). -/
-private theorem evm_div_n3_call_max_denorm' (sp base shift b0' b1' b2' b3' u2 : Word)
+/-- Denorm epilogue helper for call×max. Takes r0/r1 as explicit params (short WHNF).
+    Precondition atom order matches preloopN3CallMaxPost's unfolded form exactly,
+    so the perm callback in denorm_comp can use `exact hp` (no xperm needed). -/
+private theorem evm_div_n3_call_max_denorm' (sp base shift b0' b1' b2' b3' u3 : Word)
     (r0_un0 r0_un1 r0_un2 r0_un3 r0_u4 r0_q : Word)
     (r1_q r1_u4 : Word) (c3_0 : Word)
     (a0 a1 a2 a3 : Word)
@@ -1631,29 +1632,34 @@ private theorem evm_div_n3_call_max_denorm' (sp base shift b0' b1' b2' b3' u2 : 
     (hv_u2 : isValidDwordAccess (sp + signExtend12 4040) = true)
     (hv_u3 : isValidDwordAccess (sp + signExtend12 4032) = true) :
     cpsTriple (base + 904) (base + 1064) (divCode base)
-      ((.x12 ↦ᵣ sp) ** (.x6 ↦ᵣ sp + signExtend12 4056) ** (.x0 ↦ᵣ (0 : Word)) **
-       (.x5 ↦ᵣ (0 : Word)) ** (.x7 ↦ᵣ sp + signExtend12 4088) **
-       (.x2 ↦ᵣ r0_un3) ** (.x10 ↦ᵣ c3_0) **
-       ((sp + signExtend12 3992) ↦ₘ shift) **
-       ((sp + signExtend12 4056) ↦ₘ r0_un0) ** ((sp + signExtend12 4048) ↦ₘ r0_un1) **
-       ((sp + signExtend12 4040) ↦ₘ r0_un2) ** ((sp + signExtend12 4032) ↦ₘ r0_un3) **
-       ((sp + signExtend12 4088) ↦ₘ r0_q) ** ((sp + signExtend12 4080) ↦ₘ r1_q) **
-       ((sp + signExtend12 4072) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4064) ↦ₘ (0 : Word)) **
-       ((sp + 32) ↦ₘ b0') ** ((sp + 40) ↦ₘ b1') **
-       ((sp + 48) ↦ₘ b2') ** ((sp + 56) ↦ₘ b3') **
-       ((sp + 0) ↦ₘ a0) ** ((sp + 8) ↦ₘ a1) **
-       ((sp + 16) ↦ₘ a2) ** ((sp + 24) ↦ₘ a3) **
-       ((sp + signExtend12 4024) ↦ₘ r0_u4) **
-       ((sp + signExtend12 4016) ↦ₘ r1_u4) **
-       ((sp + signExtend12 4008) ↦ₘ (0 : Word)) **
-       ((sp + signExtend12 4000) ↦ₘ (0 : Word)) **
-       (sp + signExtend12 3984 ↦ₘ (3 : Word)) **
-       (sp + signExtend12 3976 ↦ₘ (0 : Word)) **
-       (.x1 ↦ᵣ signExtend12 4095) ** (.x11 ↦ᵣ r0_q) **
-       (sp + signExtend12 3968 ↦ₘ (base + 516)) **
-       (sp + signExtend12 3960 ↦ₘ b2') **
-       (sp + signExtend12 3952 ↦ₘ div128DLo b2') **
-       (sp + signExtend12 3944 ↦ₘ div128Un0 u2))
+      -- Flat left-associated chain matching preloopN3CallMaxPost's unfolded order:
+      (-- loopExitPostN3 at j=0:
+      (.x12 ↦ᵣ sp) ** (.x1 ↦ᵣ signExtend12 4095) **
+      (.x5 ↦ᵣ (0 : Word)) ** (.x6 ↦ᵣ sp + signExtend12 4056) **
+      (.x7 ↦ᵣ sp + signExtend12 4088) ** (.x10 ↦ᵣ c3_0) ** (.x11 ↦ᵣ r0_q) **
+      (.x2 ↦ᵣ r0_un3) ** (.x0 ↦ᵣ (0 : Word)) **
+      (sp + signExtend12 3976 ↦ₘ (0 : Word)) ** (sp + signExtend12 3984 ↦ₘ (3 : Word)) **
+      ((sp + 32) ↦ₘ b0') ** ((sp + signExtend12 4056) ↦ₘ r0_un0) **
+      ((sp + 40) ↦ₘ b1') ** ((sp + signExtend12 4048) ↦ₘ r0_un1) **
+      ((sp + 48) ↦ₘ b2') ** ((sp + signExtend12 4040) ↦ₘ r0_un2) **
+      ((sp + 56) ↦ₘ b3') ** ((sp + signExtend12 4032) ↦ₘ r0_un3) **
+      ((sp + signExtend12 4024) ↦ₘ r0_u4) **
+      ((sp + signExtend12 4088) ↦ₘ r0_q) **
+      -- carry from j=1:
+      ((sp + signExtend12 4016) ↦ₘ r1_u4) ** ((sp + signExtend12 4080) ↦ₘ r1_q) **
+      -- scratch from j=1 call:
+      (sp + signExtend12 3968 ↦ₘ (base + 516)) **
+      (sp + signExtend12 3960 ↦ₘ b2') **
+      (sp + signExtend12 3952 ↦ₘ div128DLo b2') **
+      (sp + signExtend12 3944 ↦ₘ div128Un0 u3) **
+      -- outer frame:
+      ((sp + 0) ↦ₘ a0) ** ((sp + 8) ↦ₘ a1) **
+      ((sp + 16) ↦ₘ a2) ** ((sp + 24) ↦ₘ a3) **
+      ((sp + signExtend12 4072) ↦ₘ (0 : Word)) **
+      ((sp + signExtend12 4064) ↦ₘ (0 : Word)) **
+      ((sp + signExtend12 4008) ↦ₘ (0 : Word)) **
+      ((sp + signExtend12 4000) ↦ₘ (0 : Word)) **
+      ((sp + signExtend12 3992) ↦ₘ shift))
       (denormDivPost sp shift r0_un0 r0_un1 r0_un2 r0_un3 r0_q r1_q 0 0 **
        ((sp + signExtend12 3992) ↦ₘ shift) **
        ((sp + 0) ↦ₘ a0) ** ((sp + 8) ↦ₘ a1) **
@@ -1668,7 +1674,8 @@ private theorem evm_div_n3_call_max_denorm' (sp base shift b0' b1' b2' b3' u2 : 
        (sp + signExtend12 3968 ↦ₘ (base + 516)) **
        (sp + signExtend12 3960 ↦ₘ b2') **
        (sp + signExtend12 3952 ↦ₘ div128DLo b2') **
-       (sp + signExtend12 3944 ↦ₘ div128Un0 u2)) := by
+       (sp + signExtend12 3944 ↦ₘ div128Un0 u3)) := by
+  -- Apply denorm epilogue (takes 20 atoms), frame with remaining 16
   have hB := evm_div_preamble_denorm_epilogue_spec sp base
     r0_un0 r0_un1 r0_un2 r0_un3 shift
     r0_un3 (0 : Word) (sp + signExtend12 4056) (sp + signExtend12 4088)
@@ -1688,8 +1695,9 @@ private theorem evm_div_n3_call_max_denorm' (sp base shift b0' b1' b2' b3' u2 : 
      (sp + signExtend12 3968 ↦ₘ (base + 516)) **
      (sp + signExtend12 3960 ↦ₘ b2') **
      (sp + signExtend12 3952 ↦ₘ div128DLo b2') **
-     (sp + signExtend12 3944 ↦ₘ div128Un0 u2))
+     (sp + signExtend12 3944 ↦ₘ div128Un0 u3))
     (by pcFree) hB
+  -- xperm on parameterized atoms (r0_un0 etc.) is cheap — no deep WHNF
   exact cpsTriple_consequence _ _ _ _ _ _ _
     (fun h hp => by xperm_hyp hp)
     (fun h hq => by rw [sepConj_assoc'] at hq; xperm_hyp hq)
@@ -1727,10 +1735,21 @@ theorem evm_div_n3_call_max_denorm_comp (sp base a0 a1 a2 a3 b0 b1 b2 b3 : Word)
   let r0 := iterN3Max b0' b1' b2' b3' u0 r1.2.1 r1.2.2.1 r1.2.2.2.1 r1.2.2.2.2.1
   let c3_0 := (mulsubN4 (signExtend12 4095 : Word) b0' b1' b2' b3'
     u0 r1.2.1 r1.2.2.1 r1.2.2.2.1).2.2.2.2
-  -- xperm on 36 call×max atoms exceeds heartbeat budget. Needs sub-assertion
-  -- bundling (@[irreducible] defs for denorm input / frame groups) to reduce
-  -- atom count for xperm. See issue #245 for the general approach.
-  sorry
+  -- Use denorm helper with r0/r1 as params (no WHNF chain).
+  -- Pre-weakening is `exact hp` (no xperm) because the denorm helper's precondition
+  -- atom order matches the preloop postcondition's unfolded order exactly.
+  have hD := evm_div_n3_call_max_denorm' sp base shift b0' b1' b2' b3' u3
+    r0.2.1 r0.2.2.1 r0.2.2.2.1 r0.2.2.2.2.1 r0.2.2.2.2.2 r0.1
+    r1.1 r1.2.2.2.2.2 c3_0 a0 a1 a2 a3
+    hshift_nz hvalid hv_shift hv_q0 hv_q1 hv_q2 hv_q3 hv_u0 hv_u1 hv_u2 hv_u3
+  exact cpsTriple_consequence _ _ _ _ _ _ _
+    (fun h hp => by
+      delta preloopN3CallMaxPost at hp
+      simp only [loopN3CallMaxPost, loopIterPostN3Max, loopExitPostN3_j0_eq,
+        n3_ub1_off4064, n3_qa1, se12_32, se12_40, se12_48, se12_56] at hp
+      xperm_hyp hp)
+    (fun h hq => by delta fullDivN3CallMaxPost; xperm_hyp hq)
+    hD
 
 -- (Old evm_div_n3_call_max_denorm removed — superseded by evm_div_n3_call_max_denorm' above)
 
