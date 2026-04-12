@@ -414,15 +414,41 @@ All phases below target **Evm64** primarily. Files are under `EvmAsm/Evm64/`.
     - Step 1: Make `loopBodyPostN{1,2,3,4}` parametric — move output values to definition
       parameters so per-case concrete specs can fill them in concretely.
       Status: ✅ Done (PRs #197 + #202)
-    - Step 2: Per-n loop iteration cpsTriple specs at j=0 using `divK_store_loop_j0_spec`.
-      Four theorems per N (max_skip, max_addback, call_skip, call_addback).
-      Status: ✅ Done for n=4 (`LoopIterN4.lean`), ✅ n=3 j=0 all 4 paths done + j=1 max paths done (`LoopIterN3.lean`), not started for n=1,2
+    - Step 2: Per-n loop iteration cpsTriple specs using `divK_store_loop_j0_spec` (j=0)
+      and `divK_store_loop_jgt0_spec` (j>0). Four raw specs per (n, j) pair
+      (max_skip, max_addback, call_skip, call_addback), then unified skip/addback
+      into `divK_loop_body_nX_{max,call}_unified_jY_spec`.
+      Status:
+        - ✅ n=4: j=0 all 4 paths done (`LoopIterN4.lean`)
+        - ✅ n=3: j=0 all 4 paths + j=1 all 4 paths + unified specs (`LoopIterN3.lean`, `LoopComposeN3.lean`)
+        - 🔧 n=2: j=0 all 4 paths + j=1 all 4 paths + j=2 max_skip only (`LoopIterN2.lean`); j=2 remaining 3 specs needed
+        - ❌ n=1: not started
+    - Step 2b: **Bool-parameterized loop composition** (Issue #262, PRs #267 + #268).
+      Unifies max/call branch paths via `(bltu : Bool)` parameter so that
+      2^k path combinations collapse to 1 theorem.
+      Status:
+        - ✅ Unified defs: `iterN3`, `iterN2`, `loopIterPostN3`, `loopN3UnifiedPost` (`LoopDefs.lean`)
+        - ✅ Unified 2-iteration composition: `divK_loop_n3_unified_spec (bltu_1 bltu_0 : Bool)` (`LoopUnifiedN3.lean`)
+        - ✅ Unified preloop+loop: `evm_div_n3_preloop_loop_unified_spec` (`Compose/FullPathN3LoopUnified.lean`)
+        - Unified condition predicates: `isTrialN3_j1/j0` (`FullPathN3LoopUnified.lean`)
+      Immediate next steps:
+        - Unified full-path for n=3 (preloop+loop+denorm+epilogue, base→base+1064)
+        - Complete n=2 j=2 iteration specs, then build `LoopComposeN2.lean` with Bool params directly (1 theorem vs 8)
+        - n=1 loop composition (4 iterations, Bool approach gives 1 theorem vs 16)
     - Step 3: Per-n full-path composition theorems (base→base+1064) with bundled postconditions.
       Composes pre-loop (normalization) + loop body + post-loop (denorm/epilogue).
-      Status: ✅ Done for n=4 — all 6 sub-cases proved:
-        - shift≠0: `evm_div_n4_full_{max,call}_{skip,addback}_spec` (`FullPathN4.lean`)
-        - shift=0: `evm_div_n4_full_shift0_call_{skip,addback}_spec` (`FullPathN4Shift0.lean`)
-      Not started for n=1,2,3 (need multi-iteration loop unrolling via `divK_store_loop_jgt0_spec`)
+      Status:
+        - ✅ n=4 shift≠0: `evm_div_n4_full_{max,call}_{skip,addback}_spec` (`FullPathN4.lean`)
+        - ✅ n=4 shift=0: `evm_div_n4_full_shift0_call_{skip,addback}_spec` (`FullPathN4Shift0.lean`)
+        - ✅ n=3 shift≠0: 4 full-path theorems (`FullPathN3Loop.lean`) — can be replaced by unified version
+        - ✅ n=3 shift=0: 2 full-path theorems (`FullPathN3Shift0.lean`)
+        - ❌ n=2: blocked on Step 2 (loop composition)
+        - ❌ n=1: blocked on Step 2
+      Immediate next steps:
+        - Unified n=3 full-path theorem (1 theorem with Bool params, delegates to existing 4)
+        - n=2 full-path after loop composition is done
+        - n=1 full-path
+        - MOD variants: factor shared DIV/MOD loop to avoid duplication (Issue #266)
     - Step 4: Semantic correctness bridge — connect algorithm computations to `EvmWord.div`.
       Infrastructure exists: `div_correct_n4_no_shift`, `remainder_lt_of_ge_floor`,
       `mulsub_no_underflow_correct`, `mulsub_addback_correct`, `mulsubN4_val256_eq`.
@@ -440,10 +466,21 @@ All phases below target **Evm64** primarily. Files are under `EvmAsm/Evm64/`.
           3. **Addback combined equation**: given c3=1 (borrow) and carry=1 (addback carry),
              derive `val256(a) = (q_hat-1) * val256(b) + val256(aun)` from `mulsubN4_val256_eq`
              + `addbackN4_val256_eq`.
-      Status: In progress (`DivN4Overestimate.lean`)
+      Status: In progress (`DivN4Overestimate.lean`). This is independent of Steps 2-3 and can
+      proceed in parallel. Once done for n=4, the bridge generalizes to n=1,2,3 via the same
+      `div_correct_normalized` framework.
     - Step 5: Stack-level spec using `evmWordIs`. Case-split on b=0/≠0, then on n,
       apply full-path spec + semantic bridge to prove `evmWordIs (sp+32) (EvmWord.div a b)`.
-      Status: Not started (blocked on Step 4)
+      Status: Not started (blocked on Steps 3+4 for all n values)
+
+  **Path to EVM-level DIV/MOD specs (summary):**
+  1. Complete n=2 loop iteration specs (3 missing j=2 specs) → build LoopComposeN2 with Bool unification
+  2. Complete n=1 loop iteration specs → build LoopComposeN1 with Bool unification
+  3. Build n=2 and n=1 full-path compositions (preloop+loop+denorm+epilogue)
+  4. Complete Knuth's Theorem B (Step 4) — can proceed in parallel with 1-3
+  5. Per-n semantic bridge: connect full-path postconditions to `EvmWord.div`/`EvmWord.mod`
+  6. Stack-level spec: case-split b=0/≠0, then on n, compose full-path + semantic bridge
+  7. Factor shared DIV/MOD loop (Issue #266) to derive MOD specs from DIV proofs
 
 #### 4.3 SDIV and SMOD (Signed)
 - **Approach**: Check signs, compute unsigned div/mod, apply sign correction.
