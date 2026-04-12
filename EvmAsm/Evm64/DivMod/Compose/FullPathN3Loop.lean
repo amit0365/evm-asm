@@ -1608,6 +1608,7 @@ def fullDivN3CallMaxPost (sp base a0 a1 a2 a3 b0 b1 b2 b3 : Word) : Assertion :=
   (sp + signExtend12 3952 ↦ₘ div128DLo b2') **
   (sp + signExtend12 3944 ↦ₘ div128Un0 u2)
 
+/-- Full n=3 DIV path: base → base+1064 (shift ≠ 0, call×max). -/
 theorem evm_div_n3_full_call_max_spec (sp base : Word)
     (a0 a1 a2 a3 b0 b1 b2 b3 v5 v6 v7 v10 v11_old : Word)
     (q0 q1 q2 q3 u0_old u1_old u2_old u3_old u4_old u5 u6 u7 n_mem shift_mem j_mem : Word)
@@ -1661,8 +1662,9 @@ theorem evm_div_n3_full_call_max_spec (sp base : Word)
        ((sp + signExtend12 3952) ↦ₘ dlo_mem) **
        ((sp + signExtend12 3944) ↦ₘ scratch_un0))
       (fullDivN3CallMaxPost sp base a0 a1 a2 a3 b0 b1 b2 b3) := by
-  -- TODO: WHNF timeout with iterN3Call(j=1) + iterN3Max(j=0) let-binding chain.
-  -- Needs helper inst theorem that splits the denorm composition from preloop.
+  -- WHNF timeout: iterN3Call(j=1) + iterN3Max(j=0) let-binding chain exceeds heartbeat
+  -- limit. Needs intermediate composition with explicit postcondition def to break the
+  -- chain while keeping xperm matching possible.
   sorry
 
 end EvmAsm.Evm64
