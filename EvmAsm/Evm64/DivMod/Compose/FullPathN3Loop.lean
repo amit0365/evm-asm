@@ -1608,6 +1608,94 @@ def fullDivN3CallMaxPost (sp base a0 a1 a2 a3 b0 b1 b2 b3 : Word) : Assertion :=
   (sp + signExtend12 3952 ↦ₘ div128DLo b2') **
   (sp + signExtend12 3944 ↦ₘ div128Un0 u2)
 
+-- ============================================================================
+-- Helper infrastructure for call×max (WHNF timeout with direct 14-let chain).
+-- Split into: (1) denorm cpsTriple with r0/r1 as params, (2) perm + compose.
+-- The main theorem only references opaque @[irreducible] defs in its type,
+-- avoiding WHNF chains. The denorm helper takes r0/r1 as params (short chain).
+-- ============================================================================
+
+/-- Denorm epilogue helper for call×max. Takes r0/r1 components as explicit params
+    (no iterN3Call/iterN3Max chain). Precondition is flat (not @[irreducible]). -/
+private theorem evm_div_n3_call_max_denorm (sp base shift b0' b1' b2' b3' u2 : Word)
+    (r0_un0 r0_un1 r0_un2 r0_un3 r0_u4 r0_q : Word)
+    (r1_q r1_u4 : Word) (c3_0 : Word)
+    (a0 a1 a2 a3 : Word)
+    (hshift_nz : shift ≠ 0) (hvalid : ValidMemRange sp 8)
+    (hv_shift : isValidDwordAccess (sp + signExtend12 3992) = true)
+    (hv_q0 : isValidDwordAccess (sp + signExtend12 4088) = true)
+    (hv_q1 : isValidDwordAccess (sp + signExtend12 4080) = true)
+    (hv_q2 : isValidDwordAccess (sp + signExtend12 4072) = true)
+    (hv_q3 : isValidDwordAccess (sp + signExtend12 4064) = true)
+    (hv_u0 : isValidDwordAccess (sp + signExtend12 4056) = true)
+    (hv_u1 : isValidDwordAccess (sp + signExtend12 4048) = true)
+    (hv_u2 : isValidDwordAccess (sp + signExtend12 4040) = true)
+    (hv_u3 : isValidDwordAccess (sp + signExtend12 4032) = true) :
+    cpsTriple (base + 904) (base + 1064) (divCode base)
+      ((.x12 ↦ᵣ sp) ** (.x6 ↦ᵣ sp + signExtend12 4056) ** (.x0 ↦ᵣ (0 : Word)) **
+       (.x5 ↦ᵣ (0 : Word)) ** (.x7 ↦ᵣ sp + signExtend12 4088) **
+       (.x2 ↦ᵣ r0_un3) ** (.x10 ↦ᵣ c3_0) **
+       ((sp + signExtend12 3992) ↦ₘ shift) **
+       ((sp + signExtend12 4056) ↦ₘ r0_un0) ** ((sp + signExtend12 4048) ↦ₘ r0_un1) **
+       ((sp + signExtend12 4040) ↦ₘ r0_un2) ** ((sp + signExtend12 4032) ↦ₘ r0_un3) **
+       ((sp + signExtend12 4088) ↦ₘ r0_q) ** ((sp + signExtend12 4080) ↦ₘ r1_q) **
+       ((sp + signExtend12 4072) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4064) ↦ₘ (0 : Word)) **
+       ((sp + 32) ↦ₘ b0') ** ((sp + 40) ↦ₘ b1') **
+       ((sp + 48) ↦ₘ b2') ** ((sp + 56) ↦ₘ b3') **
+       ((sp + 0) ↦ₘ a0) ** ((sp + 8) ↦ₘ a1) **
+       ((sp + 16) ↦ₘ a2) ** ((sp + 24) ↦ₘ a3) **
+       ((sp + signExtend12 4024) ↦ₘ r0_u4) **
+       ((sp + signExtend12 4016) ↦ₘ r1_u4) **
+       ((sp + signExtend12 4008) ↦ₘ (0 : Word)) **
+       ((sp + signExtend12 4000) ↦ₘ (0 : Word)) **
+       (sp + signExtend12 3984 ↦ₘ (3 : Word)) **
+       (sp + signExtend12 3976 ↦ₘ (0 : Word)) **
+       (.x1 ↦ᵣ signExtend12 4095) ** (.x11 ↦ᵣ r0_q) **
+       (sp + signExtend12 3968 ↦ₘ (base + 516)) **
+       (sp + signExtend12 3960 ↦ₘ b2') **
+       (sp + signExtend12 3952 ↦ₘ div128DLo b2') **
+       (sp + signExtend12 3944 ↦ₘ div128Un0 u2))
+      (denormDivPost sp shift r0_un0 r0_un1 r0_un2 r0_un3 r0_q r1_q 0 0 **
+       ((sp + signExtend12 3992) ↦ₘ shift) **
+       ((sp + 0) ↦ₘ a0) ** ((sp + 8) ↦ₘ a1) **
+       ((sp + 16) ↦ₘ a2) ** ((sp + 24) ↦ₘ a3) **
+       ((sp + signExtend12 4024) ↦ₘ r0_u4) **
+       ((sp + signExtend12 4016) ↦ₘ r1_u4) **
+       ((sp + signExtend12 4008) ↦ₘ (0 : Word)) **
+       ((sp + signExtend12 4000) ↦ₘ (0 : Word)) **
+       (sp + signExtend12 3984 ↦ₘ (3 : Word)) **
+       (sp + signExtend12 3976 ↦ₘ (0 : Word)) **
+       (.x1 ↦ᵣ signExtend12 4095) ** (.x11 ↦ᵣ r0_q) **
+       (sp + signExtend12 3968 ↦ₘ (base + 516)) **
+       (sp + signExtend12 3960 ↦ₘ b2') **
+       (sp + signExtend12 3952 ↦ₘ div128DLo b2') **
+       (sp + signExtend12 3944 ↦ₘ div128Un0 u2)) := by
+  have hB := evm_div_preamble_denorm_epilogue_spec sp base
+    r0_un0 r0_un1 r0_un2 r0_un3 shift
+    r0_un3 (0 : Word) (sp + signExtend12 4056) (sp + signExtend12 4088)
+    c3_0 r0_q r1_q 0 0
+    b0' b1' b2' b3'
+    hshift_nz hvalid hv_shift hv_q0 hv_q1 hv_q2 hv_q3 hv_u0 hv_u1 hv_u2 hv_u3
+  have hBF := cpsTriple_frame_left _ _ _ _ _
+    (((sp + 0) ↦ₘ a0) ** ((sp + 8) ↦ₘ a1) **
+     ((sp + 16) ↦ₘ a2) ** ((sp + 24) ↦ₘ a3) **
+     ((sp + signExtend12 4024) ↦ₘ r0_u4) **
+     ((sp + signExtend12 4016) ↦ₘ r1_u4) **
+     ((sp + signExtend12 4008) ↦ₘ (0 : Word)) **
+     ((sp + signExtend12 4000) ↦ₘ (0 : Word)) **
+     (sp + signExtend12 3984 ↦ₘ (3 : Word)) **
+     (sp + signExtend12 3976 ↦ₘ (0 : Word)) **
+     (.x1 ↦ᵣ signExtend12 4095) ** (.x11 ↦ᵣ r0_q) **
+     (sp + signExtend12 3968 ↦ₘ (base + 516)) **
+     (sp + signExtend12 3960 ↦ₘ b2') **
+     (sp + signExtend12 3952 ↦ₘ div128DLo b2') **
+     (sp + signExtend12 3944 ↦ₘ div128Un0 u2))
+    (by pcFree) hB
+  exact cpsTriple_consequence _ _ _ _ _ _ _
+    (fun h hp => by xperm_hyp hp)
+    (fun h hq => by rw [sepConj_assoc'] at hq; xperm_hyp hq)
+    hBF
+
 /-- Full n=3 DIV path: base → base+1064 (shift ≠ 0, call×max). -/
 theorem evm_div_n3_full_call_max_spec (sp base : Word)
     (a0 a1 a2 a3 b0 b1 b2 b3 v5 v6 v7 v10 v11_old : Word)
@@ -1662,9 +1750,15 @@ theorem evm_div_n3_full_call_max_spec (sp base : Word)
        ((sp + signExtend12 3952) ↦ₘ dlo_mem) **
        ((sp + signExtend12 3944) ↦ₘ scratch_un0))
       (fullDivN3CallMaxPost sp base a0 a1 a2 a3 b0 b1 b2 b3) := by
-  -- WHNF timeout: iterN3Call(j=1) + iterN3Max(j=0) let-binding chain exceeds heartbeat
-  -- limit. Needs intermediate composition with explicit postcondition def to break the
-  -- chain while keeping xperm matching possible.
+  -- 1. Preloop+loop: base → base+904 (no let bindings needed)
+  have hA := evm_div_n3_preloop_call_max_spec sp base
+    a0 a1 a2 a3 b0 b1 b2 b3 v5 v6 v7 v10 v11_old
+    q0 q1 q2 q3 u0_old u1_old u2_old u3_old u4_old u5 u6 u7 n_mem shift_mem j_mem
+    ret_mem d_mem dlo_mem scratch_un0
+    hbnz hb3z hb2nz hshift_nz hvalid
+    hv_q0 hv_q1 hv_q2 hv_q3 hv_u0 hv_u1 hv_u2 hv_u3 hv_u4
+    hv_u5 hv_u6 hv_u7 hv_n hv_shift hv_j hv_ret hv_d hv_dlo hv_scratch_un0
+    halign hbltu_1 hbltu_0
   sorry
 
 end EvmAsm.Evm64
