@@ -211,4 +211,123 @@ theorem evm_div_n3_preloop_shift0_call_call_spec (sp base : Word)
     (fun h hq => by delta preloopN3Shift0CallCallPost; simp only [hshift_z] at hq; xperm_hyp hq)
     hFull
 
+-- ============================================================================
+-- Full path postcondition for n=3 DIV (shift=0, call×call)
+-- ============================================================================
+
+@[irreducible]
+def fullDivN3Shift0CallCallPost (sp base a0 a1 a2 a3 b0 b1 b2 : Word) : Assertion :=
+  let r1 := iterN3Call b0 b1 b2 (0 : Word) a1 a2 a3 (0 : Word) (0 : Word)
+  let r0 := iterN3Call b0 b1 b2 (0 : Word) a0 r1.2.1 r1.2.2.1 r1.2.2.2.1 r1.2.2.2.2.1
+  denormDivPost sp (0 : Word) r0.2.1 r0.2.2.1 r0.2.2.2.1 r0.2.2.2.2.1 r0.1 r1.1 0 0 **
+  ((sp + signExtend12 3992) ↦ₘ (0 : Word)) **
+  ((sp + 0) ↦ₘ a0) ** ((sp + 8) ↦ₘ a1) **
+  ((sp + 16) ↦ₘ a2) ** ((sp + 24) ↦ₘ a3) **
+  ((sp + signExtend12 4024) ↦ₘ r0.2.2.2.2.2) **
+  ((sp + signExtend12 4016) ↦ₘ r1.2.2.2.2.2) **
+  ((sp + signExtend12 4008) ↦ₘ (0 : Word)) **
+  ((sp + signExtend12 4000) ↦ₘ (0 : Word)) **
+  (sp + signExtend12 3984 ↦ₘ (3 : Word)) **
+  (sp + signExtend12 3976 ↦ₘ (0 : Word)) **
+  (.x1 ↦ᵣ signExtend12 4095) ** (.x11 ↦ᵣ r0.1) **
+  (sp + signExtend12 3968 ↦ₘ (base + 516)) **
+  (sp + signExtend12 3960 ↦ₘ b2) **
+  (sp + signExtend12 3952 ↦ₘ div128DLo b2) **
+  (sp + signExtend12 3944 ↦ₘ div128Un0 r1.2.2.1)
+
+-- ============================================================================
+-- Full n=3 DIV path (shift=0, call×call): base → base+1064
+-- ============================================================================
+
+theorem evm_div_n3_full_shift0_call_call_spec (sp base : Word)
+    (a0 a1 a2 a3 b0 b1 b2 b3 v5 v6 v7 v10 v11_old : Word)
+    (q0 q1 q2 q3 u0_old u1_old u2_old u3_old u4_old u5 u6 u7 n_mem shift_mem j_mem : Word)
+    (ret_mem d_mem dlo_mem scratch_un0 : Word)
+    (hbnz : b0 ||| b1 ||| b2 ||| b3 ≠ 0)
+    (hb3z : b3 = 0) (hb2nz : b2 ≠ 0)
+    (hshift_z : (clzResult b2).1 = 0)
+    (hvalid : ValidMemRange sp 8)
+    (hv_q0 : isValidDwordAccess (sp + signExtend12 4088) = true)
+    (hv_q1 : isValidDwordAccess (sp + signExtend12 4080) = true)
+    (hv_q2 : isValidDwordAccess (sp + signExtend12 4072) = true)
+    (hv_q3 : isValidDwordAccess (sp + signExtend12 4064) = true)
+    (hv_u0 : isValidDwordAccess (sp + signExtend12 4056) = true)
+    (hv_u1 : isValidDwordAccess (sp + signExtend12 4048) = true)
+    (hv_u2 : isValidDwordAccess (sp + signExtend12 4040) = true)
+    (hv_u3 : isValidDwordAccess (sp + signExtend12 4032) = true)
+    (hv_u4 : isValidDwordAccess (sp + signExtend12 4024) = true)
+    (hv_u5 : isValidDwordAccess (sp + signExtend12 4016) = true)
+    (hv_u6 : isValidDwordAccess (sp + signExtend12 4008) = true)
+    (hv_u7 : isValidDwordAccess (sp + signExtend12 4000) = true)
+    (hv_n  : isValidDwordAccess (sp + signExtend12 3984) = true)
+    (hv_shift : isValidDwordAccess (sp + signExtend12 3992) = true)
+    (hv_j  : isValidDwordAccess (sp + signExtend12 3976) = true)
+    (hv_ret : isValidDwordAccess (sp + signExtend12 3968) = true)
+    (hv_d   : isValidDwordAccess (sp + signExtend12 3960) = true)
+    (hv_dlo : isValidDwordAccess (sp + signExtend12 3952) = true)
+    (hv_scratch_un0 : isValidDwordAccess (sp + signExtend12 3944) = true)
+    (halign : ((base + 516) + signExtend12 (0 : BitVec 12)) &&& ~~~(1 : Word) = base + 516)
+    (hbltu_0 : isCallTrialN3Shift0_j0 a1 a2 a3 b0 b1 b2) :
+    cpsTriple base (base + 1064) (divCode base)
+      ((.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ v5) ** (.x10 ↦ᵣ v10) ** (.x0 ↦ᵣ (0 : Word)) **
+       (.x6 ↦ᵣ v6) ** (.x7 ↦ᵣ v7) ** (.x2 ↦ᵣ (clzResult b2).2 >>> (63 : Nat)) **
+       (.x1 ↦ᵣ signExtend12 (4 : BitVec 12) - (4 : Word)) **
+       (.x11 ↦ᵣ v11_old) **
+       ((sp + 0) ↦ₘ a0) ** ((sp + 8) ↦ₘ a1) **
+       ((sp + 16) ↦ₘ a2) ** ((sp + 24) ↦ₘ a3) **
+       ((sp + 32) ↦ₘ b0) ** ((sp + 40) ↦ₘ b1) **
+       ((sp + 48) ↦ₘ b2) ** ((sp + 56) ↦ₘ b3) **
+       ((sp + signExtend12 4088) ↦ₘ q0) ** ((sp + signExtend12 4080) ↦ₘ q1) **
+       ((sp + signExtend12 4072) ↦ₘ q2) ** ((sp + signExtend12 4064) ↦ₘ q3) **
+       ((sp + signExtend12 4056) ↦ₘ u0_old) ** ((sp + signExtend12 4048) ↦ₘ u1_old) **
+       ((sp + signExtend12 4040) ↦ₘ u2_old) ** ((sp + signExtend12 4032) ↦ₘ u3_old) **
+       ((sp + signExtend12 4024) ↦ₘ u4_old) **
+       ((sp + signExtend12 4016) ↦ₘ u5) ** ((sp + signExtend12 4008) ↦ₘ u6) **
+       ((sp + signExtend12 4000) ↦ₘ u7) ** ((sp + signExtend12 3984) ↦ₘ n_mem) **
+       ((sp + signExtend12 3992) ↦ₘ shift_mem) **
+       ((sp + signExtend12 3976) ↦ₘ j_mem) **
+       (sp + signExtend12 3968 ↦ₘ ret_mem) ** (sp + signExtend12 3960 ↦ₘ d_mem) **
+       (sp + signExtend12 3952 ↦ₘ dlo_mem) ** (sp + signExtend12 3944 ↦ₘ scratch_un0))
+      (fullDivN3Shift0CallCallPost sp base a0 a1 a2 a3 b0 b1 b2) := by
+  let r1 := iterN3Call b0 b1 b2 (0 : Word) a1 a2 a3 (0 : Word) (0 : Word)
+  let r0 := iterN3Call b0 b1 b2 (0 : Word) a0 r1.2.1 r1.2.2.1 r1.2.2.2.1 r1.2.2.2.2.1
+  -- 1. Pre-loop + loop body: base → base+904
+  have hA := evm_div_n3_preloop_shift0_call_call_spec sp base
+    a0 a1 a2 a3 b0 b1 b2 b3 v5 v6 v7 v10 v11_old
+    q0 q1 q2 q3 u0_old u1_old u2_old u3_old u4_old u5 u6 u7 n_mem shift_mem j_mem
+    ret_mem d_mem dlo_mem scratch_un0
+    hbnz hb3z hb2nz hshift_z hvalid
+    hv_q0 hv_q1 hv_q2 hv_q3 hv_u0 hv_u1 hv_u2 hv_u3 hv_u4
+    hv_u5 hv_u6 hv_u7 hv_n hv_shift hv_j hv_ret hv_d hv_dlo hv_scratch_un0
+    halign hbltu_0
+  -- 2. Post-loop: base+904 → base+1064 (shift=0, denorm skipped → epilogue)
+  have hB := evm_div_shift0_epilogue_spec sp base
+    r0.2.1 r0.2.2.1 r0.2.2.2.1 r0.2.2.2.2.1
+    (0 : Word) r0.2.2.2.1 (0 : Word) (sp + signExtend12 4056) (sp + signExtend12 4088)
+    r0.2.2.2.2.2
+    r0.1 r1.1 0 0
+    b0 b1 b2 (0 : Word)
+    rfl hvalid hv_shift hv_q0 hv_q1 hv_q2 hv_q3
+  -- Frame epilogue with remaining atoms
+  have hBF := cpsTriple_frame_left _ _ _ _ _
+    (((sp + 0) ↦ₘ a0) ** ((sp + 8) ↦ₘ a1) **
+     ((sp + 16) ↦ₘ a2) ** ((sp + 24) ↦ₘ a3) **
+     ((sp + signExtend12 4056) ↦ₘ r0.2.1) **
+     ((sp + signExtend12 4048) ↦ₘ r0.2.2.1) **
+     ((sp + signExtend12 4040) ↦ₘ r0.2.2.2.1) **
+     ((sp + signExtend12 4032) ↦ₘ r0.2.2.2.2.1) **
+     ((sp + signExtend12 4024) ↦ₘ r0.2.2.2.2.2) **
+     ((sp + signExtend12 4016) ↦ₘ r1.2.2.2.2.2) **
+     ((sp + signExtend12 4008) ↦ₘ (0 : Word)) **
+     ((sp + signExtend12 4000) ↦ₘ (0 : Word)) **
+     (sp + signExtend12 3984 ↦ₘ (3 : Word)) **
+     (sp + signExtend12 3976 ↦ₘ (0 : Word)) **
+     (.x1 ↦ᵣ signExtend12 4095) ** (.x11 ↦ᵣ r0.1) **
+     (sp + signExtend12 3968 ↦ₘ (base + 516)) **
+     (sp + signExtend12 3960 ↦ₘ b2) **
+     (sp + signExtend12 3952 ↦ₘ div128DLo b2) **
+     (sp + signExtend12 3944 ↦ₘ div128Un0 r1.2.2.1))
+    (by pcFree) hB
+  sorry
+
 end EvmAsm.Evm64
