@@ -13,7 +13,9 @@
   `evm_div_n2_full_all_max_spec`.
 -/
 
-import EvmAsm.Evm64.DivMod.Compose.FullPathN2Full
+import EvmAsm.Evm64.DivMod.Compose.FullPathN2LoopUnified
+import EvmAsm.Evm64.DivMod.Compose.FullPath
+import EvmAsm.Evm64.DivMod.Compose.FullPathN2Loop
 
 open EvmAsm.Rv64.Tactics
 
