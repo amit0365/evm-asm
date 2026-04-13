@@ -564,6 +564,43 @@ def loopIterPostN1Call (sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : Assert
   (sp + signExtend12 3952 ↦ₘ div128DLo v0) **
   (sp + signExtend12 3944 ↦ₘ div128Un0 u0)
 
+/-- Borrow condition for n=1 call+skip: mulsub doesn't overflow. -/
+def isSkipBorrowN1Call (v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : Prop :=
+  let q_hat := div128Quot u1 u0 v0
+  (if BitVec.ult u_top (mulsubN4_c3 q_hat v0 v1 v2 v3 u0 u1 u2 u3) then (1 : Word) else 0) = (0 : Word)
+
+/-- Borrow condition for n=1 call+addback: mulsub overflows. -/
+def isAddbackBorrowN1Call (v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : Prop :=
+  let q_hat := div128Quot u1 u0 v0
+  (if BitVec.ult u_top (mulsubN4_c3 q_hat v0 v1 v2 v3 u0 u1 u2 u3) then (1 : Word) else 0) ≠ (0 : Word)
+
+-- ============================================================================
+-- Generic j versions of n=1 call path postconditions
+-- ============================================================================
+
+/-- Call+skip postcondition for n=1 loop body, generic j.
+    Bundles div128Quot computation + loopBodyN1SkipPost + scratch cells.
+    For n=1: div128 uses u_hi=u1, u_lo=u0, v_top=v0. -/
+@[irreducible]
+def loopBodyN1CallSkipPostJ (sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : Assertion :=
+  let q_hat := div128Quot u1 u0 v0
+  loopBodyN1SkipPost sp j q_hat v0 v1 v2 v3 u0 u1 u2 u3 u_top **
+  (sp + signExtend12 3968 ↦ₘ (base + 516)) **
+  (sp + signExtend12 3960 ↦ₘ v0) **
+  (sp + signExtend12 3952 ↦ₘ div128DLo v0) **
+  (sp + signExtend12 3944 ↦ₘ div128Un0 u0)
+
+/-- Call+addback postcondition for n=1 loop body, generic j.
+    Bundles div128Quot computation + loopBodyN1AddbackPost + scratch cells. -/
+@[irreducible]
+def loopBodyN1CallAddbackPostJ (sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : Assertion :=
+  let q_hat := div128Quot u1 u0 v0
+  loopBodyN1AddbackPost sp j q_hat v0 v1 v2 v3 u0 u1 u2 u3 u_top **
+  (sp + signExtend12 3968 ↦ₘ (base + 516)) **
+  (sp + signExtend12 3960 ↦ₘ v0) **
+  (sp + signExtend12 3952 ↦ₘ div128DLo v0) **
+  (sp + signExtend12 3944 ↦ₘ div128Un0 u0)
+
 -- ============================================================================
 -- Unified (Bool-parameterized) per-iteration for n=1
 -- ============================================================================
