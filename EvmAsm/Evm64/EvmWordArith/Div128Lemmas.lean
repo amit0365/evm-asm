@@ -193,8 +193,8 @@ theorem product_check_gt_imp_overestimate (u_hi un1 d_hi d_lo q_hat r_hat : Nat)
 theorem product_check_pass_imp_le (u_hi un1 d_hi d_lo q_hat r_hat : Nat)
     (B : Nat := 2^32)
     (hd_pos : 0 < d_hi * B + d_lo)
-    (hq_mul : q_hat * d_hi ≤ u_hi)
     (hr_hat : r_hat = u_hi - q_hat * d_hi)
+    (hq_mul : q_hat * d_hi ≤ u_hi)
     (hcheck_pass : q_hat * d_lo ≤ r_hat * B + un1) :
     q_hat ≤ (u_hi * B + un1) / (d_hi * B + d_lo) := by
   set d := d_hi * B + d_lo
@@ -211,31 +211,27 @@ theorem product_check_pass_imp_le (u_hi un1 d_hi d_lo q_hat r_hat : Nat)
 /-- Full correction step: after at most one correction (decrement when product check
     fails), the trial quotient overestimates by at most 1.
     - If check passes: `q̂ ≤ q_true` (from `product_check_pass_imp_le`)
-    - If check fails: `q̂ - 1 ≤ q_true` since `q̂ > q_true`, and from the initial
-      bound `q̂ ≤ q_true + 2`, the decrement gives `q̂ - 1 ≤ q_true + 1`. -/
+    - If check fails: `q̂ - 1 ≤ q_true + 1` since `q̂ > q_true` and `q̂ ≤ q_true + 2` -/
 theorem correction_step_overestimate_le_one (u_hi un1 d_hi d_lo q_hat r_hat : Nat)
     (B : Nat := 2^32)
     (hd_pos : 0 < d_hi * B + d_lo)
-    (hq_mul : q_hat * d_hi ≤ u_hi)
     (hr_hat : r_hat = u_hi - q_hat * d_hi)
+    (hq_mul : q_hat * d_hi ≤ u_hi)
     (hq_upper : q_hat ≤ (u_hi * B + un1) / (d_hi * B + d_lo) + 2) :
-    let q_corrected := if q_hat * d_lo > r_hat * B + un1 then q_hat - 1 else q_hat
-    q_corrected ≤ (u_hi * B + un1) / (d_hi * B + d_lo) + 1 := by
-  show (if q_hat * d_lo > r_hat * B + un1 then q_hat - 1 else q_hat) ≤ _
+    (if q_hat * d_lo > r_hat * B + un1 then q_hat - 1 else q_hat) ≤
+      (u_hi * B + un1) / (d_hi * B + d_lo) + 1 := by
+  set q_true := (u_hi * B + un1) / (d_hi * B + d_lo)
   split
   · -- Product check fails: decrement. q̂ > q_true and q̂ ≤ q_true + 2.
     rename_i hfail
-    set q_true := (u_hi * B + un1) / (d_hi * B + d_lo)
     have hgt : q_hat > q_true := product_check_gt_imp_overestimate u_hi un1 d_hi d_lo q_hat r_hat B
       hd_pos hr_hat hq_mul hfail
-    -- q_hat ≤ q_true + 2 = (q_true + 1) + 1, so q_hat - 1 ≤ q_true + 1
     exact Nat.sub_le_of_le_add (by omega : q_hat ≤ q_true + 1 + 1)
   · -- Product check passes: q̂ ≤ q_true, so q̂ ≤ q_true + 1 trivially.
     rename_i hpass
     simp only [not_lt] at hpass
-    set q_true := (u_hi * B + un1) / (d_hi * B + d_lo)
     have := product_check_pass_imp_le u_hi un1 d_hi d_lo q_hat r_hat B
-      hd_pos hq_mul hr_hat hpass
+      hd_pos hr_hat hq_mul hpass
     omega
 
 end EvmWord
