@@ -281,6 +281,110 @@ Large composition files (>1000 lines) should be split into independent sub-files
 
 This enables parallel kernel checking. The split reduced DivMod/Compose from 87s (monolithic) to 55s (critical path through Norm.lean).
 
+## Bundling Postconditions with `let` Bindings
+
+When a composed spec's postcondition has many `let` bindings (e.g., shift
+amounts, normalized limb values), wrap the entire postcondition — including
+the `let` computations — in an `@[irreducible] def` returning `Assertion`.
+This prevents Lean from repeatedly evaluating nested lets during type
+elaboration.
+
+### Pattern
+
+**Define** the postcondition function in a shared file (e.g., `Compose/Base.lean`):
+
+```lean
+@[irreducible]
+def myPost (sp param1 param2 ... : Word) : Assertion :=
+  let derived1 := f param1
+  let derived2 := g derived1 param2
+  -- ... all computed values as let bindings ...
+  (.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ derived1) ** ... -- full assertion chain
+```
+
+**Provide an unfold lemma** (for consumers that need the expanded form):
+
+```lean
+theorem myPost_unfold (sp param1 param2 ... : Word) :
+    myPost sp param1 param2 ... =
+    let derived1 := f param1
+    ... -- same body as the def
+    := by delta myPost; rfl
+```
+
+**Use in theorem signatures** — the `let` bindings disappear from the type:
+
+```lean
+-- BEFORE (11 let bindings in the type, slow elaboration):
+theorem my_spec ... :
+    let shift := (clzResult b3).1
+    let anti_shift := ...
+    ... 9 more lets ...
+    cpsTriple ... precond (expanded 30-atom postcondition)
+
+-- AFTER (compact type, fast elaboration):
+theorem my_spec ... :
+    cpsTriple ... precond (myPost sp n_val (clzResult b3).1 a0 a1 a2 a3 ...)
+```
+
+**Proof changes** — define the `let` bindings locally and unfold at the end:
+
+```lean
+theorem my_spec ... :
+    cpsTriple ... precond (myPost sp n_val shift_arg ...) := by
+  -- Local lets for use in intermediate composition steps
+  let shift := shift_arg
+  let anti_shift := signExtend12 (0 : BitVec 12) - shift
+  ... -- same let bindings as in myPost body
+  -- ... composition steps (unchanged) ...
+  exact cpsTriple_consequence _ _ _ _ _ _ _
+    (fun h hp => by xperm_hyp hp)
+    (fun h hq => by delta myPost; xperm_hyp hq)  -- delta unfolds @[irreducible]
+    hFull
+```
+
+### Why `@[irreducible]`
+
+- `xperm` uses reducible transparency, so even a plain `def` is opaque to it.
+  `@[irreducible]` adds safety: `simp` and `whnf` at default transparency also
+  won't accidentally unfold it.
+- `delta` ignores transparency and always unfolds — use it in the proof's
+  final `cpsTriple_consequence` callback.
+- Matches the existing `phaseB_zeroed_mem` pattern in `PhaseAB.lean`.
+
+### Scaling: external consequence lemma
+
+As compositions grow, the inline `delta myPost; xperm_hyp hq` in each
+proof's `cpsTriple_consequence` callback may become a bottleneck. To avoid
+repeating this work in every consumer, extract the implication as a
+standalone lemma:
+
+```lean
+theorem myPost_consequence (sp param1 ... : Word) (h : PartialState)
+    (hq : (expanded_postcondition) h) :
+    myPost sp param1 ... h := by
+  delta myPost; xperm_hyp hq
+```
+
+Then each theorem's final step becomes:
+
+```lean
+  exact cpsTriple_consequence _ _ _ _ _ _ _
+    (fun h hp => by xperm_hyp hp)
+    (fun h hq => myPost_consequence sp param1 ... h hq)
+    hFull
+```
+
+This pays the `delta + xperm` cost once (when the lemma is checked) rather
+than in every theorem that produces `myPost`. Place the consequence lemma
+next to the `def` and `_unfold` lemma in the shared file.
+
+### When to apply
+
+Apply this pattern when a theorem's postcondition has **3+ `let` bindings**
+that compute derived values used in the assertion chain. The canonical example
+is `loopSetupPost` in `Compose/Base.lean` (11 let bindings, used by 8 theorems).
+
 ## End-to-End Composition with Existential Intermediates
 
 When composing specs where an intermediate postcondition has existentials (e.g., `loopBodyPostN4` which wraps computed values in `∃`), standard `cpsTriple_seq_with_perm_same_cr` doesn't work because the second spec's precondition depends on the existential witnesses.
@@ -322,6 +426,58 @@ exact ⟨k1 + k2, s2, stepN_add_eq ..., hpc2, ...⟩
 ### Import cycle prevention
 
 `DivN4Full.lean` imports both `LoopBodyN4` and `FullPath.lean`. Since `LoopBody.lean` → `Compose.lean` already forms a chain, do NOT add `DivN4Full` to `Compose.lean`'s imports — it would create a cycle. `DivN4Full` stands alone.
+
+## XPerm Scaling Limits and Sub-Assertion Bundling
+
+`xperm_hyp` is O(n^2) in the number of atoms, with each pair comparison
+potentially triggering deep WHNF reduction. At ~36 atoms with complex
+sub-expressions (e.g., `iterN3Call` + `iterN3Max` iteration results), this
+can exceed the 200k heartbeat budget even in a dedicated theorem.
+
+### Symptoms
+
+- `xperm_hyp hp` times out in perm/consequence callbacks
+- The same proof structure works for simpler atom expressions (e.g., all
+  `iterN3Max`) but fails when atom values involve mixed function calls
+- The let-binding chain itself passes `sorry` tests — the timeout is
+  specifically in the `xperm` atom matching
+
+### Solution: bundle sub-assertions as `@[irreducible] def`
+
+Wrap logical groups of atoms into `@[irreducible] def`s so that `xperm`
+sees a few opaque atoms instead of 36 individual ones:
+
+```lean
+-- Instead of 20 flat atoms for denorm input:
+@[irreducible]
+def denormInputN3 (sp shift u0 u1 u2 u3 q0 q1 b0' b1' b2' b3' : Word) : Assertion :=
+  (.x12 ↦ᵣ sp) ** ... ** ((sp + 56) ↦ₘ b3')
+
+-- And 16 flat atoms for the frame:
+@[irreducible]
+def denormFrameN3 (sp base r0_u4 r1_u4 r0_q a0 a1 a2 a3 b2' u2 : Word) : Assertion :=
+  ((sp + 0) ↦ₘ a0) ** ... ** (sp + signExtend12 3944 ↦ₘ div128Un0 u2)
+```
+
+Then `xperm` only matches 2-3 opaque atoms instead of 36, avoiding
+the O(n^2) blowup. Each sub-assertion is unfolded via `delta` only
+when needed (e.g., in the denorm epilogue's own pre-weakening callback).
+
+### When to apply
+
+When a composition has **30+ atoms** in the intermediate assertion and
+the atom values involve **two or more complex functions** (e.g., mixed
+`iterN3Call`/`iterN3Max` results). Same-function compositions (all
+`iterN3Max`) tend to stay within budget because `isDefEq` is faster
+when comparing structurally similar expressions.
+
+### Guideline for new compositions
+
+- Keep each `xperm` call to **≤ 20 atoms** with complex sub-expressions
+- For multi-iteration loops, define per-iteration postconditions as
+  `@[irreducible] def`s (already done: `loopBodyN3SkipPost`, etc.)
+- For full-path compositions, also bundle the denorm input and frame
+  groups as `@[irreducible] def`s
 
 ## Roadmap (PLAN.md)
 

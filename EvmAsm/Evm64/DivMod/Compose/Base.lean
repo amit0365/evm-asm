@@ -209,4 +209,202 @@ theorem sharedDivModCode_sub_modCode (base : Word) :
     (CodeReq.union_split_mono (shared_b12_mod base)
     (fun _ _ h => by simp [CodeReq.unionAll_nil, CodeReq.empty] at h)))))))))))))
 
+-- ============================================================================
+-- Postcondition bundle for loopSetup (shift ≠ 0) path
+-- Encapsulates 11 let bindings (shift normalization of b[] and a[]) plus
+-- the full 30-atom assertion chain into a single opaque Assertion.
+-- Used by all 8 _to_loopSetup_spec theorems (n=1..4, DIV and MOD).
+-- ============================================================================
+
+/-- Postcondition for the shift≠0 path from entry to loop setup.
+    Encapsulates the shift/anti_shift computation, normalized b'[0..3],
+    and normalized u[0..4] as internal let bindings.
+    Marked @[irreducible] so xperm treats this as 1 opaque atom. -/
+@[irreducible]
+def loopSetupPost (sp n_val shift a0 a1 a2 a3 b0 b1 b2 b3 : Word) : Assertion :=
+  let anti_shift := signExtend12 (0 : BitVec 12) - shift
+  let b3' := (b3 <<< (shift.toNat % 64)) ||| (b2 >>> (anti_shift.toNat % 64))
+  let b2' := (b2 <<< (shift.toNat % 64)) ||| (b1 >>> (anti_shift.toNat % 64))
+  let b1' := (b1 <<< (shift.toNat % 64)) ||| (b0 >>> (anti_shift.toNat % 64))
+  let b0' := b0 <<< (shift.toNat % 64)
+  let u4 := a3 >>> (anti_shift.toNat % 64)
+  let u3 := (a3 <<< (shift.toNat % 64)) ||| (a2 >>> (anti_shift.toNat % 64))
+  let u2 := (a2 <<< (shift.toNat % 64)) ||| (a1 >>> (anti_shift.toNat % 64))
+  let u1 := (a1 <<< (shift.toNat % 64)) ||| (a0 >>> (anti_shift.toNat % 64))
+  let u0 := a0 <<< (shift.toNat % 64)
+  (.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ n_val) ** (.x10 ↦ᵣ (a0 >>> (anti_shift.toNat % 64))) **
+  (.x0 ↦ᵣ (0 : Word)) **
+  (.x6 ↦ᵣ shift) ** (.x7 ↦ᵣ u0) ** (.x2 ↦ᵣ anti_shift) **
+  (.x1 ↦ᵣ signExtend12 (4 : BitVec 12) - n_val) **
+  ((sp + 0) ↦ₘ a0) ** ((sp + 8) ↦ₘ a1) **
+  ((sp + 16) ↦ₘ a2) ** ((sp + 24) ↦ₘ a3) **
+  ((sp + 32) ↦ₘ b0') ** ((sp + 40) ↦ₘ b1') **
+  ((sp + 48) ↦ₘ b2') ** ((sp + 56) ↦ₘ b3') **
+  ((sp + signExtend12 4088) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4080) ↦ₘ (0 : Word)) **
+  ((sp + signExtend12 4072) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4064) ↦ₘ (0 : Word)) **
+  ((sp + signExtend12 4056) ↦ₘ u0) ** ((sp + signExtend12 4048) ↦ₘ u1) **
+  ((sp + signExtend12 4040) ↦ₘ u2) ** ((sp + signExtend12 4032) ↦ₘ u3) **
+  ((sp + signExtend12 4024) ↦ₘ u4) **
+  ((sp + signExtend12 4016) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4008) ↦ₘ (0 : Word)) **
+  ((sp + signExtend12 4000) ↦ₘ (0 : Word)) ** ((sp + signExtend12 3984) ↦ₘ n_val) **
+  ((sp + signExtend12 3992) ↦ₘ shift)
+
+/-- Unfold the opaque loopSetupPost back to its expanded form. -/
+theorem loopSetupPost_unfold (sp n_val shift a0 a1 a2 a3 b0 b1 b2 b3 : Word) :
+    loopSetupPost sp n_val shift a0 a1 a2 a3 b0 b1 b2 b3 =
+    let anti_shift := signExtend12 (0 : BitVec 12) - shift
+    let b3' := (b3 <<< (shift.toNat % 64)) ||| (b2 >>> (anti_shift.toNat % 64))
+    let b2' := (b2 <<< (shift.toNat % 64)) ||| (b1 >>> (anti_shift.toNat % 64))
+    let b1' := (b1 <<< (shift.toNat % 64)) ||| (b0 >>> (anti_shift.toNat % 64))
+    let b0' := b0 <<< (shift.toNat % 64)
+    let u4 := a3 >>> (anti_shift.toNat % 64)
+    let u3 := (a3 <<< (shift.toNat % 64)) ||| (a2 >>> (anti_shift.toNat % 64))
+    let u2 := (a2 <<< (shift.toNat % 64)) ||| (a1 >>> (anti_shift.toNat % 64))
+    let u1 := (a1 <<< (shift.toNat % 64)) ||| (a0 >>> (anti_shift.toNat % 64))
+    let u0 := a0 <<< (shift.toNat % 64)
+    (.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ n_val) ** (.x10 ↦ᵣ (a0 >>> (anti_shift.toNat % 64))) **
+    (.x0 ↦ᵣ (0 : Word)) **
+    (.x6 ↦ᵣ shift) ** (.x7 ↦ᵣ u0) ** (.x2 ↦ᵣ anti_shift) **
+    (.x1 ↦ᵣ signExtend12 (4 : BitVec 12) - n_val) **
+    ((sp + 0) ↦ₘ a0) ** ((sp + 8) ↦ₘ a1) **
+    ((sp + 16) ↦ₘ a2) ** ((sp + 24) ↦ₘ a3) **
+    ((sp + 32) ↦ₘ b0') ** ((sp + 40) ↦ₘ b1') **
+    ((sp + 48) ↦ₘ b2') ** ((sp + 56) ↦ₘ b3') **
+    ((sp + signExtend12 4088) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4080) ↦ₘ (0 : Word)) **
+    ((sp + signExtend12 4072) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4064) ↦ₘ (0 : Word)) **
+    ((sp + signExtend12 4056) ↦ₘ u0) ** ((sp + signExtend12 4048) ↦ₘ u1) **
+    ((sp + signExtend12 4040) ↦ₘ u2) ** ((sp + signExtend12 4032) ↦ₘ u3) **
+    ((sp + signExtend12 4024) ↦ₘ u4) **
+    ((sp + signExtend12 4016) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4008) ↦ₘ (0 : Word)) **
+    ((sp + signExtend12 4000) ↦ₘ (0 : Word)) ** ((sp + signExtend12 3984) ↦ₘ n_val) **
+    ((sp + signExtend12 3992) ↦ₘ shift) := by
+  delta loopSetupPost; rfl
+
+-- ============================================================================
+-- Postcondition bundles for denorm + epilogue paths
+-- ============================================================================
+
+/-- Postcondition for DIV denorm + epilogue (shift ≠ 0).
+    Encapsulates anti_shift and denormalized u'[0..3]. -/
+@[irreducible]
+def denormDivPost (sp shift u0 u1 u2 u3 q0 q1 q2 q3 : Word) : Assertion :=
+  let anti_shift := signExtend12 (0 : BitVec 12) - shift
+  let u0' := (u0 >>> (shift.toNat % 64)) ||| (u1 <<< (anti_shift.toNat % 64))
+  let u1' := (u1 >>> (shift.toNat % 64)) ||| (u2 <<< (anti_shift.toNat % 64))
+  let u2' := (u2 >>> (shift.toNat % 64)) ||| (u3 <<< (anti_shift.toNat % 64))
+  let u3' := u3 >>> (shift.toNat % 64)
+  (.x12 ↦ᵣ (sp + 32)) ** (.x5 ↦ᵣ q0) ** (.x6 ↦ᵣ q1) ** (.x7 ↦ᵣ q2) **
+  (.x2 ↦ᵣ anti_shift) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ q3) **
+  ((sp + signExtend12 4056) ↦ₘ u0') ** ((sp + signExtend12 4048) ↦ₘ u1') **
+  ((sp + signExtend12 4040) ↦ₘ u2') ** ((sp + signExtend12 4032) ↦ₘ u3') **
+  ((sp + signExtend12 4088) ↦ₘ q0) ** ((sp + signExtend12 4080) ↦ₘ q1) **
+  ((sp + signExtend12 4072) ↦ₘ q2) ** ((sp + signExtend12 4064) ↦ₘ q3) **
+  ((sp + 32) ↦ₘ q0) ** ((sp + 40) ↦ₘ q1) **
+  ((sp + 48) ↦ₘ q2) ** ((sp + 56) ↦ₘ q3)
+
+theorem denormDivPost_unfold (sp shift u0 u1 u2 u3 q0 q1 q2 q3 : Word) :
+    denormDivPost sp shift u0 u1 u2 u3 q0 q1 q2 q3 =
+    let anti_shift := signExtend12 (0 : BitVec 12) - shift
+    let u0' := (u0 >>> (shift.toNat % 64)) ||| (u1 <<< (anti_shift.toNat % 64))
+    let u1' := (u1 >>> (shift.toNat % 64)) ||| (u2 <<< (anti_shift.toNat % 64))
+    let u2' := (u2 >>> (shift.toNat % 64)) ||| (u3 <<< (anti_shift.toNat % 64))
+    let u3' := u3 >>> (shift.toNat % 64)
+    (.x12 ↦ᵣ (sp + 32)) ** (.x5 ↦ᵣ q0) ** (.x6 ↦ᵣ q1) ** (.x7 ↦ᵣ q2) **
+    (.x2 ↦ᵣ anti_shift) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ q3) **
+    ((sp + signExtend12 4056) ↦ₘ u0') ** ((sp + signExtend12 4048) ↦ₘ u1') **
+    ((sp + signExtend12 4040) ↦ₘ u2') ** ((sp + signExtend12 4032) ↦ₘ u3') **
+    ((sp + signExtend12 4088) ↦ₘ q0) ** ((sp + signExtend12 4080) ↦ₘ q1) **
+    ((sp + signExtend12 4072) ↦ₘ q2) ** ((sp + signExtend12 4064) ↦ₘ q3) **
+    ((sp + 32) ↦ₘ q0) ** ((sp + 40) ↦ₘ q1) **
+    ((sp + 48) ↦ₘ q2) ** ((sp + 56) ↦ₘ q3) := by
+  delta denormDivPost; rfl
+
+/-- Postcondition for MOD denorm + epilogue (shift ≠ 0).
+    Encapsulates anti_shift and denormalized u'[0..3]. -/
+@[irreducible]
+def denormModPost (sp shift u0 u1 u2 u3 : Word) : Assertion :=
+  let anti_shift := signExtend12 (0 : BitVec 12) - shift
+  let u0' := (u0 >>> (shift.toNat % 64)) ||| (u1 <<< (anti_shift.toNat % 64))
+  let u1' := (u1 >>> (shift.toNat % 64)) ||| (u2 <<< (anti_shift.toNat % 64))
+  let u2' := (u2 >>> (shift.toNat % 64)) ||| (u3 <<< (anti_shift.toNat % 64))
+  let u3' := u3 >>> (shift.toNat % 64)
+  (.x12 ↦ᵣ (sp + 32)) ** (.x5 ↦ᵣ u0') ** (.x6 ↦ᵣ u1') ** (.x7 ↦ᵣ u2') **
+  (.x2 ↦ᵣ anti_shift) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ u3') **
+  ((sp + signExtend12 4056) ↦ₘ u0') ** ((sp + signExtend12 4048) ↦ₘ u1') **
+  ((sp + signExtend12 4040) ↦ₘ u2') ** ((sp + signExtend12 4032) ↦ₘ u3') **
+  ((sp + 32) ↦ₘ u0') ** ((sp + 40) ↦ₘ u1') **
+  ((sp + 48) ↦ₘ u2') ** ((sp + 56) ↦ₘ u3')
+
+theorem denormModPost_unfold (sp shift u0 u1 u2 u3 : Word) :
+    denormModPost sp shift u0 u1 u2 u3 =
+    let anti_shift := signExtend12 (0 : BitVec 12) - shift
+    let u0' := (u0 >>> (shift.toNat % 64)) ||| (u1 <<< (anti_shift.toNat % 64))
+    let u1' := (u1 >>> (shift.toNat % 64)) ||| (u2 <<< (anti_shift.toNat % 64))
+    let u2' := (u2 >>> (shift.toNat % 64)) ||| (u3 <<< (anti_shift.toNat % 64))
+    let u3' := u3 >>> (shift.toNat % 64)
+    (.x12 ↦ᵣ (sp + 32)) ** (.x5 ↦ᵣ u0') ** (.x6 ↦ᵣ u1') ** (.x7 ↦ᵣ u2') **
+    (.x2 ↦ᵣ anti_shift) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ u3') **
+    ((sp + signExtend12 4056) ↦ₘ u0') ** ((sp + signExtend12 4048) ↦ₘ u1') **
+    ((sp + signExtend12 4040) ↦ₘ u2') ** ((sp + signExtend12 4032) ↦ₘ u3') **
+    ((sp + 32) ↦ₘ u0') ** ((sp + 40) ↦ₘ u1') **
+    ((sp + 48) ↦ₘ u2') ** ((sp + 56) ↦ₘ u3') := by
+  delta denormModPost; rfl
+
+-- ============================================================================
+-- Postcondition bundle for normB (PhaseAB + CLZ + PhaseC2 + NormB)
+-- ============================================================================
+
+/-- Postcondition after PhaseAB + CLZ + PhaseC2(ntaken) + NormB.
+    Encapsulates shift, anti_shift, and normalized b'[0..3]. -/
+@[irreducible]
+def normBPost (sp n_val shift b0 b1 b2 b3 : Word) : Assertion :=
+  let anti_shift := signExtend12 (0 : BitVec 12) - shift
+  let b3' := (b3 <<< (shift.toNat % 64)) ||| (b2 >>> (anti_shift.toNat % 64))
+  let b2' := (b2 <<< (shift.toNat % 64)) ||| (b1 >>> (anti_shift.toNat % 64))
+  let b1' := (b1 <<< (shift.toNat % 64)) ||| (b0 >>> (anti_shift.toNat % 64))
+  let b0' := b0 <<< (shift.toNat % 64)
+  (.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ b0') ** (.x10 ↦ᵣ b3) ** (.x0 ↦ᵣ (0 : Word)) **
+  (.x6 ↦ᵣ shift) ** (.x7 ↦ᵣ (b0 >>> (anti_shift.toNat % 64))) **
+  (.x2 ↦ᵣ anti_shift) **
+  ((sp + 32) ↦ₘ b0') ** ((sp + 40) ↦ₘ b1') **
+  ((sp + 48) ↦ₘ b2') ** ((sp + 56) ↦ₘ b3') **
+  ((sp + signExtend12 4088) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4080) ↦ₘ (0 : Word)) **
+  ((sp + signExtend12 4072) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4064) ↦ₘ (0 : Word)) **
+  ((sp + signExtend12 4016) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4008) ↦ₘ (0 : Word)) **
+  ((sp + signExtend12 4000) ↦ₘ (0 : Word)) ** ((sp + signExtend12 3984) ↦ₘ n_val) **
+  ((sp + signExtend12 3992) ↦ₘ shift)
+
+theorem normBPost_unfold (sp n_val shift b0 b1 b2 b3 : Word) :
+    normBPost sp n_val shift b0 b1 b2 b3 =
+    let anti_shift := signExtend12 (0 : BitVec 12) - shift
+    let b3' := (b3 <<< (shift.toNat % 64)) ||| (b2 >>> (anti_shift.toNat % 64))
+    let b2' := (b2 <<< (shift.toNat % 64)) ||| (b1 >>> (anti_shift.toNat % 64))
+    let b1' := (b1 <<< (shift.toNat % 64)) ||| (b0 >>> (anti_shift.toNat % 64))
+    let b0' := b0 <<< (shift.toNat % 64)
+    (.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ b0') ** (.x10 ↦ᵣ b3) ** (.x0 ↦ᵣ (0 : Word)) **
+    (.x6 ↦ᵣ shift) ** (.x7 ↦ᵣ (b0 >>> (anti_shift.toNat % 64))) **
+    (.x2 ↦ᵣ anti_shift) **
+    ((sp + 32) ↦ₘ b0') ** ((sp + 40) ↦ₘ b1') **
+    ((sp + 48) ↦ₘ b2') ** ((sp + 56) ↦ₘ b3') **
+    ((sp + signExtend12 4088) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4080) ↦ₘ (0 : Word)) **
+    ((sp + signExtend12 4072) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4064) ↦ₘ (0 : Word)) **
+    ((sp + signExtend12 4016) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4008) ↦ₘ (0 : Word)) **
+    ((sp + signExtend12 4000) ↦ₘ (0 : Word)) ** ((sp + signExtend12 3984) ↦ₘ n_val) **
+    ((sp + signExtend12 3992) ↦ₘ shift) := by
+  delta normBPost; rfl
+
+-- ============================================================================
+-- Shared signExtend12 normalization lemmas (used by FullPathN3/N4 compositions)
+-- ============================================================================
+
+theorem se12_32 : signExtend12 (32 : BitVec 12) = (32 : Word) := by decide
+theorem se12_40 : signExtend12 (40 : BitVec 12) = (40 : Word) := by decide
+theorem se12_48 : signExtend12 (48 : BitVec 12) = (48 : Word) := by decide
+theorem se12_56 : signExtend12 (56 : BitVec 12) = (56 : Word) := by decide
+
+/-- When b ≠ 0, 0 < b in unsigned ordering (BitVec.ult). -/
+theorem ult_zero_of_ne {b : Word} (h : b ≠ 0) : BitVec.ult 0 b := by
+  unfold BitVec.ult; simp
+  exact Nat.pos_of_ne_zero (fun h0 => h (by exact BitVec.eq_of_toNat_eq h0))
+
 end EvmAsm.Evm64

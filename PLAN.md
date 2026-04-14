@@ -358,17 +358,13 @@ All phases below target **Evm64** primarily. Files are under `EvmAsm/Evm64/`.
     - `divK_loopSetup_ntaken_spec` (m≥0 → loop body), `divK_loopSetup_taken_spec` (m<0 → denorm)
   - DIV Epilogue ✅: load q[0..3] + store to output (10 instrs, base+1004), `divK_div_epilogue_spec`
 
-  **Full path compositions (all proved, 0 sorry):**
+  **Full path compositions:**
   - LoopBody (main Knuth D loop): 114 instructions at base+448
     - 20 sorry-free theorems in `LoopBody.lean` + N-specific variants in `LoopBodyN{1,2,3,4}.lean`
     - `intro_lets` tactic added for selective let-binding expansion (xperm scaling fix)
-    - Combined spec unifies all 4 paths with existential postconditions
-  - Per-n full specs (16 files): DivN{1,2,3,4}Full.lean, DivN{1,2,3,4}FullShift0.lean,
-    ModN{1,2,3,4}Full.lean, ModN{1,2,3,4}FullShift0.lean — each covers base→base+1064
-  - Combined b≠0 specs: `evm_div_bnz_full_spec` (DivCombined.lean),
-    `evm_mod_bnz_full_spec` (ModCombined.lean) — by_cases on n (1/2/3/4) × shift (0/≠0)
-  - Stack-level b≠0 specs: `evm_div_bnz_stack_spec`, `evm_mod_bnz_stack_spec` (Spec.lean)
-    — uses evmWordIs for a, b, and existential result EvmWord
+    - Per-case concrete specs were in `LoopBodyN{X}Concrete.lean` (removed, see semantic path below)
+  - Per-n full specs: removed (existentially quantified computation results → not useful)
+  - Stack-level b≠0 specs: TODO (needs semantic correctness bridge first)
 
   **Remaining work (semantic correctness):**
   - Multi-limb arithmetic foundations: `MultiLimb.lean` — half-word decomposition, rv64_divu/mulhu
@@ -392,10 +388,104 @@ All phases below target **Evm64** primarily. Files are under `EvmAsm/Evm64/`.
     `mulsub_limb_nat_eq` (per-limb carry equation from register ops),
     `mulsub_carry_word_eq` (Word carry = Nat carry when < 2^64),
     `mulsub_4limb_euclidean_div` (4-limb chain → EvmWord.div/mod for single-digit quotient) (done)
-  - Remaining: prove algorithm output satisfies Nat-level Euclidean property
-    (carry chain analysis connecting specific register expressions to val256 equations)
-  - Stack-level specs with `evmWordIs (sp+32) (EvmWord.div a b)` / `(EvmWord.mod a b)` in postcondition
-  - Combined spec merging b=0 + b≠0 into single `evm_div_stack_spec`/`evm_mod_stack_spec`
+  - Per-limb addback: `DivAddbackLimb.lean` — `addback_limb_nat_eq` (per-limb carry equation),
+    `addback_4limb_val256` (4-limb addition chain), `addback_correction_euclidean`
+    (mulsub underflow + addback → corrected Euclidean with q-1) (done)
+  - Remainder bound: `DivRemainderBound.lean` — `remainder_lt_of_ge_floor` (key: Euclidean eq +
+    overestimate → exact quotient + remainder < divisor), `mulsub_no_underflow_correct` (happy path),
+    `mulsub_addback_correct` (addback path), `val256_euclidean_to_div_mod` (val256 → EvmWord bridge),
+    `norm_euclidean_correct` (normalization round-trip) (done)
+  - Quotient accumulation: `DivAccumulate.lean` — multi-iteration telescoping (`iter_accumulate_{2,3,4}`),
+    val256 trailing-zero simplifications, per-n end-to-end `div_correct_n{1,2,3,4}_no_shift`,
+    `div_quotient_of_normalized` / `mod_remainder_of_normalized` (shift bridge),
+    `div_of_val256_eq_div` / `mod_of_val256_eq_mod` (val256 → EvmWord),
+    `div_correct_normalized` / `mod_correct_normalized` (combined normalization bridge) (done)
+  - Mulsub carry strict bound: `DivMulSubCarry.lean` — `mulsub_limb_carry_strict_lt` (per-limb carry
+    always < 2^64, proven via case analysis on MULHU maximum), `mulsub_limb_word_carry_eq` (Word carry
+    = Nat carry, unconditional), `mulsub_limb_nat_word_eq` (per-limb equation with Word carry_out),
+    `mulsub_register_4limb_val256` (4-limb register ops → val256 Euclidean equation) (done)
+  - Addback carry bridge: `DivAddbackCarry.lean` — `or_toNat_eq_add_of_le_one` (OR = ADD for {0,1}
+    Words), `addback_carries_exclusive` (two overflow flags can't both fire), `addback_limb_nat_word_eq`
+    (per-limb addback with OR carry), `addback_register_4limb_val256` (4-limb addback → val256) (done)
+  - Stack spec bridge: `DivLimbBridge.lean` — `ne_zero_iff_getLimbN_or` (EvmWord nonzero ↔ limbs OR
+    nonzero), `getLimbN_fromLimbs_match` / `getLimbN_fromLimbs_{0,1,2,3}` (fromLimbs round-trip for
+    reconstructing evmWordIs from individual memory cells) (done)
+  - **Semantic correctness path:**
+    - Step 1: Make `loopBodyPostN{1,2,3,4}` parametric — move output values to definition
+      parameters so per-case concrete specs can fill them in concretely.
+      Status: ✅ Done (PRs #197 + #202)
+    - Step 2: Per-n loop iteration cpsTriple specs using `divK_store_loop_j0_spec` (j=0)
+      and `divK_store_loop_jgt0_spec` (j>0). Four raw specs per (n, j) pair
+      (max_skip, max_addback, call_skip, call_addback), then unified skip/addback
+      into `divK_loop_body_nX_{max,call}_unified_jY_spec`.
+      Status:
+        - ✅ n=4: j=0 all 4 paths done (`LoopIterN4.lean`)
+        - ✅ n=3: j=0 all 4 paths + j=1 all 4 paths + unified specs (`LoopIterN3.lean`, `LoopComposeN3.lean`)
+        - ✅ n=2: j=0,j=1,j=2 all 4 paths + unified specs (`LoopIterN2.lean`, `LoopComposeN2.lean`)
+        - ❌ n=1: not started
+    - Step 2b: **Bool-parameterized loop composition** (Issue #262, PRs #267–#272).
+      Unifies max/call branch paths via `(bltu : Bool)` parameter so that
+      2^k path combinations collapse to 1 theorem.
+      Status:
+        - ✅ Unified defs: `iterN3`, `iterN2`, `loopIterPostN3`, `loopN3UnifiedPost`, `loopN2UnifiedPost` (`LoopDefs.lean`)
+        - ✅ n=3 unified 2-iteration composition: `divK_loop_n3_unified_spec (bltu_1 bltu_0 : Bool)` (`LoopUnifiedN3.lean`)
+        - ✅ n=3 unified preloop+loop: `evm_div_n3_preloop_loop_unified_spec` (`Compose/FullPathN3LoopUnified.lean`)
+        - ✅ n=2 unified 3-iteration composition: `divK_loop_n2_unified_spec (bltu_2 bltu_1 bltu_0 : Bool)` (`LoopUnifiedN2.lean`)
+          Layered: iter10 (4 cases) → max/call+iter10 (2 lemmas) → unified dispatch
+        - `iterN2Max`/`iterN2Call` marked `@[irreducible]` to prevent stuck if-reduction in projections
+        - Unified condition predicates: `isTrialN3_j1/j0` (`FullPathN3LoopUnified.lean`)
+      Immediate next steps:
+        - ✅ n=2 full-path composition (preloop+loop+denorm+epilogue, PRs #274–#277)
+        - ✅ Unified full-path for n=3 shift≠0 (PR #279) + n=2 shift=0
+        - n=1 loop iteration specs + composition (4 iterations, Bool approach gives 1 theorem vs 16)
+    - Step 3: Per-n full-path composition theorems (base→base+1064) with bundled postconditions.
+      Composes pre-loop (normalization) + loop body + post-loop (denorm/epilogue).
+      Status:
+        - ✅ n=4 shift≠0: `evm_div_n4_full_{max,call}_{skip,addback}_spec` (`FullPathN4.lean`)
+        - ✅ n=4 shift=0: `evm_div_n4_full_shift0_call_{skip,addback}_spec` (`FullPathN4Shift0.lean`)
+        - ✅ n=3 shift≠0: 4 full-path theorems (`FullPathN3Loop.lean`) — can be replaced by unified version
+        - ✅ n=3 shift=0: 2 full-path theorems (`FullPathN3Shift0.lean`)
+        - ✅ n=2 shift≠0: unified full-path `evm_div_n2_full_unified_spec` (`FullPathN2Full.lean`, `FullPathN2Cases.lean`)
+          8 per-case lemmas + unified dispatch via `delta + rfl` postcondition bridge
+        - ✅ n=2 shift=0: unified full-path `evm_div_n2_full_shift0_unified_spec` (`FullPathN2Shift0.lean`)
+          j=2 always call (u4=0 < b1), unified over (bltu_1 bltu_0 : Bool) for 4 combinations
+        - ❌ n=1: blocked on Step 2
+      Immediate next steps:
+        - n=1 loop iteration specs + full-path
+        - MOD variants: factor shared DIV/MOD loop to avoid duplication (Issue #266)
+    - Step 4: Semantic correctness bridge — connect algorithm computations to `EvmWord.div`.
+      Infrastructure exists: `div_correct_n4_no_shift`, `remainder_lt_of_ge_floor`,
+      `mulsub_no_underflow_correct`, `mulsub_addback_correct`, `mulsubN4_val256_eq`.
+      Partial progress:
+        - ✅ Max trial overestimate: `val256_div_lt_pow64` — when b3≠0, val256(a)/val256(b) ≤ 2^64-1
+        - ✅ Skip path correctness: `n4_max_skip_correct` — c3=0 + max trial → EvmWord.div correct
+        - **Missing math theorem (Knuth's Theorem B)**: for the addback and call paths, need:
+          1. **Mulsub borrow bound**: prove that `mulsubN4` borrow c3 has `c3.toNat ≤ 1`
+             when the trial quotient overestimates by ≤ 1 (i.e., q_hat ≤ ⌊u/v⌋ + 1).
+             This ensures the 2^256 terms cancel in the mulsub+addback combined equation.
+          2. **Call path trial quotient overestimate**: prove that `div128Quot u_top u3 v3`
+             produces a quotient q̂ satisfying `⌊u/v⌋ ≤ q̂ ≤ ⌊u/v⌋ + 1` when the divisor's
+             leading limb has its MSB set (normalized). This is the formal version of
+             Knuth TAOCP Vol 2 §4.3.1 Theorem B.
+          3. **Addback combined equation**: given c3=1 (borrow) and carry=1 (addback carry),
+             derive `val256(a) = (q_hat-1) * val256(b) + val256(aun)` from `mulsubN4_val256_eq`
+             + `addbackN4_val256_eq`.
+      Status: In progress (`DivN4Overestimate.lean`). This is independent of Steps 2-3 and can
+      proceed in parallel. Once done for n=4, the bridge generalizes to n=1,2,3 via the same
+      `div_correct_normalized` framework.
+    - Step 5: Stack-level spec using `evmWordIs`. Case-split on b=0/≠0, then on n,
+      apply full-path spec + semantic bridge to prove `evmWordIs (sp+32) (EvmWord.div a b)`.
+      Status: Not started (blocked on Steps 3+4 for all n values)
+
+  **Path to EVM-level DIV/MOD specs (summary):**
+  1. ✅ Complete n=2 loop composition with Bool unification (PRs #270–#272)
+  2. ✅ Complete n=2 full-path composition (PRs #274–#277)
+  3. Complete n=1 loop iteration specs → build LoopComposeN1 with Bool unification
+  4. Build n=2 shift=0 and n=1 full-path compositions
+  4. Complete Knuth's Theorem B (Step 4) — can proceed in parallel with 1-3
+  5. Per-n semantic bridge: connect full-path postconditions to `EvmWord.div`/`EvmWord.mod`
+  6. Stack-level spec: case-split b=0/≠0, then on n, compose full-path + semantic bridge
+  7. Factor shared DIV/MOD loop (Issue #266) to derive MOD specs from DIV proofs
 
 #### 4.3 SDIV and SMOD (Signed)
 - **Approach**: Check signs, compute unsigned div/mod, apply sign correction.
