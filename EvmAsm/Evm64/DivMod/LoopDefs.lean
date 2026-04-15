@@ -1436,4 +1436,72 @@ def iterN3Call_da (v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) :
     Word × Word × Word × Word × Word × Word :=
   iterWithDoubleAddback (div128Quot u3 u2 v2) v0 v1 v2 v3 u0 u1 u2 u3 u_top
 
+-- ============================================================================
+-- Double-addback iteration postconditions (_da variants)
+-- These use iterN*_da which accounts for the BEQ double-addback path.
+-- ============================================================================
+
+def loopIterPostN1Max_da (sp j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : Assertion :=
+  let q_hat : Word := signExtend12 4095
+  let c3 := (mulsubN4 q_hat v0 v1 v2 v3 u0 u1 u2 u3).2.2.2.2
+  if BitVec.ult u_top c3 then
+    loopBodyAddbackBeqPost (1 : Word) sp j q_hat v0 v1 v2 v3 u0 u1 u2 u3 u_top
+  else
+    loopBodySkipPost (1 : Word) sp j q_hat v0 v1 v2 v3 u0 u1 u2 u3 u_top
+
+def loopIterPostN1Call_da (sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : Assertion :=
+  let q_hat := div128Quot u1 u0 v0
+  let c3 := (mulsubN4 q_hat v0 v1 v2 v3 u0 u1 u2 u3).2.2.2.2
+  if BitVec.ult u_top c3 then
+    loopBodyN1CallAddbackBeqPostJ sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top
+  else
+    loopBodyN1CallSkipPostJ sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top
+
+def loopIterPostN1_da (bltu : Bool) (sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : Assertion :=
+  match bltu with
+  | true => loopIterPostN1Call_da sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top
+  | false => loopIterPostN1Max_da sp j v0 v1 v2 v3 u0 u1 u2 u3 u_top ** empAssertion
+
+def loopIterPostN2Max_da (sp j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : Assertion :=
+  let q_hat : Word := signExtend12 4095
+  let c3 := (mulsubN4 q_hat v0 v1 v2 v3 u0 u1 u2 u3).2.2.2.2
+  if BitVec.ult u_top c3 then
+    loopBodyAddbackBeqPost (2 : Word) sp j q_hat v0 v1 v2 v3 u0 u1 u2 u3 u_top
+  else
+    loopBodySkipPost (2 : Word) sp j q_hat v0 v1 v2 v3 u0 u1 u2 u3 u_top
+
+def loopIterPostN2Call_da (sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : Assertion :=
+  let q_hat := div128Quot u2 u1 v1
+  let c3 := (mulsubN4 q_hat v0 v1 v2 v3 u0 u1 u2 u3).2.2.2.2
+  if BitVec.ult u_top c3 then
+    loopBodyN2CallAddbackBeqPostJ sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top
+  else
+    loopBodyN2CallSkipPostJ sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top
+
+def loopIterPostN2_da (bltu : Bool) (sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : Assertion :=
+  match bltu with
+  | true => loopIterPostN2Call_da sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top
+  | false => loopIterPostN2Max_da sp j v0 v1 v2 v3 u0 u1 u2 u3 u_top ** empAssertion
+
+def loopIterPostN3Max_da (sp j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : Assertion :=
+  let q_hat : Word := signExtend12 4095
+  let c3 := (mulsubN4 q_hat v0 v1 v2 v3 u0 u1 u2 u3).2.2.2.2
+  if BitVec.ult u_top c3 then
+    loopBodyAddbackBeqPost (3 : Word) sp j q_hat v0 v1 v2 v3 u0 u1 u2 u3 u_top
+  else
+    loopBodySkipPost (3 : Word) sp j q_hat v0 v1 v2 v3 u0 u1 u2 u3 u_top
+
+def loopIterPostN3Call_da (sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : Assertion :=
+  let q_hat := div128Quot u3 u2 v2
+  let c3 := (mulsubN4 q_hat v0 v1 v2 v3 u0 u1 u2 u3).2.2.2.2
+  if BitVec.ult u_top c3 then
+    loopBodyN3CallAddbackBeqPostJ sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top
+  else
+    loopBodyN3CallSkipPostJ sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top
+
+def loopIterPostN3_da (bltu : Bool) (sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : Assertion :=
+  match bltu with
+  | true => loopIterPostN3Call_da sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top
+  | false => loopIterPostN3Max_da sp j v0 v1 v2 v3 u0 u1 u2 u3 u_top ** empAssertion
+
 end EvmAsm.Evm64
