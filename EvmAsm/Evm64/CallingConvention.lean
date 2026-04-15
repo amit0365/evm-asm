@@ -105,7 +105,6 @@ theorem ret_spec' (base : Word) (ra_val : Word) :
 -- Prologue spec
 -- ============================================================================
 
-set_option maxHeartbeats 800000 in
 /-- Non-leaf prologue: allocate 16-byte frame, save ra at sp-8.
     sp_val is the ORIGINAL sp on entry.
     After prologue: sp = sp_val - 16, ra saved at mem[sp_val - 8]. -/
@@ -131,7 +130,6 @@ theorem cc_prologue_spec (base sp_val ra_val old_slot : Word)
 -- Epilogue spec
 -- ============================================================================
 
-set_option maxHeartbeats 800000 in
 /-- Non-leaf epilogue: restore ra, deallocate frame, return.
     sp_val is the FRAME sp (= original - 16).
     After epilogue: sp = sp_val + 16 (= original), ra restored, jumps to saved_ra. -/

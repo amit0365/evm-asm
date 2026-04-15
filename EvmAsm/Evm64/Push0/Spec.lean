@@ -15,7 +15,6 @@ namespace EvmAsm.Evm64
 
 open EvmAsm.Rv64
 
-set_option maxHeartbeats 6400000 in
 /-- PUSH0: writes 4 zero limbs at nsp, moves SP backward by 32.
     5 instructions = 20 bytes. nsp is the NEW stack pointer (after decrement). -/
 theorem evm_push0_spec (nsp base : Word)

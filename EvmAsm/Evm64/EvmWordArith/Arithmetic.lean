@@ -39,7 +39,6 @@ private theorem ite_word_01 (c : Prop) [Decidable c] :
   split <;> simp
 
 -- Combined carry: (carry_a ||| carry_b).toNat = (a + b + cin) / 2^64
-set_option maxHeartbeats 400000 in
 private theorem combined_carry_toNat (x y cin : Word) (hcin : cin.toNat ≤ 1) :
     let psum := x + y
     let ca := if BitVec.ult psum y then (1 : Word) else 0
@@ -55,7 +54,6 @@ private theorem combined_carry_toNat (x y cin : Word) (hcin : cin.toNat ≤ 1) :
   have : (x.toNat + y.toNat) % 2^64 < 2^64 := Nat.mod_lt _ (by omega)
   omega
 
-set_option maxHeartbeats 800000 in
 /-- Each limb of a + b equals the carry-chain result at that limb position. -/
 theorem add_carry_chain_correct (a b : EvmWord) :
     let a0 := a.getLimb 0; let b0 := b.getLimb 0
@@ -236,7 +234,6 @@ private theorem sub_limb_toNat {a_limb b_limb borrow : Word}
   have hb := b_limb.isLt
   rcases hborrow with h | h <;> simp only [h] <;> omega
 
-set_option maxHeartbeats 800000 in
 /-- Each limb of a - b equals the borrow-chain result at that limb position. -/
 theorem sub_borrow_chain_correct (a b : EvmWord) :
     let a0 := a.getLimb 0; let b0 := b.getLimb 0
