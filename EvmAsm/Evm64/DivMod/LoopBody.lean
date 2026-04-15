@@ -1108,6 +1108,41 @@ theorem divK_double_addback_beq_spec
     (fun h hp => by xperm_hyp hp)
     full
 
+/-- Named variant of double_addback_beq_spec with addbackN4 projections in postcondition. -/
+theorem divK_double_addback_beq_named_spec
+    (sp u_base q_hat' v0 v1 v2 v3 aun0 aun1 aun2 aun3 aun4 : Word)
+    (base : Word)
+    (hv_v0 : isValidDwordAccess (sp + signExtend12 32) = true)
+    (hv_u0 : isValidDwordAccess (u_base + signExtend12 0) = true)
+    (hv_v1 : isValidDwordAccess (sp + signExtend12 40) = true)
+    (hv_u1 : isValidDwordAccess (u_base + signExtend12 4088) = true)
+    (hv_v2 : isValidDwordAccess (sp + signExtend12 48) = true)
+    (hv_u2 : isValidDwordAccess (u_base + signExtend12 4080) = true)
+    (hv_v3 : isValidDwordAccess (sp + signExtend12 56) = true)
+    (hv_u3 : isValidDwordAccess (u_base + signExtend12 4072) = true)
+    (hv_u4 : isValidDwordAccess (u_base + signExtend12 4064) = true) :
+    let ab' := addbackN4 aun0 aun1 aun2 aun3 aun4 v0 v1 v2 v3
+    let q_hat'' := q_hat' + signExtend12 4095
+    cpsTriple (base + 880) (base + 884) (sharedDivModCode base)
+      ((.x12 ↦ᵣ sp) ** (.x6 ↦ᵣ u_base) ** (.x7 ↦ᵣ (0 : Word)) **
+       (.x11 ↦ᵣ q_hat') ** (.x5 ↦ᵣ aun4) ** (.x2 ↦ᵣ aun3) ** (.x0 ↦ᵣ (0 : Word)) **
+       ((sp + signExtend12 32) ↦ₘ v0) ** ((u_base + signExtend12 0) ↦ₘ aun0) **
+       ((sp + signExtend12 40) ↦ₘ v1) ** ((u_base + signExtend12 4088) ↦ₘ aun1) **
+       ((sp + signExtend12 48) ↦ₘ v2) ** ((u_base + signExtend12 4080) ↦ₘ aun2) **
+       ((sp + signExtend12 56) ↦ₘ v3) ** ((u_base + signExtend12 4072) ↦ₘ aun3) **
+       ((u_base + signExtend12 4064) ↦ₘ aun4))
+      ((.x12 ↦ᵣ sp) ** (.x6 ↦ᵣ u_base) **
+       (.x7 ↦ᵣ addbackN4_carry aun0 aun1 aun2 aun3 v0 v1 v2 v3) **
+       (.x11 ↦ᵣ q_hat'') ** (.x5 ↦ᵣ ab'.2.2.2.2) ** (.x2 ↦ᵣ ab'.2.2.2.1) ** (.x0 ↦ᵣ (0 : Word)) **
+       ((sp + signExtend12 32) ↦ₘ v0) ** ((u_base + signExtend12 0) ↦ₘ ab'.1) **
+       ((sp + signExtend12 40) ↦ₘ v1) ** ((u_base + signExtend12 4088) ↦ₘ ab'.2.1) **
+       ((sp + signExtend12 48) ↦ₘ v2) ** ((u_base + signExtend12 4080) ↦ₘ ab'.2.2.1) **
+       ((sp + signExtend12 56) ↦ₘ v3) ** ((u_base + signExtend12 4072) ↦ₘ ab'.2.2.2.1) **
+       ((u_base + signExtend12 4064) ↦ₘ ab'.2.2.2.2)) := by
+  intro ab' q_hat''
+  exact divK_double_addback_beq_spec sp u_base q_hat' v0 v1 v2 v3 aun0 aun1 aun2 aun3 aun4
+    base hv_v0 hv_u0 hv_v1 hv_u1 hv_v2 hv_u2 hv_v3 hv_u3 hv_u4
+
 set_option maxRecDepth 4096 in
 set_option maxHeartbeats 800000 in
 /-- Double-addback BEQ check + store q[j] + loop control.
@@ -2046,12 +2081,29 @@ theorem divK_mulsub_correction_addback_beq_spec
     have h4 : u4_out = ab'.2.2.2.2 := if_pos hcarry
     have hc : carry_out = addbackN4_carry ab.1 ab.2.1 ab.2.2.1 ab.2.2.2.1 v0 v1 v2 v3 := if_pos hcarry
     rw [hq, h0, h1, h2, h3, h4, hc]
-    -- Compose named_880(→880) + DA(880→884)
-    -- named_880 has addbackN4_carry in postcondition, enabling rw to 0
-    -- DA has matching precondition after rewrite
-    -- Last step: postcondition matching between DA output and goal
-    -- Blocked: isDefEq cannot match ab' projections between DA internal lets and outer ab'
-    sorry
+    -- Use named 880 spec (→880 with addbackN4_carry in postcondition)
+    have MCA_N := (divK_mulsub_correction_addback_named_880_spec sp q_hat j v0 v1 v2 v3 u0 u1 u2 u3 u_top
+      v1_old v5_old v6_old v7_old v10_old v2_old base
+      hv_j hv_v0 hv_u0 hv_v1 hv_u1 hv_v2 hv_u2 hv_v3 hv_u3 hv_u4) hborrow
+    -- Rewrite carry to 0
+    rw [show addbackN4_carry ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 v0 v1 v2 v3 = (0 : Word) from hcarry] at MCA_N
+    -- Use named DA spec (880→884 with addbackN4 projections in postcondition)
+    have DA := divK_double_addback_beq_named_spec sp u_base
+      (q_hat + signExtend12 4095) v0 v1 v2 v3
+      ab.1 ab.2.1 ab.2.2.1 ab.2.2.2.1 ab.2.2.2.2
+      base hv_v0 hv_u0 hv_v1 hv_u1 hv_v2 hv_u2 hv_v3 hv_u3 hv_u4
+    -- Frame DA with extra atoms from MCA_N postcondition
+    have DAf := cpsTriple_frame_left _ _ _ _ _
+      ((.x1 ↦ᵣ j) ** (.x10 ↦ᵣ c3) **
+       (sp + signExtend12 3976 ↦ₘ j))
+      (by pcFree) DA
+    -- Compose MCA_N(→880) with DAf(880→884)
+    have full := cpsTriple_seq_with_perm_same_cr _ _ _ _ _ _ _ _
+      (fun h hp => by xperm_hyp hp) MCA_N DAf
+    exact cpsTriple_consequence _ _ _ _ _ _ _
+      (fun h hp => by xperm_hyp hp)
+      (fun h hp => by xperm_hyp hp)
+      full
   · -- carry ≠ 0: single addback path (BEQ passthrough)
     have hq : q_out = q_hat + signExtend12 4095 := if_neg hcarry
     have h0 : un0_out = ab.1 := if_neg hcarry
