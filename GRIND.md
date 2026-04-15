@@ -168,26 +168,112 @@ When in doubt, write a short throwaway test demonstrating the duplication is rea
 
 Add new rows here as sets land. Each row should link the issue and the introducing PR.
 
-## 8. Roadmap
+## 8. Rollout roadmap
 
-The phased rollout plan for spreading this methodology repo-wide is tracked in PLAN.md under the "Grindset Rollout" section (or a separate `GRINDSET_ROLLOUT.md` if extracted). Pending phases at time of writing:
+The methodology is rolled out in small, independently-reviewable phases. Each phase = one issue + one PR (or a small series of ≤3-file PRs).
 
-1. **Bulk DivMod address migration** (~108 lemmas across 11 files) — extends `divmod_addr`.
-2. **`rv64_addr`** — generalize `bv_addr` (currently `simp only [BitVec.add_assoc]; rfl`) to a richer set covering `signExtend13`/`signExtend21` evaluations and register-offset arithmetic.
-3. **`byte_alg`** — `extractByte`/`replaceByte` algebra in `EvmAsm/Rv64/ByteOps.lean` and `EvmAsm/Evm64/Byte/`.
-4. **`reg_ops`** — `getReg`/`setReg`/`getPC`/`setPC` equations in `Rv64/Basic.lean`. Lowest risk because the lemmas are already `@[simp]`; this phase only augments with `@[grind =]`.
-5. **`bv_eval`** — concrete BitVec/Word arithmetic. Highest scope-blowup risk; gate on demand evidence from earlier phases.
-6. **Retrospective & policy hardening** — measure proof-line reduction, decide whether to keep per-domain macros or unify into a single `evm_grind`.
+**Design caveat.** Phase 1 choices (sub-namespace placement, `@[attr, grind =]` dual-registration, grind-first tactic macro, two-file attr-decl split) are *tentative pending validation in production*. Later phases adopt them only after Phase 1 has been in use long enough to expose problems. If experience updates a choice, revise §4 ("Rules of thumb") and note the revision in §8.2's relevant phase entry.
 
-Each phase = one issue + one PR (or a small series of ≤3-file PRs). When a phase lands, add a row to §7 and update its status here.
+**Status legend:** ✅ landed · 🚧 in progress · ⏳ pending.
+
+### 8.1 Per-phase recipe
+
+Every phase follows the same seven-step shape. Deviate only with a documented reason.
+
+1. **Identify** a class of repetitive proofs. Find them by grep on the closing-tactic shape (e.g., `simp only [show … from by decide]; bv_omega`, or `rfl` chains, or `simp only [getReg_setReg_*]`).
+2. **Inventory** the atomic facts shared across the class. List concrete literals, base lemmas, and any unfolding hints needed.
+3. **Land infrastructure** in a single small PR: `XyzSet.lean` (+ `XyzSetAttr.lean` if using Layout B from §3), atomic facts as `@[xyz_set, grind =]`, and a tactic macro following the `first | grind | (simp only [xyz_set]; <closer>)` shape.
+4. **Migrate one heavy file** (≤10 lemmas) in the same PR as proof-of-value.
+5. **Document** by adding a row to §7 and updating the phase's status in §8.2.
+6. **Open a bulk-migration issue**, keeping each follow-up PR to ≤3 files to avoid review fatigue and merge conflicts.
+7. **Retrospective**: count proof-line reduction, measure `lake build` time delta, decide whether to keep/extend/retire the set.
+
+### 8.2 Phases
+
+#### Phase 1 ✅ — DivMod address arithmetic
+- **Goal:** close DivMod address-equality goals with `by divmod_addr`.
+- **Targets:** `EvmAsm/Evm64/DivMod/AddrNorm.lean`, `AddrNormAttr.lean`. First migration: 4 `u_j1_*` lemmas in `LoopComposeN3.lean`.
+- **Issue/PR:** #263 / #304.
+
+#### Phase 2 ⏳ — Bulk DivMod address migration
+- **Goal:** collapse the remaining ~108 one-off address-equality lemmas in DivMod to `by divmod_addr`.
+- **Sub-PRs** (each ≤3 files, grouped to cluster related files):
+  1. `LoopComposeN1.lean` (12) + `LoopComposeN2.lean` (4)
+  2. `FullPathN1Loop.lean` (15) — **blocked on PR #300 merge**
+  3. `FullPathN2Loop.lean` (13) + `FullPathN3Loop.lean` (13) — **blocked on PR #300 merge**
+  4. `ModPhaseB.lean` (15) + `Compose/ModPhaseBn21.lean` + `Compose/ModPhaseBn3.lean`
+  5. `Compose/NormA.lean` + `Compose/Norm.lean` + `Compose/Epilogue.lean` — also delete their file-private `se12_*` shadows, which collide-by-name with `AddrNorm.lean`'s globals.
+  6. Sweep: grep for any remaining `simp only [show signExtend12 .* by decide]` in `EvmAsm/Evm64/DivMod/` and clean up.
+- **Dependencies:** PR #300 (double-addback) for sub-PRs 2–3. Sub-PRs 1, 4, 5, 6 are unblocked today.
+- **Stop criterion:** `grep -r "simp only \[show signExtend12" EvmAsm/Evm64/DivMod/` returns zero matches.
+
+#### Phase 3 ⏳ — `rv64_addr` (generalize `bv_addr`)
+- **Goal:** a richer Rv64-wide address simp/grind set, subsuming today's `bv_addr` (`simp only [BitVec.add_assoc]; rfl`, 578 callsites in DivMod alone).
+- **Targets:** new `EvmAsm/Rv64/Tactics/AddrNorm.lean` (+ `AddrNormAttr.lean` if Layout B). Atomic facts: `signExtend13`/`signExtend21` evaluations on common branch/jump offsets, `BitVec.add_assoc` rewrites, `Word + 0 = Word` identities.
+- **Proof-of-value:** migrate one file inside `EvmAsm/Rv64/` (e.g., specs in `Rv64/SyscallSpecs.lean`).
+- **Dependencies:** none (independent of DivMod work).
+- **Stop criterion:** `bv_addr` is either gone or a deprecated alias; bulk migration tracked via the Phase 3 follow-up issue.
+
+#### Phase 4 ⏳ — `byte_alg`
+- **Goal:** close `extractByte`/`replaceByte` algebra goals with one tactic.
+- **Targets:** new `EvmAsm/Rv64/ByteAlg.lean`. Atomic facts: `extractByte_replaceByte_same`, `extractByte_replaceByte_diff`, `replaceByte_replaceByte_same`, byte-index arithmetic, `extractByte` of concrete word literals.
+- **Proof-of-value:** one file in `EvmAsm/Evm64/Byte/` (e.g., `Byte/Spec.lean`).
+- **Dependencies:** none.
+
+#### Phase 5 ⏳ — `reg_ops`
+- **Goal:** close register-read-after-write chains (`getReg (setReg s r v) r' = …`, `setReg_setReg` commute/idempotent) with one tactic.
+- **Targets:** the existing `@[simp]` lemmas on `getReg`/`setReg`/`getPC`/`setPC` in `Rv64/Basic.lean` are *augmented* with `@[grind =]` — behavior of existing simp-based proofs does not change. Tactic macro wraps `grind` over the set.
+- **Proof-of-value:** migrate proofs in `Rv64/Tactics/RunBlock.lean` that hand-chain these lemmas.
+- **Risk:** **lowest** of any phase — adding `@[grind =]` to already-`@[simp]` lemmas cannot break existing proofs.
+- **Sequencing note:** can run in parallel with Phase 2 — no merge-conflict exposure.
+
+#### Phase 6 ⏳ — `bv_eval`
+- **Goal:** close concrete BitVec/Word arithmetic evaluations (`(1 : Word) <<< 6 = 64`, `BitVec.toNat` of small literals, `Word + 0 = Word`, `BitVec.add_assoc/comm` chain rewrites).
+- **Risk:** **highest scope-blowup risk** — easy to over-include and slow `grind` globally. Approach cautiously: identify the top 5–10 repeated atomic facts via grep, ship just those, expand only if a follow-up survey shows demand. Cap the file at ~30 entries; split by sub-domain if larger.
+- **Dependencies:** gate on experience from Phases 2–5 (what worked, what didn't, what atomic-fact density the grind index tolerates).
+
+#### Phase 7 ⏳ — Retrospective & policy hardening
+- **Measure:**
+  - total proof-line reduction across the repo (pre-Phase-1 baseline vs. end state),
+  - `lake build` wall-time delta per affected module,
+  - count of cases where the simp-fallback branch fired (signal that grind isn't sufficient alone).
+- **Decide:** keep per-domain macros (`divmod_addr`, `rv64_addr`, `byte_alg`, `reg_ops`, `bv_eval`) — explicit, scoped, predictable — or unify into a single `evm_grind` tactic that tries all sets.
+- **Update §4** ("Rules of thumb") with lessons learned.
+- **Open governance issue** for per-set ownership and contribution rules.
+
+### 8.3 Sequencing
+
+```
+Phase 1 (PR #304) ──┬→ Phase 5 (reg_ops)     [lowest risk, independent, can run now]
+                    │
+                    ├→ Phase 2 (DivMod bulk) [some files wait on #300]
+                    │
+                    ├→ Phase 3 (rv64_addr)   [independent of P2]
+                    │
+                    ├→ Phase 4 (byte_alg)    [independent]
+                    │
+                    ├→ Phase 6 (bv_eval)     [gated on P3-P5 evidence]
+                    │
+                    └→ Phase 7 (retro)       [after others]
+```
+
+### 8.4 Cross-cutting risks & mitigations
+
+| Risk | Mitigation |
+|---|---|
+| Conflict with active DivMod PRs (#300, #303, future double-addback) | Schedule Phase 2 sub-PRs around their merges. Never touch a file in flight. |
+| Build-time regression from broad `grind` invocation | Benchmark each phase's PR on the affected file(s) before/after; reject if >10% slowdown. The simp-fallback in the macro means `grind` is never the only path. |
+| `grind` closes the wrong way (silent incorrect rewrite) | The macro's `first` block makes the fallback deterministic — not a replacement for review. Add a regression test if it ever happens in practice. Avoid registering broad `@[simp]` on the same lemmas (see §4). |
+| Atomic-fact-file sprawl | Cap individual sets at ~50 entries (§4). If a set grows beyond, split by sub-domain. |
+| Design churn invalidates earlier phases | The §8 preamble flags Phase 1 choices as tentative. Phases 2+ adopt only after Phase 1 review lands. Update §4 if lessons generalize. |
 
 ## 9. Maintenance & contribution
 
-- **Update §7** when a new set lands.
-- **Update §8** when a phase moves between pending → in-progress → landed, or when phases are added/removed.
-- **Update §4 ("Rules of thumb")** when a new lesson generalizes from a single PR to a repo-wide convention.
+- **Update §7** (live sets table) when a new set lands.
+- **Update §8.2** (phase entries) when a phase moves between pending → in-progress → landed, or when phases are added/removed.
+- **Update §4** ("Rules of thumb") when a new lesson generalizes from a single PR to a repo-wide convention. If the lesson invalidates an earlier Phase 1 design choice (see §8 preamble), note the revision in the relevant §8.2 phase entry too.
 - **Do not duplicate this content** in CLAUDE.md, AGENTS.md, or PR descriptions. Link here instead.
-- **PR conventions for new sets:** name the file `<DomainName>Set.lean` or `<DomainName>Norm.lean` (consistent with `AddrNorm.lean`); place the attr-decl file alongside as `<DomainName>SetAttr.lean` if Layout B is used; provide one migrated file in the same PR as proof-of-value; document in §7.
+- **PR conventions for new sets:** name the file `<DomainName>Set.lean` or `<DomainName>Norm.lean` (consistent with `AddrNorm.lean`); place the attr-decl file alongside as `<DomainName>SetAttr.lean` if Layout B is used; provide one migrated file in the same PR as proof-of-value; document in §7; update the relevant §8.2 phase status.
 
 ## 10. References
 
