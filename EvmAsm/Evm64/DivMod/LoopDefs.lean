@@ -1433,6 +1433,24 @@ def iterN3Call_da (v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) :
     Word × Word × Word × Word × Word × Word :=
   iterWithDoubleAddback (div128Quot u3 u2 v2) v0 v1 v2 v3 u0 u1 u2 u3 u_top
 
+/-- Unified per-iteration computation with double addback for n=3. -/
+def iterN3_da (bltu : Bool) (v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) :
+    Word × Word × Word × Word × Word × Word :=
+  if bltu then iterN3Call_da v0 v1 v2 v3 u0 u1 u2 u3 u_top
+  else iterN3Max_da v0 v1 v2 v3 u0 u1 u2 u3 u_top
+
+@[simp]
+theorem iterN3_da_true (v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) :
+    iterN3_da true v0 v1 v2 v3 u0 u1 u2 u3 u_top =
+    iterN3Call_da v0 v1 v2 v3 u0 u1 u2 u3 u_top := by
+  simp [iterN3_da]
+
+@[simp]
+theorem iterN3_da_false (v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) :
+    iterN3_da false v0 v1 v2 v3 u0 u1 u2 u3 u_top =
+    iterN3Max_da v0 v1 v2 v3 u0 u1 u2 u3 u_top := by
+  simp [iterN3_da]
+
 -- ============================================================================
 -- Double-addback iteration postconditions (_da variants)
 -- These use iterN*_da which accounts for the BEQ double-addback path.
