@@ -269,11 +269,50 @@ Phase 1 (PR #304) ──┬→ Phase 5 (reg_ops)     [lowest risk, independent, 
 
 ## 9. Maintenance & contribution
 
+### 9.1 Reactive updates (when something changes)
+
 - **Update §7** (live sets table) when a new set lands.
 - **Update §8.2** (phase entries) when a phase moves between pending → in-progress → landed, or when phases are added/removed.
 - **Update §4** ("Rules of thumb") when a new lesson generalizes from a single PR to a repo-wide convention. If the lesson invalidates an earlier Phase 1 design choice (see §8 preamble), note the revision in the relevant §8.2 phase entry too.
 - **Do not duplicate this content** in CLAUDE.md, AGENTS.md, or PR descriptions. Link here instead.
-- **PR conventions for new sets:** name the file `<DomainName>Set.lean` or `<DomainName>Norm.lean` (consistent with `AddrNorm.lean`); place the attr-decl file alongside as `<DomainName>SetAttr.lean` if Layout B is used; provide one migrated file in the same PR as proof-of-value; document in §7; update the relevant §8.2 phase status.
+
+### 9.2 Periodic audits (scheduled refactoring review)
+
+Every grind/simp set accumulates drift over time: dead facts, redundant lemmas, convention drift from when §4 was tighter, and tactic-macro shapes that `grind` may no longer need. A short, scheduled audit keeps the sets lean.
+
+**Cadence.** Run an audit whenever any of these triggers fires — whichever comes first:
+
+- **Calendar:** every ~6 months (track via a recurring GitHub issue).
+- **Activity:** after every second *new* set lands (i.e., audit when about to add the 3rd, 5th, 7th, … set).
+- **Preflight:** as part of opening a new set, briefly check the nearest existing set for duplicated facts. This is a ~5-minute check, not a full audit — just prevents the obvious misses.
+
+**Per-set checklist.** Go set-by-set in §7 table order. For each set, answer:
+
+1. **Dead facts?** Temporarily remove a suspect lemma, `lake build` the dependent modules, see if any proof fails. If none, the fact is dead — delete it. (Cheap, because `lake build` is incremental.)
+2. **Redundant facts?** Two lemmas that are definitionally equal or where one implies the other via a shorter path. Remove the weaker one.
+3. **Fallback misfires?** Where does the macro's `first` block actually fall through to `simp only […]; bv_omega`? If the fallback fires on a recurring shape, either add a grind hint or accept the fallback as permanent for that shape (and note it in §8.2).
+4. **Convention drift?** Does the set conform to §4 *today*? Sets created before a §4 rule tightened may not — fix, or record the deviation in the relevant §8.2 entry.
+5. **Merge or split?** If two sets have substantial overlap in *consumer files*, consider merging. If one set covers two disjoint fact clusters (e.g., `signExtend12` evaluations vs. shift evaluations), consider splitting by sub-domain.
+6. **Entry-count cap (§4).** Sets should stay ≤50 entries (`bv_eval` ≤30). Over cap → split.
+7. **Build-time regression?** Re-benchmark one representative dependent module (e.g., `lake build EvmAsm.Evm64.DivMod.LoopComposeN3` for `divmod_addr`) against the baseline captured when the set landed. If >10% slower with no offsetting proof-line reduction, shrink or retire.
+8. **Consumer count.** `grep` for callers of the tactic macro. Fewer than 3 consumer files → consider inlining and retiring (the inverse of §6's entry criterion).
+
+**Artifacts.** Open one issue per cycle titled `Grindset audit YYYY-Qx` containing:
+
+- a findings table (set · check · action · rationale),
+- one sub-task (linked PR) per action.
+
+The audit issue itself should *not* land changes. Findings become follow-up PRs, one per action, keeping each change small and independently reviewable.
+
+**First audit.** Runs after Phase 4 or Phase 5 lands (enough sets in §7 to make comparisons worthwhile). Before that, the preflight trigger is enough.
+
+### 9.3 PR conventions for new sets
+
+- **Filename:** `<DomainName>Set.lean` or `<DomainName>Norm.lean`, matching `AddrNorm.lean`.
+- **Attr-decl file:** if using Layout B (§3), place the attr-decl alongside as `<DomainName>SetAttr.lean` or `<DomainName>NormAttr.lean`.
+- **Proof-of-value:** provide one migrated file in the same PR.
+- **Documentation:** add a row to §7; update the relevant §8.2 phase status; if the set introduces a new convention, update §4.
+- **Benchmark:** record the baseline `lake build` time for the migrated file in the PR description. The §9.2 audits compare against this baseline.
 
 ## 10. References
 
