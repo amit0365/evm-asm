@@ -1959,6 +1959,21 @@ theorem divK_mulsub_correction_addback_beq_spec
     have h4 : u4_out = ab'.2.2.2.2 := if_pos hcarry
     have hc : carry_out = addbackN4_carry ab.1 ab.2.1 ab.2.2.1 ab.2.2.2.1 v0 v1 v2 v3 := if_pos hcarry
     rw [hq, h0, h1, h2, h3, h4, hc]
+    -- Get mulsub+addback (→880) — no intro_lets
+    have MCA880 := (divK_mulsub_correction_addback_880_spec sp q_hat j v0 v1 v2 v3 u0 u1 u2 u3 u_top
+      v1_old v5_old v6_old v7_old v10_old v2_old base
+      hv_j hv_v0 hv_u0 hv_v1 hv_u1 hv_v2 hv_u2 hv_v3 hv_u3 hv_u4) hborrow
+    -- Get double addback BEQ (880→884)
+    -- Use consequence to weaken DA's precondition: replace x7 = 0 with x7 = carry
+    -- Since carry = 0 by hcarry, (.x7 ↦ᵣ carry) → (.x7 ↦ᵣ 0) via rw
+    have DA := divK_double_addback_beq_spec sp u_base
+      (q_hat + signExtend12 4095) v0 v1 v2 v3
+      ab.1 ab.2.1 ab.2.2.1 ab.2.2.2.1 ab.2.2.2.2
+      base hv_v0 hv_u0 hv_v1 hv_u1 hv_v2 hv_u2 hv_v3 hv_u3 hv_u4
+    -- TODO: Compose MCA880(→880) with DA(880→884)
+    -- Blocked by xperm_hyp isDefEq failure: MCA880 postcondition and DA precondition
+    -- have definitionally-equal but structurally-different let expansions for carry/aco3.
+    -- Need to normalize let expansions before composition (e.g., via delta/unfold).
     sorry
   · -- carry ≠ 0: single addback path (BEQ passthrough)
     have hq : q_out = q_hat + signExtend12 4095 := if_neg hcarry
