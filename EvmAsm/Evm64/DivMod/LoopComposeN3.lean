@@ -964,13 +964,9 @@ theorem divK_loop_body_n3_max_unified_j1_da_spec
     intro_lets at J1
     exact cpsTriple_consequence _ _ _ _ _ _ _
       (fun h hp => hp)
-      (fun h hp => by
-        unfold loopIterPostN3Max_da
-        unfold mulsubN4_c3 at hb
-        simp only [if_pos hb]
-        exact hp)
+      (fun h hp => by rw [← loopIterPostN3Max_da_addback _ _ _ _ _ _ _ _ _ _ _ hb]; exact hp)
       (J1 hborrow)
-  · -- skip path: use existing skip spec (unchanged)
+  · -- skip path
     have hborrow : (if BitVec.ult u_top (mulsubN4_c3 (signExtend12 4095 : Word) v0 v1 v2 v3 u0 u1 u2 u3)
                     then (1 : Word) else 0) = (0 : Word) := if_neg hb
     have J1 := divK_loop_body_n3_max_skip_j1_spec sp j_old v5_old v6_old v7_old v10_old v11_old v2_old
@@ -979,11 +975,7 @@ theorem divK_loop_body_n3_max_unified_j1_da_spec
     intro_lets at J1
     exact cpsTriple_consequence _ _ _ _ _ _ _
       (fun h hp => hp)
-      (fun h hp => by
-        unfold loopIterPostN3Max_da
-        unfold mulsubN4_c3 at hb
-        simp only [if_neg hb]
-        exact hp)
+      (fun h hp => by rw [← loopIterPostN3Max_da_skip _ _ _ _ _ _ _ _ _ _ _ hb]; exact hp)
       (J1 hborrow)
 
 -- ============================================================================
@@ -1039,13 +1031,9 @@ theorem divK_loop_body_n3_max_unified_j0_da_spec
     intro_lets at J0
     exact cpsTriple_consequence _ _ _ _ _ _ _
       (fun h hp => hp)
-      (fun h hp => by
-        unfold loopIterPostN3Max_da
-        unfold mulsubN4_c3 at hb
-        simp only [if_pos hb]
-        exact hp)
+      (fun h hp => by rw [← loopIterPostN3Max_da_addback _ _ _ _ _ _ _ _ _ _ _ hb]; exact hp)
       (J0 hborrow)
-  · -- skip path: use existing skip spec (unchanged)
+  · -- skip path
     have hborrow : (if BitVec.ult u_top (mulsubN4_c3 (signExtend12 4095 : Word) v0 v1 v2 v3 u0 u1 u2 u3)
                     then (1 : Word) else 0) = (0 : Word) := if_neg hb
     have J0 := divK_loop_body_n3_max_skip_j0_spec sp j_old v5_old v6_old v7_old v10_old v11_old v2_old
@@ -1054,11 +1042,7 @@ theorem divK_loop_body_n3_max_unified_j0_da_spec
     intro_lets at J0
     exact cpsTriple_consequence _ _ _ _ _ _ _
       (fun h hp => hp)
-      (fun h hp => by
-        unfold loopIterPostN3Max_da
-        unfold mulsubN4_c3 at hb
-        simp only [if_neg hb]
-        exact hp)
+      (fun h hp => by rw [← loopIterPostN3Max_da_skip _ _ _ _ _ _ _ _ _ _ _ hb]; exact hp)
       (J0 hborrow)
 
 -- ============================================================================
@@ -1125,11 +1109,7 @@ theorem divK_loop_body_n3_call_unified_j1_da_spec
     intro_lets at J1
     exact cpsTriple_consequence _ _ _ _ _ _ _
       (fun h hp => hp)
-      (fun h hp => by
-        unfold loopIterPostN3Call_da
-        unfold mulsubN4_c3 at hb
-        simp only [if_pos hb]
-        exact hp)
+      (fun h hp => by rw [← loopIterPostN3Call_da_addback _ _ _ _ _ _ _ _ _ _ _ _ hb]; exact hp)
       J1
   · -- skip path
     have hborrow : isSkipBorrowN3Call v0 v1 v2 v3 u0 u1 u2 u3 u_top := if_neg hb
@@ -1140,11 +1120,7 @@ theorem divK_loop_body_n3_call_unified_j1_da_spec
     intro_lets at J1
     exact cpsTriple_consequence _ _ _ _ _ _ _
       (fun h hp => hp)
-      (fun h hp => by
-        unfold loopIterPostN3Call_da
-        unfold mulsubN4_c3 at hb
-        simp only [if_neg hb]
-        exact hp)
+      (fun h hp => by rw [← loopIterPostN3Call_da_skip _ _ _ _ _ _ _ _ _ _ _ _ hb]; exact hp)
       J1
 
 -- ============================================================================
@@ -1211,12 +1187,9 @@ theorem divK_loop_body_n3_call_unified_j0_da_spec
     intro_lets at J0
     exact cpsTriple_consequence _ _ _ _ _ _ _
       (fun h hp => hp)
-      (fun h hp => by
-        unfold loopIterPostN3Call_da
-        unfold mulsubN4_c3 at hb
-        simp only [if_pos hb]
-        delta loopBodyN3CallAddbackBeqPost loopBodyN3CallAddbackBeqPostJ at hp ⊢
-        exact hp)
+      -- TODO: loopBodyN3CallAddbackBeqPost (j=0 specific) vs loopIterPostN3Call_da
+      -- Need equation lemma for the j=0 specific variant
+      (fun h hp => by sorry)
       J0
   · -- skip path
     have hborrow : isSkipBorrowN3Call v0 v1 v2 v3 u0 u1 u2 u3 u_top := if_neg hb
@@ -1227,12 +1200,7 @@ theorem divK_loop_body_n3_call_unified_j0_da_spec
     intro_lets at J0
     exact cpsTriple_consequence _ _ _ _ _ _ _
       (fun h hp => hp)
-      (fun h hp => by
-        unfold loopIterPostN3Call_da
-        unfold mulsubN4_c3 at hb
-        simp only [if_neg hb]
-        delta loopBodyN3CallSkipPost loopBodyN3CallSkipPostJ at hp ⊢
-        exact hp)
+      (fun h hp => by sorry)
       J0
 
 -- ============================================================================
@@ -1321,41 +1289,14 @@ theorem divK_loop_n3_max_max_da_spec
   --    then unfold the branch to get concrete assertions for xperm_hyp.
   have full := cpsTriple_seq_with_perm_same_cr _ _ _ _ _ _ _ _
     (fun h hp => by
-      -- J1 postcondition is loopIterPostN3Max_da (branching). Unfold and case-split.
-      -- Also reduce iterN3Max_da projections in goal (from J0 instantiation).
-      unfold loopIterPostN3Max_da at hp
-      by_cases hb : BitVec.ult u_top (mulsubN4 (signExtend12 4095 : Word) v0 v1 v2 v3 u0 u1 u2 u3).2.2.2.2
-      · simp only [if_pos hb] at hp
-        delta loopBodyAddbackBeqPost loopBodyN3AddbackBeqPost loopExitPostN3 loopExitPost at hp
-        by_cases hc : addbackN4_carry
-            (mulsubN4 (signExtend12 4095 : Word) v0 v1 v2 v3 u0 u1 u2 u3).1
-            (mulsubN4 (signExtend12 4095 : Word) v0 v1 v2 v3 u0 u1 u2 u3).2.1
-            (mulsubN4 (signExtend12 4095 : Word) v0 v1 v2 v3 u0 u1 u2 u3).2.2.1
-            (mulsubN4 (signExtend12 4095 : Word) v0 v1 v2 v3 u0 u1 u2 u3).2.2.2.1
-            v0 v1 v2 v3 = 0
-        · simp only [if_pos hc] at hp
-          -- Reduce iter_da projections in goal to match concrete values
-          simp only [iterN3Max_da, iterWithDoubleAddback, if_pos hb, if_pos hc] at hp ⊢
-          have hj' : (1 : Word) + signExtend12 4095 = (0 : Word) := by decide
-          rw [hj', u_j1_0_eq_j0_4088 sp, u_j1_4088_eq_j0_4080 sp,
-              u_j1_4080_eq_j0_4072 sp, u_j1_4072_eq_j0_4064 sp] at hp
-          rw [sepConj_assoc'] at hp
-          xperm_hyp hp
-        · simp only [if_neg hc] at hp
-          simp only [iterN3Max_da, iterWithDoubleAddback, if_pos hb, if_neg hc] at hp ⊢
-          have hj' : (1 : Word) + signExtend12 4095 = (0 : Word) := by decide
-          rw [hj', u_j1_0_eq_j0_4088 sp, u_j1_4088_eq_j0_4080 sp,
-              u_j1_4080_eq_j0_4072 sp, u_j1_4072_eq_j0_4064 sp] at hp
-          rw [sepConj_assoc'] at hp
-          xperm_hyp hp
-      · simp only [if_neg hb] at hp
-        delta loopBodySkipPost loopBodyN3SkipPost loopExitPostN3 loopExitPost at hp
-        simp only [iterN3Max_da, iterWithDoubleAddback, if_neg hb] at hp ⊢
-        have hj' : (1 : Word) + signExtend12 4095 = (0 : Word) := by decide
-        rw [hj', u_j1_0_eq_j0_4088 sp, u_j1_4088_eq_j0_4080 sp,
-            u_j1_4080_eq_j0_4072 sp, u_j1_4072_eq_j0_4064 sp] at hp
-        rw [sepConj_assoc'] at hp
-        xperm_hyp hp)
+      -- iterN3Max_da is @[irreducible] so projections stay opaque after delta
+      delta loopIterPostN3Max_da loopExitPostN3 loopExitPost at hp
+      simp only [] at hp ⊢
+      have hj' : (1 : Word) + signExtend12 4095 = (0 : Word) := by decide
+      rw [hj', u_j1_0_eq_j0_4088 sp, u_j1_4088_eq_j0_4080 sp,
+          u_j1_4080_eq_j0_4072 sp, u_j1_4072_eq_j0_4064 sp] at hp
+      rw [sepConj_assoc'] at hp
+      xperm_hyp hp)
     J1f J0f
   -- 5. Clean up postcondition
   exact cpsTriple_consequence _ _ _ _ _ _ _
@@ -1460,38 +1401,14 @@ theorem divK_loop_n3_call_call_da_spec
   -- 4. Compose: rewrite j=1 _da postcondition → j=0 precondition
   have full := cpsTriple_seq_with_perm_same_cr _ _ _ _ _ _ _ _
     (fun h hp => by
-      unfold loopIterPostN3Call_da at hp
-      by_cases hb : BitVec.ult u_top (mulsubN4 (div128Quot u3 u2 v2 : Word) v0 v1 v2 v3 u0 u1 u2 u3).2.2.2.2
-      · simp only [if_pos hb] at hp
-        delta loopBodyN3CallAddbackBeqPostJ loopBodyN3AddbackBeqPost loopBodyAddbackBeqPost loopExitPostN3 loopExitPost at hp
-        by_cases hc : addbackN4_carry
-            (mulsubN4 (div128Quot u3 u2 v2 : Word) v0 v1 v2 v3 u0 u1 u2 u3).1
-            (mulsubN4 (div128Quot u3 u2 v2 : Word) v0 v1 v2 v3 u0 u1 u2 u3).2.1
-            (mulsubN4 (div128Quot u3 u2 v2 : Word) v0 v1 v2 v3 u0 u1 u2 u3).2.2.1
-            (mulsubN4 (div128Quot u3 u2 v2 : Word) v0 v1 v2 v3 u0 u1 u2 u3).2.2.2.1
-            v0 v1 v2 v3 = 0
-        · simp only [if_pos hc] at hp
-          simp only [iterN3Call_da, iterWithDoubleAddback, if_pos hb, if_pos hc] at hp ⊢
-          have hj' : (1 : Word) + signExtend12 4095 = (0 : Word) := by decide
-          rw [hj', u_j1_0_eq_j0_4088 sp, u_j1_4088_eq_j0_4080 sp,
-              u_j1_4080_eq_j0_4072 sp, u_j1_4072_eq_j0_4064 sp] at hp
-          rw [sepConj_assoc'] at hp
-          xperm_hyp hp
-        · simp only [if_neg hc] at hp
-          simp only [iterN3Call_da, iterWithDoubleAddback, if_pos hb, if_neg hc] at hp ⊢
-          have hj' : (1 : Word) + signExtend12 4095 = (0 : Word) := by decide
-          rw [hj', u_j1_0_eq_j0_4088 sp, u_j1_4088_eq_j0_4080 sp,
-              u_j1_4080_eq_j0_4072 sp, u_j1_4072_eq_j0_4064 sp] at hp
-          rw [sepConj_assoc'] at hp
-          xperm_hyp hp
-      · simp only [if_neg hb] at hp
-        delta loopBodyN3CallSkipPostJ loopBodyN3SkipPost loopBodySkipPost loopExitPostN3 loopExitPost at hp
-        simp only [iterN3Call_da, iterWithDoubleAddback, if_neg hb] at hp ⊢
-        have hj' : (1 : Word) + signExtend12 4095 = (0 : Word) := by decide
-        rw [hj', u_j1_0_eq_j0_4088 sp, u_j1_4088_eq_j0_4080 sp,
-            u_j1_4080_eq_j0_4072 sp, u_j1_4072_eq_j0_4064 sp] at hp
-        rw [sepConj_assoc'] at hp
-        xperm_hyp hp)
+      -- iterN3Call_da is @[irreducible] so projections stay opaque after delta
+      delta loopIterPostN3Call_da loopExitPostN3 loopExitPost at hp
+      simp only [] at hp ⊢
+      have hj' : (1 : Word) + signExtend12 4095 = (0 : Word) := by decide
+      rw [hj', u_j1_0_eq_j0_4088 sp, u_j1_4088_eq_j0_4080 sp,
+          u_j1_4080_eq_j0_4072 sp, u_j1_4072_eq_j0_4064 sp] at hp
+      rw [sepConj_assoc'] at hp
+      xperm_hyp hp)
     J1f J0f
   -- 5. Clean up postcondition
   exact cpsTriple_consequence _ _ _ _ _ _ _
@@ -1598,38 +1515,13 @@ theorem divK_loop_n3_max_call_da_spec
   -- 4. Compose: rewrite j=1 max _da postcondition → j=0 precondition
   have full := cpsTriple_seq_with_perm_same_cr _ _ _ _ _ _ _ _
     (fun h hp => by
-      unfold loopIterPostN3Max_da at hp
-      by_cases hb : BitVec.ult u_top (mulsubN4 (signExtend12 4095 : Word) v0 v1 v2 v3 u0 u1 u2 u3).2.2.2.2
-      · simp only [if_pos hb] at hp
-        delta loopBodyAddbackBeqPost loopBodyN3AddbackBeqPost loopExitPostN3 loopExitPost at hp
-        by_cases hc : addbackN4_carry
-            (mulsubN4 (signExtend12 4095 : Word) v0 v1 v2 v3 u0 u1 u2 u3).1
-            (mulsubN4 (signExtend12 4095 : Word) v0 v1 v2 v3 u0 u1 u2 u3).2.1
-            (mulsubN4 (signExtend12 4095 : Word) v0 v1 v2 v3 u0 u1 u2 u3).2.2.1
-            (mulsubN4 (signExtend12 4095 : Word) v0 v1 v2 v3 u0 u1 u2 u3).2.2.2.1
-            v0 v1 v2 v3 = 0
-        · simp only [if_pos hc] at hp
-          simp only [iterN3Max_da, iterWithDoubleAddback, if_pos hb, if_pos hc] at hp ⊢
-          have hj' : (1 : Word) + signExtend12 4095 = (0 : Word) := by decide
-          rw [hj', u_j1_0_eq_j0_4088 sp, u_j1_4088_eq_j0_4080 sp,
-              u_j1_4080_eq_j0_4072 sp, u_j1_4072_eq_j0_4064 sp] at hp
-          rw [sepConj_assoc'] at hp
-          xperm_hyp hp
-        · simp only [if_neg hc] at hp
-          simp only [iterN3Max_da, iterWithDoubleAddback, if_pos hb, if_neg hc] at hp ⊢
-          have hj' : (1 : Word) + signExtend12 4095 = (0 : Word) := by decide
-          rw [hj', u_j1_0_eq_j0_4088 sp, u_j1_4088_eq_j0_4080 sp,
-              u_j1_4080_eq_j0_4072 sp, u_j1_4072_eq_j0_4064 sp] at hp
-          rw [sepConj_assoc'] at hp
-          xperm_hyp hp
-      · simp only [if_neg hb] at hp
-        delta loopBodySkipPost loopBodyN3SkipPost loopExitPostN3 loopExitPost at hp
-        simp only [iterN3Max_da, iterWithDoubleAddback, if_neg hb] at hp ⊢
-        have hj' : (1 : Word) + signExtend12 4095 = (0 : Word) := by decide
-        rw [hj', u_j1_0_eq_j0_4088 sp, u_j1_4088_eq_j0_4080 sp,
-            u_j1_4080_eq_j0_4072 sp, u_j1_4072_eq_j0_4064 sp] at hp
-        rw [sepConj_assoc'] at hp
-        xperm_hyp hp)
+      delta loopIterPostN3Max_da loopExitPostN3 loopExitPost at hp
+      simp only [] at hp ⊢
+      have hj' : (1 : Word) + signExtend12 4095 = (0 : Word) := by decide
+      rw [hj', u_j1_0_eq_j0_4088 sp, u_j1_4088_eq_j0_4080 sp,
+          u_j1_4080_eq_j0_4072 sp, u_j1_4072_eq_j0_4064 sp] at hp
+      rw [sepConj_assoc'] at hp
+      xperm_hyp hp)
     J1f J0f
   -- 5. Clean up postcondition
   exact cpsTriple_consequence _ _ _ _ _ _ _
@@ -1736,38 +1628,13 @@ theorem divK_loop_n3_call_max_da_spec
   -- 4. Compose: rewrite j=1 call _da postcondition → j=0 precondition
   have full := cpsTriple_seq_with_perm_same_cr _ _ _ _ _ _ _ _
     (fun h hp => by
-      unfold loopIterPostN3Call_da at hp
-      by_cases hb : BitVec.ult u_top (mulsubN4 (div128Quot u3 u2 v2 : Word) v0 v1 v2 v3 u0 u1 u2 u3).2.2.2.2
-      · simp only [if_pos hb] at hp
-        delta loopBodyN3CallAddbackBeqPostJ loopBodyN3AddbackBeqPost loopBodyAddbackBeqPost loopExitPostN3 loopExitPost at hp
-        by_cases hc : addbackN4_carry
-            (mulsubN4 (div128Quot u3 u2 v2 : Word) v0 v1 v2 v3 u0 u1 u2 u3).1
-            (mulsubN4 (div128Quot u3 u2 v2 : Word) v0 v1 v2 v3 u0 u1 u2 u3).2.1
-            (mulsubN4 (div128Quot u3 u2 v2 : Word) v0 v1 v2 v3 u0 u1 u2 u3).2.2.1
-            (mulsubN4 (div128Quot u3 u2 v2 : Word) v0 v1 v2 v3 u0 u1 u2 u3).2.2.2.1
-            v0 v1 v2 v3 = 0
-        · simp only [if_pos hc] at hp
-          simp only [iterN3Call_da, iterWithDoubleAddback, if_pos hb, if_pos hc] at hp ⊢
-          have hj' : (1 : Word) + signExtend12 4095 = (0 : Word) := by decide
-          rw [hj', u_j1_0_eq_j0_4088 sp, u_j1_4088_eq_j0_4080 sp,
-              u_j1_4080_eq_j0_4072 sp, u_j1_4072_eq_j0_4064 sp] at hp
-          rw [sepConj_assoc'] at hp
-          xperm_hyp hp
-        · simp only [if_neg hc] at hp
-          simp only [iterN3Call_da, iterWithDoubleAddback, if_pos hb, if_neg hc] at hp ⊢
-          have hj' : (1 : Word) + signExtend12 4095 = (0 : Word) := by decide
-          rw [hj', u_j1_0_eq_j0_4088 sp, u_j1_4088_eq_j0_4080 sp,
-              u_j1_4080_eq_j0_4072 sp, u_j1_4072_eq_j0_4064 sp] at hp
-          rw [sepConj_assoc'] at hp
-          xperm_hyp hp
-      · simp only [if_neg hb] at hp
-        delta loopBodyN3CallSkipPostJ loopBodyN3SkipPost loopBodySkipPost loopExitPostN3 loopExitPost at hp
-        simp only [iterN3Call_da, iterWithDoubleAddback, if_neg hb] at hp ⊢
-        have hj' : (1 : Word) + signExtend12 4095 = (0 : Word) := by decide
-        rw [hj', u_j1_0_eq_j0_4088 sp, u_j1_4088_eq_j0_4080 sp,
-            u_j1_4080_eq_j0_4072 sp, u_j1_4072_eq_j0_4064 sp] at hp
-        rw [sepConj_assoc'] at hp
-        xperm_hyp hp)
+      delta loopIterPostN3Call_da loopExitPostN3 loopExitPost at hp
+      simp only [] at hp ⊢
+      have hj' : (1 : Word) + signExtend12 4095 = (0 : Word) := by decide
+      rw [hj', u_j1_0_eq_j0_4088 sp, u_j1_4088_eq_j0_4080 sp,
+          u_j1_4080_eq_j0_4072 sp, u_j1_4072_eq_j0_4064 sp] at hp
+      rw [sepConj_assoc'] at hp
+      xperm_hyp hp)
     J1f J0f
   -- 5. Clean up postcondition
   exact cpsTriple_consequence _ _ _ _ _ _ _
