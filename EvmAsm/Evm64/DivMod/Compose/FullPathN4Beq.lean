@@ -446,4 +446,60 @@ theorem evm_div_n4_preloop_call_addback_beq_spec (sp base : Word)
     (fun h hq => by delta preloopCallAddbackBeqPostN4; xperm_hyp hq)
     hFull
 
+-- ============================================================================
+-- preloopMaxAddbackBeqPostN4 unfold (for composition with epilogue)
+-- ============================================================================
+
+/-- Unfold preloopMaxAddbackBeqPostN4 to expanded form with sp-relative addresses.
+    The `if carry = 0` branches in loopBodyAddbackBeqPost flow through unchanged. -/
+theorem preloopMaxAddbackBeqPostN4_unfold (sp a0 a1 a2 a3 b0 b1 b2 b3 : Word) :
+    preloopMaxAddbackBeqPostN4 sp a0 a1 a2 a3 b0 b1 b2 b3 =
+    let shift := (clzResult b3).1
+    let anti_shift := signExtend12 (0 : BitVec 12) - shift
+    let b3' := (b3 <<< (shift.toNat % 64)) ||| (b2 >>> (anti_shift.toNat % 64))
+    let b2' := (b2 <<< (shift.toNat % 64)) ||| (b1 >>> (anti_shift.toNat % 64))
+    let b1' := (b1 <<< (shift.toNat % 64)) ||| (b0 >>> (anti_shift.toNat % 64))
+    let b0' := b0 <<< (shift.toNat % 64)
+    let u4 := a3 >>> (anti_shift.toNat % 64)
+    let u3 := (a3 <<< (shift.toNat % 64)) ||| (a2 >>> (anti_shift.toNat % 64))
+    let u2 := (a2 <<< (shift.toNat % 64)) ||| (a1 >>> (anti_shift.toNat % 64))
+    let u1 := (a1 <<< (shift.toNat % 64)) ||| (a0 >>> (anti_shift.toNat % 64))
+    let u0 := a0 <<< (shift.toNat % 64)
+    let q_hat : Word := signExtend12 4095
+    let ms := mulsubN4 q_hat b0' b1' b2' b3' u0 u1 u2 u3
+    let c3 := ms.2.2.2.2
+    let u4_new := u4 - c3
+    let ab := addbackN4 ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 u4_new b0' b1' b2' b3'
+    let ab' := addbackN4 ab.1 ab.2.1 ab.2.2.1 ab.2.2.2.1 ab.2.2.2.2 b0' b1' b2' b3'
+    let carry := addbackN4_carry ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 b0' b1' b2' b3'
+    let q_out := if carry = 0 then q_hat + signExtend12 4095 + signExtend12 4095
+                 else q_hat + signExtend12 4095
+    let un0_out := if carry = 0 then ab'.1 else ab.1
+    let un1_out := if carry = 0 then ab'.2.1 else ab.2.1
+    let un2_out := if carry = 0 then ab'.2.2.1 else ab.2.2.1
+    let un3_out := if carry = 0 then ab'.2.2.2.1 else ab.2.2.2.1
+    let u4_out  := if carry = 0 then ab'.2.2.2.2 else ab.2.2.2.2
+    ((.x12 ↦ᵣ sp) ** (.x1 ↦ᵣ signExtend12 4095) **
+     (.x5 ↦ᵣ (0 : Word)) ** (.x6 ↦ᵣ sp + signExtend12 4056) **
+     (.x7 ↦ᵣ sp + signExtend12 4088) ** (.x10 ↦ᵣ c3) ** (.x11 ↦ᵣ q_out) **
+     (.x2 ↦ᵣ un3_out) ** (.x0 ↦ᵣ (0 : Word)) **
+     (sp + signExtend12 3976 ↦ₘ (0 : Word)) ** (sp + signExtend12 3984 ↦ₘ (4 : Word)) **
+     ((sp + 32) ↦ₘ b0') ** ((sp + signExtend12 4056) ↦ₘ un0_out) **
+     ((sp + 40) ↦ₘ b1') ** ((sp + signExtend12 4048) ↦ₘ un1_out) **
+     ((sp + 48) ↦ₘ b2') ** ((sp + signExtend12 4040) ↦ₘ un2_out) **
+     ((sp + 56) ↦ₘ b3') ** ((sp + signExtend12 4032) ↦ₘ un3_out) **
+     ((sp + signExtend12 4024) ↦ₘ u4_out) **
+     ((sp + signExtend12 4088) ↦ₘ q_out)) **
+    ((sp + 0) ↦ₘ a0) ** ((sp + 8) ↦ₘ a1) **
+    ((sp + 16) ↦ₘ a2) ** ((sp + 24) ↦ₘ a3) **
+    ((sp + signExtend12 4080) ↦ₘ (0 : Word)) **
+    ((sp + signExtend12 4072) ↦ₘ (0 : Word)) **
+    ((sp + signExtend12 4064) ↦ₘ (0 : Word)) **
+    ((sp + signExtend12 4016) ↦ₘ (0 : Word)) **
+    ((sp + signExtend12 4008) ↦ₘ (0 : Word)) **
+    ((sp + signExtend12 4000) ↦ₘ (0 : Word)) **
+    ((sp + signExtend12 3992) ↦ₘ shift) := by
+  delta preloopMaxAddbackBeqPostN4 loopBodyN4AddbackBeqPost loopBodyAddbackBeqPost
+  simp only [loopExitPostN4_j0_eq, se12_32, se12_40, se12_48, se12_56]
+
 end EvmAsm.Evm64
