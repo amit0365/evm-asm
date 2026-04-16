@@ -799,6 +799,7 @@ theorem divK_loop_body_n1_max_unified_j3_da_spec
     have J3 := divK_loop_body_n1_max_addback_j3_beq_spec sp j_old v5_old v6_old v7_old v10_old v11_old v2_old
       v0 v1 v2 v3 u0 u1 u2 u3 u_top q_old base
       hv_j hv_n1 hv_uhi hv_ulo hv_vtop hv_v0 hv_u0 hv_v1 hv_u1 hv_v2 hv_u2 hv_v3 hv_u3 hv_u4 hv_q hbltu
+      (by sorry : isAddbackCarry2NzN1Max v0 v1 v2 v3 u0 u1 u2 u3 u_top)
     intro_lets at J3
     exact cpsTriple_consequence _ _ _ _ _ _ _
       (fun h hp => hp)
@@ -864,6 +865,7 @@ theorem divK_loop_body_n1_max_unified_j2_da_spec
     have J2 := divK_loop_body_n1_max_addback_j2_beq_spec sp j_old v5_old v6_old v7_old v10_old v11_old v2_old
       v0 v1 v2 v3 u0 u1 u2 u3 u_top q_old base
       hv_j hv_n1 hv_uhi hv_ulo hv_vtop hv_v0 hv_u0 hv_v1 hv_u1 hv_v2 hv_u2 hv_v3 hv_u3 hv_u4 hv_q hbltu
+      (by sorry : isAddbackCarry2NzN1Max v0 v1 v2 v3 u0 u1 u2 u3 u_top)
     intro_lets at J2
     exact cpsTriple_consequence _ _ _ _ _ _ _
       (fun h hp => hp)
@@ -929,6 +931,7 @@ theorem divK_loop_body_n1_max_unified_j1_da_spec
     have J1 := divK_loop_body_n1_max_addback_j1_beq_spec sp j_old v5_old v6_old v7_old v10_old v11_old v2_old
       v0 v1 v2 v3 u0 u1 u2 u3 u_top q_old base
       hv_j hv_n1 hv_uhi hv_ulo hv_vtop hv_v0 hv_u0 hv_v1 hv_u1 hv_v2 hv_u2 hv_v3 hv_u3 hv_u4 hv_q hbltu
+      (by sorry : isAddbackCarry2NzN1Max v0 v1 v2 v3 u0 u1 u2 u3 u_top)
     intro_lets at J1
     exact cpsTriple_consequence _ _ _ _ _ _ _
       (fun h hp => hp)
@@ -995,6 +998,7 @@ theorem divK_loop_body_n1_max_unified_j0_da_spec
     have J0 := divK_loop_body_n1_max_addback_j0_beq_spec sp j_old v5_old v6_old v7_old v10_old v11_old v2_old
       v0 v1 v2 v3 u0 u1 u2 u3 u_top q_old base
       hv_j hv_n1 hv_uhi hv_ulo hv_vtop hv_v0 hv_u0 hv_v1 hv_u1 hv_v2 hv_u2 hv_v3 hv_u3 hv_u4 hv_q hbltu
+      (by sorry : isAddbackCarry2NzN1Max v0 v1 v2 v3 u0 u1 u2 u3 u_top)
     intro_lets at J0
     exact cpsTriple_consequence _ _ _ _ _ _ _
       (fun h hp => hp)
@@ -1075,6 +1079,7 @@ theorem divK_loop_body_n1_call_unified_j3_da_spec
       v0 v1 v2 v3 u0 u1 u2 u3 u_top q_old ret_mem d_mem dlo_mem scratch_un0 base
       hv_j hv_n1 hv_uhi hv_ulo hv_vtop hv_ret hv_d hv_dlo hv_scratch_un0 halign
       hv_v0 hv_u0 hv_v1 hv_u1 hv_v2 hv_u2 hv_v3 hv_u3 hv_u4 hv_q hbltu hborrow
+      (by sorry : isAddbackCarry2NzN1Call v0 v1 v2 v3 u0 u1 u2 u3 u_top)
     intro_lets at J3
     exact cpsTriple_consequence _ _ _ _ _ _ _
       (fun h hp => hp)
@@ -1151,6 +1156,7 @@ theorem divK_loop_body_n1_call_unified_j2_da_spec
       v0 v1 v2 v3 u0 u1 u2 u3 u_top q_old ret_mem d_mem dlo_mem scratch_un0 base
       hv_j hv_n1 hv_uhi hv_ulo hv_vtop hv_ret hv_d hv_dlo hv_scratch_un0 halign
       hv_v0 hv_u0 hv_v1 hv_u1 hv_v2 hv_u2 hv_v3 hv_u3 hv_u4 hv_q hbltu hborrow
+      (by sorry : isAddbackCarry2NzN1Call v0 v1 v2 v3 u0 u1 u2 u3 u_top)
     intro_lets at J2
     exact cpsTriple_consequence _ _ _ _ _ _ _
       (fun h hp => hp)
@@ -1227,6 +1233,7 @@ theorem divK_loop_body_n1_call_unified_j1_da_spec
       v0 v1 v2 v3 u0 u1 u2 u3 u_top q_old ret_mem d_mem dlo_mem scratch_un0 base
       hv_j hv_n1 hv_uhi hv_ulo hv_vtop hv_ret hv_d hv_dlo hv_scratch_un0 halign
       hv_v0 hv_u0 hv_v1 hv_u1 hv_v2 hv_u2 hv_v3 hv_u3 hv_u4 hv_q hbltu hborrow
+      (by sorry : isAddbackCarry2NzN1Call v0 v1 v2 v3 u0 u1 u2 u3 u_top)
     intro_lets at J1
     exact cpsTriple_consequence _ _ _ _ _ _ _
       (fun h hp => hp)
@@ -1304,6 +1311,7 @@ theorem divK_loop_body_n1_call_unified_j0_da_spec
       v0 v1 v2 v3 u0 u1 u2 u3 u_top q_old ret_mem d_mem dlo_mem scratch_un0 base
       hv_j hv_n1 hv_uhi hv_ulo hv_vtop hv_ret hv_d hv_dlo hv_scratch_un0 halign
       hv_v0 hv_u0 hv_v1 hv_u1 hv_v2 hv_u2 hv_v3 hv_u3 hv_u4 hv_q hbltu hborrow
+      (by sorry : isAddbackCarry2NzN1Call v0 v1 v2 v3 u0 u1 u2 u3 u_top)
     intro_lets at J0
     exact cpsTriple_consequence _ _ _ _ _ _ _
       (fun h hp => hp)
