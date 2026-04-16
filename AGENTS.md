@@ -112,6 +112,10 @@ The project includes concrete test cases using `native_decide`:
 - Main branch: `main`
 - Create feature branches for new work
 - Use meaningful commit messages with Co-Authored-By line for AI contributions
+- **PR titles must follow conventional commit format**: `type[(scope)]: subject`
+  (e.g. `refactor: extract shared Shift Compose helpers`,
+  `fix(shr): address canonicalization in sign-fill path`). The PR summary bot
+  flags titles that don't match this format.
 
 ## References
 
@@ -288,6 +292,31 @@ Large composition files (>1000 lines) should be split into independent sub-files
 - `Compose.lean`: lightweight re-export of all sub-files
 
 This enables parallel kernel checking. The split reduced DivMod/Compose from 87s (monolithic) to 55s (critical path through Norm.lean).
+
+### File-size guardrail
+
+The advice above is enforced mechanically by `scripts/check-file-size.sh`, which runs as the first step of the Build CI workflow:
+
+| Path | Hard cap |
+|---|---|
+| `EvmAsm/Evm64/**/Compose/**/*.lean` | 1200 lines (soft cap 1000) |
+| `EvmAsm/Evm64/**/*.lean` (everything else) | 1500 lines |
+| `Program.lean` (any directory) | exempt — concrete bytecode + tests, no proof cost |
+
+A file over cap **must** either be split or carry an opt-out comment in its first 20 lines:
+
+```lean
+-- file-size-exception: <one-line reason, ideally with a tracking issue>
+```
+
+The reason is required so the exception is visible in code review rather than a silent override. Existing oversize files are grandfathered with such comments; new files should not need them.
+
+To run the check locally:
+
+```sh
+scripts/check-file-size.sh           # exit 1 on any unexcused violation
+scripts/check-file-size.sh --report  # always exit 0; print all over-cap files
+```
 
 ## Bundling Postconditions with `let` Bindings
 

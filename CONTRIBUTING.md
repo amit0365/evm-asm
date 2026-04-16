@@ -11,10 +11,11 @@ Start with:
 Before sending work for review:
 
 - Run `lake build` and confirm it succeeds with no errors and no `sorry`.
+- Run `scripts/check-file-size.sh` (or rely on CI) — Lean files under `EvmAsm/Evm64/` have line caps documented in `AGENTS.md` ("File-size guardrail"). Split rather than raise the cap; if a split is genuinely impractical, add a `-- file-size-exception: <reason>` line near the top of the file so reviewers see the exception.
 - Avoid leaving `sorry` in finished work unless the change is explicitly meant to preserve partial progress.
 - When adding a new `.lean` file, make sure it is imported so that it is included in the default build target.
 - Do not add `set_option maxHeartbeats` or `set_option maxRecDepth` to files. These are configured globally in `lakefile.toml`. If a proof times out, restructure it (split into smaller lemmas, add intermediate `have` bindings) instead of raising limits. Timeouts are usually caused by unification issues, not insufficient heartbeats.
-- Do not use `native_decide` or `bv_decide`. All proofs must be kernel-checkable. Use `decide` for concrete decidable propositions, or `omega`/`simp`/`ext` for bitvector reasoning.
+- Do not use `native_decide` or `bv_decide`. All proofs must be kernel-checkable. `native_decide` reflects through compiled code, and `bv_decide` dispatches to an external SAT solver and reflects the UNSAT certificate — neither is verified by the kernel. `decide`, `omega`, `bv_omega`, `simp`, and `ext` are all fine (`bv_omega` is `omega` extended with BitVec normalization and is kernel-checkable). Prefer `decide` for concrete decidable propositions.
 
 ## Spec and Proof Guidelines
 
