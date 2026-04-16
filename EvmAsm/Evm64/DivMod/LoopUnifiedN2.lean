@@ -891,6 +891,7 @@ theorem divK_loop_n2_max_iter10_da_spec (bltu_1 bltu_0 : Bool)
     v0 v1 v2 v3 u0 u1 u2 u3 u_top q2_old base
     hv_j hv_n1 hv_uhi_2 hv_ulo_2 hv_vtop hv_v0 hv_u0_2 hv_v1 hv_u1_2 hv_v2 hv_u2_2 hv_v3 hv_u3_2 hv_u4_2 hv_q2
     hbltu_2
+    (by sorry : isAddbackCarry2NzN2Max v0 v1 v2 v3 u0 u1 u2 u3 u_top)
   intro_lets at J2
   have J2f := cpsTriple_frame_left _ _ _ _ _
     (((u_base_1 + signExtend12 0) ↦ₘ u0_orig_1) ** (q_addr_1 ↦ₘ q1_old) **
@@ -1007,6 +1008,7 @@ theorem divK_loop_n2_call_iter10_da_spec (bltu_1 bltu_0 : Bool)
     hv_j hv_n1 hv_uhi_2 hv_ulo_2 hv_vtop hv_ret hv_d hv_dlo hv_scratch_un0 halign
     hv_v0 hv_u0_2 hv_v1 hv_u1_2 hv_v2 hv_u2_2 hv_v3 hv_u3_2 hv_u4_2 hv_q2
     hbltu_2
+    (by sorry : isAddbackCarry2NzN2Call v0 v1 v2 v3 u0 u1 u2 u3 u_top)
   intro_lets at J2
   have J2f := cpsTriple_frame_left _ _ _ _ _
     (((u_base_1 + signExtend12 0) ↦ₘ u0_orig_1) ** (q_addr_1 ↦ₘ q1_old) **
