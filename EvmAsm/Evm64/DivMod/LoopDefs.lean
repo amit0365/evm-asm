@@ -1522,21 +1522,52 @@ def loopIterPostN1_da (bltu : Bool) (sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top : W
   | true => loopIterPostN1Call_da sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top
   | false => loopIterPostN1Max_da sp j v0 v1 v2 v3 u0 u1 u2 u3 u_top ** empAssertion
 
-def loopIterPostN2Max_da (sp j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : Assertion :=
-  let q_hat : Word := signExtend12 4095
-  let c3 := (mulsubN4 q_hat v0 v1 v2 v3 u0 u1 u2 u3).2.2.2.2
-  if BitVec.ult u_top c3 then
-    loopBodyAddbackBeqPost (2 : Word) sp j q_hat v0 v1 v2 v3 u0 u1 u2 u3 u_top
-  else
-    loopBodySkipPost (2 : Word) sp j q_hat v0 v1 v2 v3 u0 u1 u2 u3 u_top
+@[irreducible] def loopIterPostN2Max_da (sp j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : Assertion :=
+  let r := iterN2Max_da v0 v1 v2 v3 u0 u1 u2 u3 u_top
+  let c3 := (mulsubN4 (signExtend12 4095 : Word) v0 v1 v2 v3 u0 u1 u2 u3).2.2.2.2
+  loopExitPostN2 sp j r.1 c3 r.2.1 r.2.2.1 r.2.2.2.1 r.2.2.2.2.1 r.2.2.2.2.2 v0 v1 v2 v3
 
-def loopIterPostN2Call_da (sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : Assertion :=
+theorem loopIterPostN2Max_da_addback (sp j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word)
+    (hb : BitVec.ult u_top (mulsubN4_c3 (signExtend12 4095 : Word) v0 v1 v2 v3 u0 u1 u2 u3)) :
+    loopBodyN2AddbackBeqPost sp j (signExtend12 4095 : Word) v0 v1 v2 v3 u0 u1 u2 u3 u_top =
+    loopIterPostN2Max_da sp j v0 v1 v2 v3 u0 u1 u2 u3 u_top := by
+  delta loopIterPostN2Max_da iterN2Max_da iterWithDoubleAddback
+        loopBodyN2AddbackBeqPost loopBodyAddbackBeqPost loopExitPostN2 loopExitPost
+  unfold mulsubN4_c3 at hb; simp only [if_pos hb]; split <;> rfl
+
+theorem loopIterPostN2Max_da_skip (sp j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word)
+    (hb : ¬BitVec.ult u_top (mulsubN4_c3 (signExtend12 4095 : Word) v0 v1 v2 v3 u0 u1 u2 u3)) :
+    loopBodyN2SkipPost sp j (signExtend12 4095 : Word) v0 v1 v2 v3 u0 u1 u2 u3 u_top =
+    loopIterPostN2Max_da sp j v0 v1 v2 v3 u0 u1 u2 u3 u_top := by
+  delta loopIterPostN2Max_da iterN2Max_da iterWithDoubleAddback
+        loopBodyN2SkipPost loopBodySkipPost loopExitPostN2 loopExitPost
+  unfold mulsubN4_c3 at hb; simp only [if_neg hb]
+
+@[irreducible] def loopIterPostN2Call_da (sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : Assertion :=
+  let r := iterN2Call_da v0 v1 v2 v3 u0 u1 u2 u3 u_top
   let q_hat := div128Quot u2 u1 v1
   let c3 := (mulsubN4 q_hat v0 v1 v2 v3 u0 u1 u2 u3).2.2.2.2
-  if BitVec.ult u_top c3 then
-    loopBodyN2CallAddbackBeqPostJ sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top
-  else
-    loopBodyN2CallSkipPostJ sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top
+  loopExitPostN2 sp j r.1 c3 r.2.1 r.2.2.1 r.2.2.2.1 r.2.2.2.2.1 r.2.2.2.2.2 v0 v1 v2 v3 **
+  (sp + signExtend12 3968 ↦ₘ (base + 516)) **
+  (sp + signExtend12 3960 ↦ₘ v1) **
+  (sp + signExtend12 3952 ↦ₘ div128DLo v1) **
+  (sp + signExtend12 3944 ↦ₘ div128Un0 u1)
+
+theorem loopIterPostN2Call_da_addback (sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word)
+    (hb : BitVec.ult u_top (mulsubN4_c3 (div128Quot u2 u1 v1) v0 v1 v2 v3 u0 u1 u2 u3)) :
+    loopBodyN2CallAddbackBeqPostJ sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top =
+    loopIterPostN2Call_da sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top := by
+  delta loopIterPostN2Call_da iterN2Call_da iterWithDoubleAddback
+        loopBodyN2CallAddbackBeqPostJ loopBodyN2AddbackBeqPost loopBodyAddbackBeqPost loopExitPostN2 loopExitPost
+  unfold mulsubN4_c3 at hb; simp only [if_pos hb]; split <;> rfl
+
+theorem loopIterPostN2Call_da_skip (sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word)
+    (hb : ¬BitVec.ult u_top (mulsubN4_c3 (div128Quot u2 u1 v1) v0 v1 v2 v3 u0 u1 u2 u3)) :
+    loopBodyN2CallSkipPostJ sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top =
+    loopIterPostN2Call_da sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top := by
+  delta loopIterPostN2Call_da iterN2Call_da iterWithDoubleAddback
+        loopBodyN2CallSkipPostJ loopBodyN2SkipPost loopBodySkipPost loopExitPostN2 loopExitPost
+  unfold mulsubN4_c3 at hb; simp only [if_neg hb]
 
 def loopIterPostN2_da (bltu : Bool) (sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : Assertion :=
   match bltu with
