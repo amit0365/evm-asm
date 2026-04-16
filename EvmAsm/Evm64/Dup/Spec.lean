@@ -38,7 +38,6 @@ theorem dup_pair_spec (sp : Word)
 -- Low-level generic DUP spec
 -- ============================================================================
 
-set_option maxHeartbeats 6400000 in
 /-- Generic DUPn spec (low level): copies 4 dword limbs from src (at nsp+n*32) to dst (at nsp).
     Requires 1 ≤ n ≤ 16 (valid EVM DUP range). -/
 theorem evm_dup_spec (nsp base : Word)
@@ -119,7 +118,6 @@ theorem evm_dup_spec (nsp base : Word)
 -- EvmWord-level DUP spec
 -- ============================================================================
 
-set_option maxHeartbeats 3200000 in
 /-- DUPn spec at evmWordIs level: copies the nth stack element to new top position. -/
 theorem evm_dup_evmword_spec (nsp base : Word)
     (n : Nat) (hn1 : 1 ≤ n) (hn16 : n ≤ 16)
@@ -156,7 +154,6 @@ theorem evm_dup_evmword_spec (nsp base : Word)
 -- Stack-level DUP spec
 -- ============================================================================
 
-set_option maxHeartbeats 3200000 in
 /-- DUPn stack spec: copies the (n-1)-th element (0-indexed) from the stack
     to a new top position, leaving the rest unchanged. -/
 theorem evm_dup_stack_spec (nsp base : Word)

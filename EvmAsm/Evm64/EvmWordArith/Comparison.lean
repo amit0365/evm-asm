@@ -16,7 +16,6 @@ namespace EvmWord
 -- LT correctness: borrow chain = unsigned less-than
 -- ============================================================================
 
-set_option maxHeartbeats 400000 in
 theorem lt_borrow_chain_correct (a b : EvmWord) :
     let a0 := a.getLimb 0; let b0 := b.getLimb 0
     let a1 := a.getLimb 1; let b1 := b.getLimb 1

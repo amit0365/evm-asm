@@ -40,7 +40,7 @@ theorem swap_limb_spec (sp : Word)
 -- Low-level generic SWAP spec
 -- ============================================================================
 
-set_option maxHeartbeats 6400000 in
+set_option maxHeartbeats 800000 in
 /-- Generic SWAPn spec (low level): swaps 4 dword limbs at sp (top) with 4 at sp+n*32 (nth).
     Requires 1 ≤ n ≤ 16 (valid EVM SWAP range). -/
 theorem evm_swap_spec (sp base : Word)
