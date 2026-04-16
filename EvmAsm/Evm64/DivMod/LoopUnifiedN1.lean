@@ -1189,6 +1189,7 @@ theorem divK_loop_n1_iter10_unified_da_spec (bltu_1 bltu_0 : Bool)
       v0 v1 v2 v3 u0 u1 u2 u3 u_top q1_old base
       hv_j hv_n1 hv_uhi_1 hv_ulo_1 hv_vtop hv_v0 hv_u0_1 hv_v1 hv_u1_1 hv_v2 hv_u2_1 hv_v3 hv_u3_1 hv_u4_1 hv_q1
       hbltu_1'
+      (by sorry : isAddbackCarry2NzN1Max v0 v1 v2 v3 u0 u1 u2 u3 u_top)
     intro_lets at J1
     -- Frame j=1 with u0_orig, q0_old, and scratch
     have J1f := cpsTriple_frame_left _ _ _ _ _
@@ -1220,6 +1221,7 @@ theorem divK_loop_n1_iter10_unified_da_spec (bltu_1 bltu_0 : Bool)
       q0_old base
       hv_j hv_n1 hv_uhi_0 hv_ulo_0 hv_vtop hv_v0 hv_u0_0 hv_v1 hv_u1_0 hv_v2 hv_u2_0 hv_v3 hv_u3_0 hv_u4_0 hv_q0
       hbltu_0'
+      (by sorry)
     intro_lets at J0
     -- Frame j=0 with j=1's carried atoms and scratch
     have J0f := cpsTriple_frame_left _ _ _ _ _
@@ -1262,6 +1264,7 @@ theorem divK_loop_n1_iter10_unified_da_spec (bltu_1 bltu_0 : Bool)
       v0 v1 v2 v3 u0 u1 u2 u3 u_top q1_old base
       hv_j hv_n1 hv_uhi_1 hv_ulo_1 hv_vtop hv_v0 hv_u0_1 hv_v1 hv_u1_1 hv_v2 hv_u2_1 hv_v3 hv_u3_1 hv_u4_1 hv_q1
       hbltu_1'
+      (by sorry : isAddbackCarry2NzN1Max v0 v1 v2 v3 u0 u1 u2 u3 u_top)
     intro_lets at J1
     have J1f := cpsTriple_frame_left _ _ _ _ _
       (((u_base_0 + signExtend12 0) ↦ₘ u0_orig) ** (q_addr_0 ↦ₘ q0_old) **
@@ -1293,6 +1296,7 @@ theorem divK_loop_n1_iter10_unified_da_spec (bltu_1 bltu_0 : Bool)
       hv_j hv_n1 hv_uhi_0 hv_ulo_0 hv_vtop hv_ret hv_d hv_dlo hv_scratch_un0 halign
       hv_v0 hv_u0_0 hv_v1 hv_u1_0 hv_v2 hv_u2_0 hv_v3 hv_u3_0 hv_u4_0 hv_q0
       hbltu_0'
+      (by sorry)
     intro_lets at J0
     -- Frame j=0 with j=1's carried atoms only
     have J0f := cpsTriple_frame_left _ _ _ _ _
@@ -1331,6 +1335,7 @@ theorem divK_loop_n1_iter10_unified_da_spec (bltu_1 bltu_0 : Bool)
       hv_j hv_n1 hv_uhi_1 hv_ulo_1 hv_vtop hv_ret hv_d hv_dlo hv_scratch_un0 halign
       hv_v0 hv_u0_1 hv_v1 hv_u1_1 hv_v2 hv_u2_1 hv_v3 hv_u3_1 hv_u4_1 hv_q1
       hbltu_1'
+      (by sorry : isAddbackCarry2NzN1Call v0 v1 v2 v3 u0 u1 u2 u3 u_top)
     intro_lets at J1
     -- Frame j=1 with u0_orig, q0_old only (scratch is in call spec)
     have J1f := cpsTriple_frame_left _ _ _ _ _
@@ -1360,6 +1365,7 @@ theorem divK_loop_n1_iter10_unified_da_spec (bltu_1 bltu_0 : Bool)
       q0_old base
       hv_j hv_n1 hv_uhi_0 hv_ulo_0 hv_vtop hv_v0 hv_u0_0 hv_v1 hv_u1_0 hv_v2 hv_u2_0 hv_v3 hv_u3_0 hv_u4_0 hv_q0
       hbltu_0'
+      (by sorry)
     intro_lets at J0
     -- Frame j=0 with j=1's carried atoms + j=1 scratch (persists from call)
     have J0f := cpsTriple_frame_left _ _ _ _ _
@@ -1402,6 +1408,7 @@ theorem divK_loop_n1_iter10_unified_da_spec (bltu_1 bltu_0 : Bool)
       hv_j hv_n1 hv_uhi_1 hv_ulo_1 hv_vtop hv_ret hv_d hv_dlo hv_scratch_un0 halign
       hv_v0 hv_u0_1 hv_v1 hv_u1_1 hv_v2 hv_u2_1 hv_v3 hv_u3_1 hv_u4_1 hv_q1
       hbltu_1'
+      (by sorry : isAddbackCarry2NzN1Call v0 v1 v2 v3 u0 u1 u2 u3 u_top)
     intro_lets at J1
     -- Frame j=1 with u0_orig, q0_old only
     have J1f := cpsTriple_frame_left _ _ _ _ _
@@ -1433,6 +1440,7 @@ theorem divK_loop_n1_iter10_unified_da_spec (bltu_1 bltu_0 : Bool)
       hv_j hv_n1 hv_uhi_0 hv_ulo_0 hv_vtop hv_ret hv_d hv_dlo hv_scratch_un0 halign
       hv_v0 hv_u0_0 hv_v1 hv_u1_0 hv_v2 hv_u2_0 hv_v3 hv_u3_0 hv_u4_0 hv_q0
       hbltu_0'
+      (by sorry)
     intro_lets at J0
     -- Frame j=0 with j=1's carried atoms only
     have J0f := cpsTriple_frame_left _ _ _ _ _
@@ -1536,6 +1544,7 @@ theorem divK_loop_n1_max_iter10_da_spec (bltu_1 bltu_0 : Bool)
     v0 v1 v2 v3 u0 u1 u2 u3 u_top q2_old base
     hv_j hv_n1 hv_uhi_2 hv_ulo_2 hv_vtop hv_v0 hv_u0_2 hv_v1 hv_u1_2 hv_v2 hv_u2_2 hv_v3 hv_u3_2 hv_u4_2 hv_q2
     hbltu_2
+    (by sorry : isAddbackCarry2NzN1Max v0 v1 v2 v3 u0 u1 u2 u3 u_top)
   intro_lets at J2
   -- Frame j=2 with iter10 extra atoms and scratch
   have J2f := cpsTriple_frame_left _ _ _ _ _
@@ -1658,6 +1667,7 @@ theorem divK_loop_n1_call_iter10_da_spec (bltu_1 bltu_0 : Bool)
     hv_j hv_n1 hv_uhi_2 hv_ulo_2 hv_vtop hv_ret hv_d hv_dlo hv_scratch_un0 halign
     hv_v0 hv_u0_2 hv_v1 hv_u1_2 hv_v2 hv_u2_2 hv_v3 hv_u3_2 hv_u4_2 hv_q2
     hbltu_2
+    (by sorry : isAddbackCarry2NzN1Call v0 v1 v2 v3 u0 u1 u2 u3 u_top)
   intro_lets at J2
   -- Frame j=2 with iter10 extra atoms only (scratch consumed by call)
   have J2f := cpsTriple_frame_left _ _ _ _ _
@@ -1894,6 +1904,7 @@ theorem divK_loop_n1_max_iter210_da_spec (bltu_2 bltu_1 bltu_0 : Bool)
     v0 v1 v2 v3 u0 u1 u2 u3 u_top q3_old base
     hv_j hv_n1 hv_uhi_3 hv_ulo_3 hv_vtop hv_v0 hv_u0_3 hv_v1 hv_u1_3 hv_v2 hv_u2_3 hv_v3 hv_u3_3 hv_u4_3 hv_q3
     hbltu_3
+    (by sorry : isAddbackCarry2NzN1Max v0 v1 v2 v3 u0 u1 u2 u3 u_top)
   intro_lets at J3
   -- Frame j=3 with iter210 extra atoms and scratch
   have J3f := cpsTriple_frame_left _ _ _ _ _
@@ -2051,6 +2062,7 @@ theorem divK_loop_n1_call_iter210_da_spec (bltu_2 bltu_1 bltu_0 : Bool)
     hv_j hv_n1 hv_uhi_3 hv_ulo_3 hv_vtop hv_ret hv_d hv_dlo hv_scratch_un0 halign
     hv_v0 hv_u0_3 hv_v1 hv_u1_3 hv_v2 hv_u2_3 hv_v3 hv_u3_3 hv_u4_3 hv_q3
     hbltu_3
+    (by sorry : isAddbackCarry2NzN1Call v0 v1 v2 v3 u0 u1 u2 u3 u_top)
   intro_lets at J3
   -- Frame j=3 with iter210 extra atoms only (scratch consumed by call)
   have J3f := cpsTriple_frame_left _ _ _ _ _
