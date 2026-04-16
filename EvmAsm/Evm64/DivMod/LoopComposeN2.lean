@@ -999,8 +999,7 @@ theorem divK_loop_n2_max_max_da_spec
       (loopN2Iter10Pre sp j_old v5_old v6_old v7_old v10_old v11_old v2_old
         v0 v1 v2 v3 u0 u1 u2 u3 u_top u0_orig q1_old q0_old)
       (loopN2MaxPost_da sp v0 v1 v2 v3 u0 u1 u2 u3 u_top u0_orig) := by
-  sorry
-/-  delta loopN2Iter10Pre; simp only []
+  delta loopN2Iter10Pre; simp only []
   let u_base_1 := sp + signExtend12 4056 - (1 : Word) <<< (3 : BitVec 6).toNat
   let u_base_0 := sp + signExtend12 4056 - (0 : Word) <<< (3 : BitVec 6).toNat
   let q_addr_1 := sp + signExtend12 4088 - (1 : Word) <<< (3 : BitVec 6).toNat
@@ -1048,37 +1047,12 @@ theorem divK_loop_n2_max_max_da_spec
   have full := cpsTriple_seq_with_perm_same_cr _ _ _ _ _ _ _ _
     (fun h hp => by
       delta loopIterPostN2Max_da loopExitPostN2 loopExitPost at hp
-      by_cases hb : BitVec.ult u_top (mulsubN4 (signExtend12 4095 : Word) v0 v1 v2 v3 u0 u1 u2 u3).2.2.2.2
-      · simp only [if_pos hb] at hp
-        delta loopBodyAddbackBeqPost loopBodyN2AddbackBeqPost loopExitPostN2 loopExitPost at hp
-        by_cases hc : addbackN4_carry
-            (mulsubN4 (signExtend12 4095 : Word) v0 v1 v2 v3 u0 u1 u2 u3).1
-            (mulsubN4 (signExtend12 4095 : Word) v0 v1 v2 v3 u0 u1 u2 u3).2.1
-            (mulsubN4 (signExtend12 4095 : Word) v0 v1 v2 v3 u0 u1 u2 u3).2.2.1
-            (mulsubN4 (signExtend12 4095 : Word) v0 v1 v2 v3 u0 u1 u2 u3).2.2.2.1
-            v0 v1 v2 v3 = 0
-        · simp only [if_pos hc] at hp
-          simp only [iterN2Max_da, iterWithDoubleAddback, if_pos hb, if_pos hc] at hp ⊢
-          have hj' : (1 : Word) + signExtend12 4095 = (0 : Word) := by decide
-          rw [hj', u_j1_0_eq_j0_4088 sp, u_j1_4088_eq_j0_4080 sp,
-              u_j1_4080_eq_j0_4072 sp, u_j1_4072_eq_j0_4064 sp] at hp
-          rw [sepConj_assoc'] at hp
-          xperm_hyp hp
-        · simp only [if_neg hc] at hp
-          simp only [iterN2Max_da, iterWithDoubleAddback, if_pos hb, if_neg hc] at hp ⊢
-          have hj' : (1 : Word) + signExtend12 4095 = (0 : Word) := by decide
-          rw [hj', u_j1_0_eq_j0_4088 sp, u_j1_4088_eq_j0_4080 sp,
-              u_j1_4080_eq_j0_4072 sp, u_j1_4072_eq_j0_4064 sp] at hp
-          rw [sepConj_assoc'] at hp
-          xperm_hyp hp
-      · simp only [if_neg hb] at hp
-        delta loopBodySkipPost loopBodyN2SkipPost loopExitPostN2 loopExitPost at hp
-        simp only [iterN2Max_da, iterWithDoubleAddback, if_neg hb] at hp ⊢
-        have hj' : (1 : Word) + signExtend12 4095 = (0 : Word) := by decide
-        rw [hj', u_j1_0_eq_j0_4088 sp, u_j1_4088_eq_j0_4080 sp,
-            u_j1_4080_eq_j0_4072 sp, u_j1_4072_eq_j0_4064 sp] at hp
-        rw [sepConj_assoc'] at hp
-        xperm_hyp hp)
+      simp only [] at hp ⊢
+      have hj' : (1 : Word) + signExtend12 4095 = (0 : Word) := by decide
+      rw [hj', u_j1_0_eq_j0_4088 sp, u_j1_4088_eq_j0_4080 sp,
+          u_j1_4080_eq_j0_4072 sp, u_j1_4072_eq_j0_4064 sp] at hp
+      rw [sepConj_assoc'] at hp
+      xperm_hyp hp)
     J1f J0f
   -- 5. Clean up postcondition
   exact cpsTriple_consequence _ _ _ _ _ _ _
@@ -1087,7 +1061,6 @@ theorem divK_loop_n2_max_max_da_spec
       delta loopN2MaxPost_da
       exact hp)
     full
--/
 
 -- ============================================================================
 -- Double-addback (_da) two-iteration call×call composition for n=2
@@ -1131,8 +1104,7 @@ theorem divK_loop_n2_call_call_da_spec
         v0 v1 v2 v3 u0 u1 u2 u3 u_top u0_orig q1_old q0_old
         ret_mem d_mem dlo_mem scratch_un0)
       (loopN2CallCallPost_da sp base v0 v1 v2 v3 u0 u1 u2 u3 u_top u0_orig) := by
-  sorry
-/-  delta loopN2Iter10PreWithScratch loopN2Iter10Pre; simp only []
+  delta loopN2Iter10PreWithScratch loopN2Iter10Pre; simp only []
   let u_base_1 := sp + signExtend12 4056 - (1 : Word) <<< (3 : BitVec 6).toNat
   let u_base_0 := sp + signExtend12 4056 - (0 : Word) <<< (3 : BitVec 6).toNat
   let q_addr_1 := sp + signExtend12 4088 - (1 : Word) <<< (3 : BitVec 6).toNat
@@ -1184,37 +1156,12 @@ theorem divK_loop_n2_call_call_da_spec
   have full := cpsTriple_seq_with_perm_same_cr _ _ _ _ _ _ _ _
     (fun h hp => by
       delta loopIterPostN2Call_da loopExitPostN2 loopExitPost at hp
-      by_cases hb : BitVec.ult u_top (mulsubN4 (div128Quot u2 u1 v1 : Word) v0 v1 v2 v3 u0 u1 u2 u3).2.2.2.2
-      · simp only [if_pos hb] at hp
-        delta loopBodyN2CallAddbackBeqPostJ loopBodyN2AddbackBeqPost loopBodyAddbackBeqPost loopExitPostN2 loopExitPost at hp
-        by_cases hc : addbackN4_carry
-            (mulsubN4 (div128Quot u2 u1 v1 : Word) v0 v1 v2 v3 u0 u1 u2 u3).1
-            (mulsubN4 (div128Quot u2 u1 v1 : Word) v0 v1 v2 v3 u0 u1 u2 u3).2.1
-            (mulsubN4 (div128Quot u2 u1 v1 : Word) v0 v1 v2 v3 u0 u1 u2 u3).2.2.1
-            (mulsubN4 (div128Quot u2 u1 v1 : Word) v0 v1 v2 v3 u0 u1 u2 u3).2.2.2.1
-            v0 v1 v2 v3 = 0
-        · simp only [if_pos hc] at hp
-          simp only [iterN2Call_da, iterWithDoubleAddback, if_pos hb, if_pos hc] at hp ⊢
-          have hj' : (1 : Word) + signExtend12 4095 = (0 : Word) := by decide
-          rw [hj', u_j1_0_eq_j0_4088 sp, u_j1_4088_eq_j0_4080 sp,
-              u_j1_4080_eq_j0_4072 sp, u_j1_4072_eq_j0_4064 sp] at hp
-          rw [sepConj_assoc'] at hp
-          xperm_hyp hp
-        · simp only [if_neg hc] at hp
-          simp only [iterN2Call_da, iterWithDoubleAddback, if_pos hb, if_neg hc] at hp ⊢
-          have hj' : (1 : Word) + signExtend12 4095 = (0 : Word) := by decide
-          rw [hj', u_j1_0_eq_j0_4088 sp, u_j1_4088_eq_j0_4080 sp,
-              u_j1_4080_eq_j0_4072 sp, u_j1_4072_eq_j0_4064 sp] at hp
-          rw [sepConj_assoc'] at hp
-          xperm_hyp hp
-      · simp only [if_neg hb] at hp
-        delta loopBodyN2CallSkipPostJ loopBodyN2SkipPost loopBodySkipPost loopExitPostN2 loopExitPost at hp
-        simp only [iterN2Call_da, iterWithDoubleAddback, if_neg hb] at hp ⊢
-        have hj' : (1 : Word) + signExtend12 4095 = (0 : Word) := by decide
-        rw [hj', u_j1_0_eq_j0_4088 sp, u_j1_4088_eq_j0_4080 sp,
-            u_j1_4080_eq_j0_4072 sp, u_j1_4072_eq_j0_4064 sp] at hp
-        rw [sepConj_assoc'] at hp
-        xperm_hyp hp)
+      simp only [] at hp ⊢
+      have hj' : (1 : Word) + signExtend12 4095 = (0 : Word) := by decide
+      rw [hj', u_j1_0_eq_j0_4088 sp, u_j1_4088_eq_j0_4080 sp,
+          u_j1_4080_eq_j0_4072 sp, u_j1_4072_eq_j0_4064 sp] at hp
+      rw [sepConj_assoc'] at hp
+      xperm_hyp hp)
     J1f J0f
   -- 5. Clean up postcondition
   exact cpsTriple_consequence _ _ _ _ _ _ _
@@ -1223,7 +1170,6 @@ theorem divK_loop_n2_call_call_da_spec
       delta loopN2CallCallPost_da
       exact hp)
     full
--/
 
 -- ============================================================================
 -- Double-addback (_da) two-iteration max×call composition for n=2
@@ -1270,8 +1216,7 @@ theorem divK_loop_n2_max_call_da_spec
         v0 v1 v2 v3 u0 u1 u2 u3 u_top u0_orig q1_old q0_old
         ret_mem d_mem dlo_mem scratch_un0)
       (loopN2MaxCallPost_da sp base v0 v1 v2 v3 u0 u1 u2 u3 u_top u0_orig) := by
-  sorry
-/-  delta loopN2Iter10PreWithScratch loopN2Iter10Pre; simp only []
+  delta loopN2Iter10PreWithScratch loopN2Iter10Pre; simp only []
   let u_base_1 := sp + signExtend12 4056 - (1 : Word) <<< (3 : BitVec 6).toNat
   let u_base_0 := sp + signExtend12 4056 - (0 : Word) <<< (3 : BitVec 6).toNat
   let q_addr_1 := sp + signExtend12 4088 - (1 : Word) <<< (3 : BitVec 6).toNat
@@ -1324,37 +1269,12 @@ theorem divK_loop_n2_max_call_da_spec
   have full := cpsTriple_seq_with_perm_same_cr _ _ _ _ _ _ _ _
     (fun h hp => by
       delta loopIterPostN2Max_da loopExitPostN2 loopExitPost at hp
-      by_cases hb : BitVec.ult u_top (mulsubN4 (signExtend12 4095 : Word) v0 v1 v2 v3 u0 u1 u2 u3).2.2.2.2
-      · simp only [if_pos hb] at hp
-        delta loopBodyAddbackBeqPost loopBodyN2AddbackBeqPost loopExitPostN2 loopExitPost at hp
-        by_cases hc : addbackN4_carry
-            (mulsubN4 (signExtend12 4095 : Word) v0 v1 v2 v3 u0 u1 u2 u3).1
-            (mulsubN4 (signExtend12 4095 : Word) v0 v1 v2 v3 u0 u1 u2 u3).2.1
-            (mulsubN4 (signExtend12 4095 : Word) v0 v1 v2 v3 u0 u1 u2 u3).2.2.1
-            (mulsubN4 (signExtend12 4095 : Word) v0 v1 v2 v3 u0 u1 u2 u3).2.2.2.1
-            v0 v1 v2 v3 = 0
-        · simp only [if_pos hc] at hp
-          simp only [iterN2Max_da, iterWithDoubleAddback, if_pos hb, if_pos hc] at hp ⊢
-          have hj' : (1 : Word) + signExtend12 4095 = (0 : Word) := by decide
-          rw [hj', u_j1_0_eq_j0_4088 sp, u_j1_4088_eq_j0_4080 sp,
-              u_j1_4080_eq_j0_4072 sp, u_j1_4072_eq_j0_4064 sp] at hp
-          rw [sepConj_assoc'] at hp
-          xperm_hyp hp
-        · simp only [if_neg hc] at hp
-          simp only [iterN2Max_da, iterWithDoubleAddback, if_pos hb, if_neg hc] at hp ⊢
-          have hj' : (1 : Word) + signExtend12 4095 = (0 : Word) := by decide
-          rw [hj', u_j1_0_eq_j0_4088 sp, u_j1_4088_eq_j0_4080 sp,
-              u_j1_4080_eq_j0_4072 sp, u_j1_4072_eq_j0_4064 sp] at hp
-          rw [sepConj_assoc'] at hp
-          xperm_hyp hp
-      · simp only [if_neg hb] at hp
-        delta loopBodySkipPost loopBodyN2SkipPost loopExitPostN2 loopExitPost at hp
-        simp only [iterN2Max_da, iterWithDoubleAddback, if_neg hb] at hp ⊢
-        have hj' : (1 : Word) + signExtend12 4095 = (0 : Word) := by decide
-        rw [hj', u_j1_0_eq_j0_4088 sp, u_j1_4088_eq_j0_4080 sp,
-            u_j1_4080_eq_j0_4072 sp, u_j1_4072_eq_j0_4064 sp] at hp
-        rw [sepConj_assoc'] at hp
-        xperm_hyp hp)
+      simp only [] at hp ⊢
+      have hj' : (1 : Word) + signExtend12 4095 = (0 : Word) := by decide
+      rw [hj', u_j1_0_eq_j0_4088 sp, u_j1_4088_eq_j0_4080 sp,
+          u_j1_4080_eq_j0_4072 sp, u_j1_4072_eq_j0_4064 sp] at hp
+      rw [sepConj_assoc'] at hp
+      xperm_hyp hp)
     J1f J0f
   -- 5. Clean up postcondition
   exact cpsTriple_consequence _ _ _ _ _ _ _
@@ -1363,7 +1283,6 @@ theorem divK_loop_n2_max_call_da_spec
       delta loopN2MaxCallPost_da
       exact hp)
     full
--/
 
 -- ============================================================================
 -- Double-addback (_da) two-iteration call×max composition for n=2
@@ -1410,8 +1329,7 @@ theorem divK_loop_n2_call_max_da_spec
         v0 v1 v2 v3 u0 u1 u2 u3 u_top u0_orig q1_old q0_old
         ret_mem d_mem dlo_mem scratch_un0)
       (loopN2CallMaxPost_da sp base v0 v1 v2 v3 u0 u1 u2 u3 u_top u0_orig) := by
-  sorry
-/-  delta loopN2Iter10PreWithScratch loopN2Iter10Pre; simp only []
+  delta loopN2Iter10PreWithScratch loopN2Iter10Pre; simp only []
   let u_base_1 := sp + signExtend12 4056 - (1 : Word) <<< (3 : BitVec 6).toNat
   let u_base_0 := sp + signExtend12 4056 - (0 : Word) <<< (3 : BitVec 6).toNat
   let q_addr_1 := sp + signExtend12 4088 - (1 : Word) <<< (3 : BitVec 6).toNat
@@ -1464,37 +1382,12 @@ theorem divK_loop_n2_call_max_da_spec
   have full := cpsTriple_seq_with_perm_same_cr _ _ _ _ _ _ _ _
     (fun h hp => by
       delta loopIterPostN2Call_da loopExitPostN2 loopExitPost at hp
-      by_cases hb : BitVec.ult u_top (mulsubN4 (div128Quot u2 u1 v1 : Word) v0 v1 v2 v3 u0 u1 u2 u3).2.2.2.2
-      · simp only [if_pos hb] at hp
-        delta loopBodyN2CallAddbackBeqPostJ loopBodyN2AddbackBeqPost loopBodyAddbackBeqPost loopExitPostN2 loopExitPost at hp
-        by_cases hc : addbackN4_carry
-            (mulsubN4 (div128Quot u2 u1 v1 : Word) v0 v1 v2 v3 u0 u1 u2 u3).1
-            (mulsubN4 (div128Quot u2 u1 v1 : Word) v0 v1 v2 v3 u0 u1 u2 u3).2.1
-            (mulsubN4 (div128Quot u2 u1 v1 : Word) v0 v1 v2 v3 u0 u1 u2 u3).2.2.1
-            (mulsubN4 (div128Quot u2 u1 v1 : Word) v0 v1 v2 v3 u0 u1 u2 u3).2.2.2.1
-            v0 v1 v2 v3 = 0
-        · simp only [if_pos hc] at hp
-          simp only [iterN2Call_da, iterWithDoubleAddback, if_pos hb, if_pos hc] at hp ⊢
-          have hj' : (1 : Word) + signExtend12 4095 = (0 : Word) := by decide
-          rw [hj', u_j1_0_eq_j0_4088 sp, u_j1_4088_eq_j0_4080 sp,
-              u_j1_4080_eq_j0_4072 sp, u_j1_4072_eq_j0_4064 sp] at hp
-          rw [sepConj_assoc'] at hp
-          xperm_hyp hp
-        · simp only [if_neg hc] at hp
-          simp only [iterN2Call_da, iterWithDoubleAddback, if_pos hb, if_neg hc] at hp ⊢
-          have hj' : (1 : Word) + signExtend12 4095 = (0 : Word) := by decide
-          rw [hj', u_j1_0_eq_j0_4088 sp, u_j1_4088_eq_j0_4080 sp,
-              u_j1_4080_eq_j0_4072 sp, u_j1_4072_eq_j0_4064 sp] at hp
-          rw [sepConj_assoc'] at hp
-          xperm_hyp hp
-      · simp only [if_neg hb] at hp
-        delta loopBodyN2CallSkipPostJ loopBodyN2SkipPost loopBodySkipPost loopExitPostN2 loopExitPost at hp
-        simp only [iterN2Call_da, iterWithDoubleAddback, if_neg hb] at hp ⊢
-        have hj' : (1 : Word) + signExtend12 4095 = (0 : Word) := by decide
-        rw [hj', u_j1_0_eq_j0_4088 sp, u_j1_4088_eq_j0_4080 sp,
-            u_j1_4080_eq_j0_4072 sp, u_j1_4072_eq_j0_4064 sp] at hp
-        rw [sepConj_assoc'] at hp
-        xperm_hyp hp)
+      simp only [] at hp ⊢
+      have hj' : (1 : Word) + signExtend12 4095 = (0 : Word) := by decide
+      rw [hj', u_j1_0_eq_j0_4088 sp, u_j1_4088_eq_j0_4080 sp,
+          u_j1_4080_eq_j0_4072 sp, u_j1_4072_eq_j0_4064 sp] at hp
+      rw [sepConj_assoc'] at hp
+      xperm_hyp hp)
     J1f J0f
   -- 5. Clean up postcondition
   exact cpsTriple_consequence _ _ _ _ _ _ _
@@ -1503,6 +1396,5 @@ theorem divK_loop_n2_call_max_da_spec
       delta loopN2CallMaxPost_da
       exact hp)
     full
--/
 
 end EvmAsm.Evm64
