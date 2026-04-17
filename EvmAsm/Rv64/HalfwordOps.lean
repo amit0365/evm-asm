@@ -63,7 +63,6 @@ theorem generic_lhu_spec (rd rs1 : Reg) (v_addr v_old : Word)
     (offset : BitVec 12) (base : Word)
     (dwordAddr : Word) (word_val : Word)
     (hrd_ne_x0 : rd ≠ .x0)
-    (_hrd_ne_rs1 : rd ≠ rs1)
     (halign : alignToDword (v_addr + signExtend12 offset) = dwordAddr)
     (hvalid : isValidHalfwordAccess (v_addr + signExtend12 offset) = true) :
     cpsTriple base (base + 4)
@@ -108,7 +107,6 @@ theorem generic_lh_spec (rd rs1 : Reg) (v_addr v_old : Word)
     (offset : BitVec 12) (base : Word)
     (dwordAddr : Word) (word_val : Word)
     (hrd_ne_x0 : rd ≠ .x0)
-    (_hrd_ne_rs1 : rd ≠ rs1)
     (halign : alignToDword (v_addr + signExtend12 offset) = dwordAddr)
     (hvalid : isValidHalfwordAccess (v_addr + signExtend12 offset) = true) :
     cpsTriple base (base + 4)
@@ -152,7 +150,6 @@ SH writes a halfword to memory at a 2-byte aligned address. -/
 theorem generic_sh_spec (rs1 rs2 : Reg) (v_addr v_data : Word)
     (offset : BitVec 12) (base : Word)
     (dwordAddr : Word) (word_old : Word)
-    (_hne : rs1 ≠ rs2)
     (halign : alignToDword (v_addr + signExtend12 offset) = dwordAddr)
     (hvalid : isValidHalfwordAccess (v_addr + signExtend12 offset) = true) :
     cpsTriple base (base + 4)

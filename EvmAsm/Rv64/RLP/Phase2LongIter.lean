@@ -136,7 +136,7 @@ theorem rlp_phase2_long_iter_spec
   have hvalid0 : isValidByteAccess (ptr + signExtend12 (0 : BitVec 12)) = true := by
     rw [h_se0]; simpa using hvalid
   have lbu_raw := generic_lbu_spec .x12 .x13 ptr v12_old 0 base dwordAddr word_val
-    (by nofun) (by nofun) halign0 hvalid0
+    (by nofun) halign0 hvalid0
   rw [show ptr + signExtend12 (0 : BitVec 12) = ptr from by
         rw [h_se0]; bv_omega] at lbu_raw
   -- Step 2: SLLI x11, x11, 8.
