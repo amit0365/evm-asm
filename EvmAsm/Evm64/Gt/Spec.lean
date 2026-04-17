@@ -28,8 +28,7 @@ abbrev evm_gt_code (base : Word) : CodeReq :=
     26 instructions = 104 bytes total. -/
 theorem evm_gt_spec (sp : Word) (base : Word)
     (a0 a1 a2 a3 b0 b1 b2 b3 : Word)
-    (v7 v6 v5 v11 : Word)
-    (hvalid : ValidMemRange sp 8) :
+    (v7 v6 v5 v11 : Word) :
     -- Borrow chain: b - a (GT direction)
     let borrow0 := if BitVec.ult b0 a0 then (1 : Word) else 0
     let borrow1a := if BitVec.ult b1 a1 then (1 : Word) else 0
@@ -77,8 +76,7 @@ theorem evm_gt_spec (sp : Word) (base : Word)
 /-- Stack-level 256-bit EVM GT: operates on two EvmWords via evmWordIs.
     GT(a, b) = LT(b, a), using the borrow chain in b-a direction. -/
 theorem evm_gt_stack_spec (sp base : Word)
-    (a b : EvmWord) (v7 v6 v5 v11 : Word)
-    (hvalid : ValidMemRange sp 8) :
+    (a b : EvmWord) (v7 v6 v5 v11 : Word) :
     -- Borrow chain: b - a (GT direction)
     let borrow0 := if BitVec.ult (b.getLimbN 0) (a.getLimbN 0) then (1 : Word) else 0
     let borrow1a := if BitVec.ult (b.getLimbN 1) (a.getLimbN 1) then (1 : Word) else 0
@@ -106,7 +104,7 @@ theorem evm_gt_stack_spec (sp base : Word)
   have h_main := evm_gt_spec sp base
     (a.getLimbN 0) (a.getLimbN 1) (a.getLimbN 2) (a.getLimbN 3)
     (b.getLimbN 0) (b.getLimbN 1) (b.getLimbN 2) (b.getLimbN 3)
-    v7 v6 v5 v11 hvalid
+    v7 v6 v5 v11
   exact cpsTriple_consequence _ _ _ _ _ _ _
     (fun h hp => by
       simp only [evmWordIs] at hp

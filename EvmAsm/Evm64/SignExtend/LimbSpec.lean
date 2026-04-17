@@ -65,8 +65,7 @@ abbrev signext_body_3_code (base : Word) (jal_off : BitVec 21) : CodeReq :=
 theorem signext_body_3_spec (sp : Word)
     (v5 shift_amount : Word) (v3 : Word)
     (base exit : Word) (jal_off : BitVec 21)
-    (hexit : (base + 16) + signExtend21 jal_off = exit)
-    (hvalid : ValidMemRange sp 8) :
+    (hexit : (base + 16) + signExtend21 jal_off = exit) :
     let result := BitVec.sshiftRight (v3 <<< (shift_amount.toNat % 64)) (shift_amount.toNat % 64)
     let code := signext_body_3_code base jal_off
     cpsTriple base exit code
@@ -89,8 +88,7 @@ abbrev signext_body_2_code (base : Word) (jal_off : BitVec 21) : CodeReq :=
 theorem signext_body_2_spec (sp : Word)
     (v5 v10 shift_amount : Word) (v2 v3 : Word)
     (base exit : Word) (jal_off : BitVec 21)
-    (hexit : (base + 24) + signExtend21 jal_off = exit)
-    (hvalid : ValidMemRange sp 8) :
+    (hexit : (base + 24) + signExtend21 jal_off = exit) :
     let result := BitVec.sshiftRight (v2 <<< (shift_amount.toNat % 64)) (shift_amount.toNat % 64)
     let sign_fill := BitVec.sshiftRight result 63
     let code := signext_body_2_code base jal_off
@@ -122,8 +120,7 @@ abbrev signext_body_1_code (base : Word) (jal_off : BitVec 21) : CodeReq :=
 theorem signext_body_1_spec (sp : Word)
     (v5 v10 shift_amount : Word) (v1 v2 v3 : Word)
     (base exit : Word) (jal_off : BitVec 21)
-    (hexit : (base + 28) + signExtend21 jal_off = exit)
-    (hvalid : ValidMemRange sp 8) :
+    (hexit : (base + 28) + signExtend21 jal_off = exit) :
     let result := BitVec.sshiftRight (v1 <<< (shift_amount.toNat % 64)) (shift_amount.toNat % 64)
     let sign_fill := BitVec.sshiftRight result 63
     let code := signext_body_1_code base jal_off
@@ -158,8 +155,7 @@ abbrev signext_body_0_code (base : Word) : CodeReq :=
     LD + SLL + SRA + SD + SRAI + SD + SD + SD. Falls through to done. -/
 theorem signext_body_0_spec (sp : Word)
     (v5 v10 shift_amount : Word) (v0 v1 v2 v3 : Word)
-    (base : Word)
-    (hvalid : ValidMemRange sp 8) :
+    (base : Word) :
     let result := BitVec.sshiftRight (v0 <<< (shift_amount.toNat % 64)) (shift_amount.toNat % 64)
     let sign_fill := BitVec.sshiftRight result 63
     let code := signext_body_0_code base

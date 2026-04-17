@@ -27,8 +27,7 @@ abbrev evm_lt_code (base : Word) : CodeReq :=
     26 instructions = 104 bytes total. -/
 theorem evm_lt_spec (sp : Word) (base : Word)
     (a0 a1 a2 a3 b0 b1 b2 b3 : Word)
-    (v7 v6 v5 v11 : Word)
-    (hvalid : ValidMemRange sp 8) :
+    (v7 v6 v5 v11 : Word) :
     let borrow0 := if BitVec.ult a0 b0 then (1 : Word) else 0
     let borrow1a := if BitVec.ult a1 b1 then (1 : Word) else 0
     let temp1 := a1 - b1
@@ -74,8 +73,7 @@ theorem evm_lt_spec (sp : Word) (base : Word)
 
 /-- Stack-level 256-bit EVM LT: operates on two EvmWords via evmWordIs. -/
 theorem evm_lt_stack_spec (sp base : Word)
-    (a b : EvmWord) (v7 v6 v5 v11 : Word)
-    (hvalid : ValidMemRange sp 8) :
+    (a b : EvmWord) (v7 v6 v5 v11 : Word) :
     let a0 := a.getLimbN 0; let b0 := b.getLimbN 0
     let a1 := a.getLimbN 1; let b1 := b.getLimbN 1
     let a2 := a.getLimbN 2; let b2 := b.getLimbN 2
@@ -106,7 +104,7 @@ theorem evm_lt_stack_spec (sp base : Word)
   have h_main := evm_lt_spec sp base
     (a.getLimbN 0) (a.getLimbN 1) (a.getLimbN 2) (a.getLimbN 3)
     (b.getLimbN 0) (b.getLimbN 1) (b.getLimbN 2) (b.getLimbN 3)
-    v7 v6 v5 v11 hvalid
+    v7 v6 v5 v11
   exact cpsTriple_consequence _ _ _ _ _ _ _
     (fun h hp => by
       simp only [evmWordIs] at hp

@@ -847,16 +847,16 @@ theorem evm_shl_body_evmWord_spec (sp base : Word)
   -- Body specs extended to shlCode
   have hbody3 := cpsTriple_extend_code (shl_body_3_sub_shlCode base)
     (shl_body_3_spec (sp + 32) limb_shift ((0 : Word) + signExtend12 2) bit_shift anti_shift mask
-      v0 v1 v2 v3 (base + 84) (base + 360) 252 (shl_body3_exit base) hv32)
+      v0 v1 v2 v3 (base + 84) (base + 360) 252 (shl_body3_exit base))
   have hbody2 := cpsTriple_extend_code (shl_body_2_sub_shlCode base)
     (shl_body_2_spec (sp + 32) limb_shift ((0 : Word) + signExtend12 2) bit_shift anti_shift mask
-      v0 v1 v2 v3 (base + 112) (base + 360) 200 (shl_body2_exit base) hv32)
+      v0 v1 v2 v3 (base + 112) (base + 360) 200 (shl_body2_exit base))
   have hbody1 := cpsTriple_extend_code (shl_body_1_sub_shlCode base)
     (shl_body_1_spec (sp + 32) limb_shift ((0 : Word) + signExtend12 1) bit_shift anti_shift mask
-      v0 v1 v2 v3 (base + 164) (base + 360) 124 (shl_body1_exit base) hv32)
+      v0 v1 v2 v3 (base + 164) (base + 360) 124 (shl_body1_exit base))
   have hbody0 := cpsTriple_extend_code (shl_body_0_sub_shlCode base)
     (shl_body_0_spec (sp + 32) limb_shift sltiu_val bit_shift anti_shift mask
-      v0 v1 v2 v3 (base + 240) (base + 360) 24 (shl_body0_exit base) hv32)
+      v0 v1 v2 v3 (base + 240) (base + 360) 24 (shl_body0_exit base))
   -- Frame each body with (x0=0 ** shift_mem)
   have hbody3_f := cpsTriple_frame_left (base + 84) (base + 360) _ _ _
     ((.x0 ↦ᵣ (0 : Word)) ** (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3))

@@ -647,13 +647,13 @@ theorem signext_body_spec (sp base : Word)
   have hphaseC := cpsNBranch_extend_code (phase_c_sub_signextCode base) hphaseC_raw
   -- Body specs + done, extended to signextCode
   have hbody3 := cpsTriple_extend_code (body_3_sub_signextCode base)
-    (signext_body_3_spec sp limb_idx shift_amount v3 (base + 76) (base + 188) 96 (se_body3_exit base) hvalid)
+    (signext_body_3_spec sp limb_idx shift_amount v3 (base + 76) (base + 188) 96 (se_body3_exit base))
   have hbody2 := cpsTriple_extend_code (body_2_sub_signextCode base)
-    (signext_body_2_spec sp limb_idx ((0 : Word) + signExtend12 2) shift_amount v2 v3 (base + 96) (base + 188) 68 (se_body2_exit base) hvalid)
+    (signext_body_2_spec sp limb_idx ((0 : Word) + signExtend12 2) shift_amount v2 v3 (base + 96) (base + 188) 68 (se_body2_exit base))
   have hbody1 := cpsTriple_extend_code (body_1_sub_signextCode base)
-    (signext_body_1_spec sp limb_idx ((0 : Word) + signExtend12 1) shift_amount v1 v2 v3 (base + 124) (base + 188) 36 (se_body1_exit base) hvalid)
+    (signext_body_1_spec sp limb_idx ((0 : Word) + signExtend12 1) shift_amount v1 v2 v3 (base + 124) (base + 188) 36 (se_body1_exit base))
   have hbody0 := cpsTriple_extend_code (body_0_sub_signextCode base)
-    (signext_body_0_spec sp limb_idx byte_shift shift_amount v0 v1 v2 v3 (base + 156) hvalid)
+    (signext_body_0_spec sp limb_idx byte_shift shift_amount v0 v1 v2 v3 (base + 156))
   rw [show (base + 156 : Word) + 32 = base + 188 from by bv_omega] at hbody0
   have hdone := cpsTriple_extend_code (done_sub_signextCode base) (signext_done_spec sp (base + 188))
   rw [se_done_exit] at hdone

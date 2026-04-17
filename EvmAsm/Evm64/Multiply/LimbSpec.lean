@@ -416,8 +416,7 @@ abbrev evm_mul_code (base : Word) : CodeReq :=
     writes (A * B) mod 2^256 to sp+32..sp+56, advances sp by 32. -/
 theorem evm_mul_spec (sp : Word) (base : Word)
     (a0 a1 a2 a3 b0 b1 b2 b3 : Word)
-    (v5 v6 v7 v10 v11 : Word)
-    (hvalid : ValidMemRange sp 8) :
+    (v5 v6 v7 v10 v11 : Word) :
     -- Col0 intermediates
     let c0_r0 := a0 * b0
     let c0_hi_a0b0 := rv64_mulhu a0 b0

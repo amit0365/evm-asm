@@ -26,8 +26,7 @@ abbrev evm_eq_code (base : Word) : CodeReq :=
     21 instructions = 84 bytes total. -/
 theorem evm_eq_spec (sp : Word) (base : Word)
     (a0 a1 a2 a3 b0 b1 b2 b3 : Word)
-    (v7 v6 v5 v11 : Word)
-    (hvalid : ValidMemRange sp 8) :
+    (v7 v6 v5 v11 : Word) :
     -- XOR-OR accumulation chain
     let acc0 := a0 ^^^ b0
     let acc1 := acc0 ||| (a1 ^^^ b1)
@@ -73,8 +72,7 @@ theorem evm_eq_spec (sp : Word) (base : Word)
 
 /-- Stack-level 256-bit EVM EQ: operates on two EvmWords via evmWordIs. -/
 theorem evm_eq_stack_spec (sp base : Word)
-    (a b : EvmWord) (v7 v6 v5 v11 : Word)
-    (hvalid : ValidMemRange sp 8) :
+    (a b : EvmWord) (v7 v6 v5 v11 : Word) :
     -- XOR-OR accumulation chain
     let acc0 := a.getLimbN 0 ^^^ b.getLimbN 0
     let acc1 := acc0 ||| (a.getLimbN 1 ^^^ b.getLimbN 1)
@@ -95,7 +93,7 @@ theorem evm_eq_stack_spec (sp base : Word)
   have h_main := evm_eq_spec sp base
     (a.getLimbN 0) (a.getLimbN 1) (a.getLimbN 2) (a.getLimbN 3)
     (b.getLimbN 0) (b.getLimbN 1) (b.getLimbN 2) (b.getLimbN 3)
-    v7 v6 v5 v11 hvalid
+    v7 v6 v5 v11
   exact cpsTriple_consequence _ _ _ _ _ _ _
     (fun h hp => by
       simp only [evmWordIs] at hp

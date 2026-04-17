@@ -25,8 +25,7 @@ abbrev evm_not_code (base : Word) : CodeReq :=
     12 instructions total. Unary: complements each limb in-place, sp unchanged. -/
 theorem evm_not_spec (sp base : Word)
     (a0 a1 a2 a3 : Word)
-    (v7 : Word)
-    (hvalid : ValidMemRange sp 4) :
+    (v7 : Word) :
     let c := signExtend12 (-1 : BitVec 12)
     let code := evm_not_code base
     cpsTriple base (base + 48) code
@@ -52,8 +51,7 @@ theorem signExtend12_neg1_eq_allOnes : signExtend12 (-1 : BitVec 12) = BitVec.al
 
 /-- Stack-level 256-bit EVM NOT: complements an EvmWord in-place. -/
 theorem evm_not_stack_spec (sp base : Word)
-    (a : EvmWord) (v7 : Word)
-    (hvalid : ValidMemRange sp 4) :
+    (a : EvmWord) (v7 : Word) :
     let c := signExtend12 (-1 : BitVec 12)
     let code := evm_not_code base
     cpsTriple base (base + 48) code
@@ -69,7 +67,7 @@ theorem evm_not_stack_spec (sp base : Word)
   -- Apply evm_not_spec with individual limbs
   have h_main := evm_not_spec sp base
     (a.getLimbN 0) (a.getLimbN 1) (a.getLimbN 2) (a.getLimbN 3)
-    v7 hvalid
+    v7
   exact cpsTriple_consequence _ _ _ _ _ _ _
     (fun h hp => by
       simp only [evmWordIs] at hp
