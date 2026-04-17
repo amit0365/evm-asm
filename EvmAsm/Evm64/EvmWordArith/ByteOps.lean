@@ -83,7 +83,7 @@ def byte (i x : EvmWord) : EvmWord :=
     BitVec.ofNat 256 ((x.toNat / 2 ^ ((31 - i.toNat) * 8)) % 256)
   else 0
 
-private theorem getLimb_0_ofNat_small (n : Nat) (_hn : n < 2 ^ 64) :
+private theorem getLimb_0_ofNat_small (n : Nat) :
     getLimb (BitVec.ofNat 256 n) 0 = BitVec.ofNat 64 n := by
   simp only [getLimb]
   simp only [Fin.val_zero, Nat.zero_mul]
@@ -109,10 +109,7 @@ theorem byte_getLimb_0 (idx x : EvmWord) (hi : idx.toNat < 32) :
     BitVec.ofNat 64 ((x.toNat / 2 ^ ((31 - idx.toNat) * 8)) % 256) := by
   unfold byte
   rw [if_pos hi]
-  have : (x.toNat / 2 ^ ((31 - idx.toNat) * 8)) % 256 < 2 ^ 64 := by
-    have := Nat.mod_lt (x.toNat / 2 ^ ((31 - idx.toNat) * 8)) (by norm_num : 0 < 256)
-    linarith [show (256 : Nat) ≤ 2 ^ 64 from by norm_num]
-  exact getLimb_0_ofNat_small _ this
+  exact getLimb_0_ofNat_small _
 
 theorem byte_getLimb_high (idx x : EvmWord) (j : Fin 4) (hj : j.val ≠ 0) :
     (byte idx x).getLimb j = 0 := by

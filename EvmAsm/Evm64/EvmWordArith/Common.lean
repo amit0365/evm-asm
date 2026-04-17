@@ -69,7 +69,7 @@ theorem ult_iff {n : Nat} (x y : BitVec n) : BitVec.ult x y ↔ x.toNat < y.toNa
 -- M is the positional multiplier (2^64 at step 1, 2^128 at step 2, 2^192 at step 3).
 -- aH, bH are single limbs (< 2^64). aLo, bLo are partial sums (< M).
 theorem borrow_step_iff (M : Nat)
-    {aH bH : Nat} (_haH : aH < 2^64) (_hbH : bH < 2^64)
+    {aH bH : Nat} (haH : aH < 2^64) (hbH : bH < 2^64)
     {aLo bLo : Nat} (haLo : aLo < M) (hbLo : bLo < M) :
     (aH < bH ∨ (aH + 2^64 - bH) % 2^64 < (if aLo < bLo then 1 else 0)) ↔
     (aLo + aH * M < bLo + bH * M) := by

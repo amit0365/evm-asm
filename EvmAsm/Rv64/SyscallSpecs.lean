@@ -691,7 +691,6 @@ namespace EvmAsm.Rv64
     (offset : BitVec 12) (addr : Word)
     (dwordAddr : Word) (word_val : Word)
     (hrd_ne_x0 : rd ≠ .x0)
-    (hrd_ne_rs1 : rd ≠ rs1)
     (halign : alignToDword (v_addr + signExtend12 offset) = dwordAddr)
     (hvalid : isValidByteAccess (v_addr + signExtend12 offset) = true) :
     cpsTriple addr (addr + 4)
@@ -701,13 +700,12 @@ namespace EvmAsm.Rv64
        (rd ↦ᵣ (extractByte word_val (byteOffset (v_addr + signExtend12 offset))).zeroExtend 64) **
        (dwordAddr ↦ₘ word_val)) :=
   generic_lbu_spec rd rs1 v_addr v_old offset addr dwordAddr word_val
-    hrd_ne_x0 hrd_ne_rs1 halign hvalid
+    hrd_ne_x0 halign hvalid
 
 @[spec_gen_rv64] theorem lb_spec_gen (rd rs1 : Reg) (v_addr v_old : Word)
     (offset : BitVec 12) (addr : Word)
     (dwordAddr : Word) (word_val : Word)
     (hrd_ne_x0 : rd ≠ .x0)
-    (hrd_ne_rs1 : rd ≠ rs1)
     (halign : alignToDword (v_addr + signExtend12 offset) = dwordAddr)
     (hvalid : isValidByteAccess (v_addr + signExtend12 offset) = true) :
     cpsTriple addr (addr + 4)
@@ -717,12 +715,11 @@ namespace EvmAsm.Rv64
        (rd ↦ᵣ (extractByte word_val (byteOffset (v_addr + signExtend12 offset))).signExtend 64) **
        (dwordAddr ↦ₘ word_val)) :=
   generic_lb_spec rd rs1 v_addr v_old offset addr dwordAddr word_val
-    hrd_ne_x0 hrd_ne_rs1 halign hvalid
+    hrd_ne_x0 halign hvalid
 
 @[spec_gen_rv64] theorem sb_spec_gen (rs1 rs2 : Reg) (v_addr v_data : Word)
     (offset : BitVec 12) (addr : Word)
     (dwordAddr : Word) (word_old : Word)
-    (hne : rs1 ≠ rs2)
     (halign : alignToDword (v_addr + signExtend12 offset) = dwordAddr)
     (hvalid : isValidByteAccess (v_addr + signExtend12 offset) = true) :
     cpsTriple addr (addr + 4)
@@ -731,7 +728,7 @@ namespace EvmAsm.Rv64
       ((rs1 ↦ᵣ v_addr) ** (rs2 ↦ᵣ v_data) **
        (dwordAddr ↦ₘ replaceByte word_old (byteOffset (v_addr + signExtend12 offset)) (v_data.truncate 8))) :=
   generic_sb_spec rs1 rs2 v_addr v_data offset addr dwordAddr word_old
-    hne halign hvalid
+    halign hvalid
 
 -- ============================================================================
 -- Phase 3: M-extension (MULH, MULHSU, DIV, REM)
@@ -817,7 +814,6 @@ namespace EvmAsm.Rv64
     (offset : BitVec 12) (addr : Word)
     (dwordAddr : Word) (word_val : Word)
     (hrd_ne_x0 : rd ≠ .x0)
-    (hrd_ne_rs1 : rd ≠ rs1)
     (halign : alignToDword (v_addr + signExtend12 offset) = dwordAddr)
     (hvalid : isValidHalfwordAccess (v_addr + signExtend12 offset) = true) :
     cpsTriple addr (addr + 4)
@@ -827,13 +823,12 @@ namespace EvmAsm.Rv64
        (rd ↦ᵣ (extractHalfword word_val ((byteOffset (v_addr + signExtend12 offset)) / 2)).zeroExtend 64) **
        (dwordAddr ↦ₘ word_val)) :=
   generic_lhu_spec rd rs1 v_addr v_old offset addr dwordAddr word_val
-    hrd_ne_x0 hrd_ne_rs1 halign hvalid
+    hrd_ne_x0 halign hvalid
 
 @[spec_gen_rv64] theorem lh_spec_gen (rd rs1 : Reg) (v_addr v_old : Word)
     (offset : BitVec 12) (addr : Word)
     (dwordAddr : Word) (word_val : Word)
     (hrd_ne_x0 : rd ≠ .x0)
-    (hrd_ne_rs1 : rd ≠ rs1)
     (halign : alignToDword (v_addr + signExtend12 offset) = dwordAddr)
     (hvalid : isValidHalfwordAccess (v_addr + signExtend12 offset) = true) :
     cpsTriple addr (addr + 4)
@@ -843,12 +838,11 @@ namespace EvmAsm.Rv64
        (rd ↦ᵣ (extractHalfword word_val ((byteOffset (v_addr + signExtend12 offset)) / 2)).signExtend 64) **
        (dwordAddr ↦ₘ word_val)) :=
   generic_lh_spec rd rs1 v_addr v_old offset addr dwordAddr word_val
-    hrd_ne_x0 hrd_ne_rs1 halign hvalid
+    hrd_ne_x0 halign hvalid
 
 @[spec_gen_rv64] theorem sh_spec_gen (rs1 rs2 : Reg) (v_addr v_data : Word)
     (offset : BitVec 12) (addr : Word)
     (dwordAddr : Word) (word_old : Word)
-    (hne : rs1 ≠ rs2)
     (halign : alignToDword (v_addr + signExtend12 offset) = dwordAddr)
     (hvalid : isValidHalfwordAccess (v_addr + signExtend12 offset) = true) :
     cpsTriple addr (addr + 4)
@@ -857,7 +851,7 @@ namespace EvmAsm.Rv64
       ((rs1 ↦ᵣ v_addr) ** (rs2 ↦ᵣ v_data) **
        (dwordAddr ↦ₘ replaceHalfword word_old ((byteOffset (v_addr + signExtend12 offset)) / 2) (v_data.truncate 16))) :=
   generic_sh_spec rs1 rs2 v_addr v_data offset addr dwordAddr word_old
-    hne halign hvalid
+    halign hvalid
 
 -- ============================================================================
 -- Phase 6: Word32 memory specs (LW, LWU, SW)
@@ -867,7 +861,6 @@ namespace EvmAsm.Rv64
     (offset : BitVec 12) (addr : Word)
     (dwordAddr : Word) (word_val : Word)
     (hrd_ne_x0 : rd ≠ .x0)
-    (hrd_ne_rs1 : rd ≠ rs1)
     (halign : alignToDword (v_addr + signExtend12 offset) = dwordAddr)
     (hvalid : isValidMemAccess (v_addr + signExtend12 offset) = true) :
     cpsTriple addr (addr + 4)
@@ -877,13 +870,12 @@ namespace EvmAsm.Rv64
        (rd ↦ᵣ (extractWord32 word_val ((byteOffset (v_addr + signExtend12 offset)) / 4)).zeroExtend 64) **
        (dwordAddr ↦ₘ word_val)) :=
   generic_lwu_spec rd rs1 v_addr v_old offset addr dwordAddr word_val
-    hrd_ne_x0 hrd_ne_rs1 halign hvalid
+    hrd_ne_x0 halign hvalid
 
 @[spec_gen_rv64] theorem lw_spec_gen (rd rs1 : Reg) (v_addr v_old : Word)
     (offset : BitVec 12) (addr : Word)
     (dwordAddr : Word) (word_val : Word)
     (hrd_ne_x0 : rd ≠ .x0)
-    (hrd_ne_rs1 : rd ≠ rs1)
     (halign : alignToDword (v_addr + signExtend12 offset) = dwordAddr)
     (hvalid : isValidMemAccess (v_addr + signExtend12 offset) = true) :
     cpsTriple addr (addr + 4)
@@ -893,12 +885,11 @@ namespace EvmAsm.Rv64
        (rd ↦ᵣ (extractWord32 word_val ((byteOffset (v_addr + signExtend12 offset)) / 4)).signExtend 64) **
        (dwordAddr ↦ₘ word_val)) :=
   generic_lw_spec rd rs1 v_addr v_old offset addr dwordAddr word_val
-    hrd_ne_x0 hrd_ne_rs1 halign hvalid
+    hrd_ne_x0 halign hvalid
 
 @[spec_gen_rv64] theorem sw_spec_gen (rs1 rs2 : Reg) (v_addr v_data : Word)
     (offset : BitVec 12) (addr : Word)
     (dwordAddr : Word) (word_old : Word)
-    (hne : rs1 ≠ rs2)
     (halign : alignToDword (v_addr + signExtend12 offset) = dwordAddr)
     (hvalid : isValidMemAccess (v_addr + signExtend12 offset) = true) :
     cpsTriple addr (addr + 4)
@@ -907,6 +898,6 @@ namespace EvmAsm.Rv64
       ((rs1 ↦ᵣ v_addr) ** (rs2 ↦ᵣ v_data) **
        (dwordAddr ↦ₘ replaceWord32 word_old ((byteOffset (v_addr + signExtend12 offset)) / 4) (v_data.truncate 32))) :=
   generic_sw_spec rs1 rs2 v_addr v_data offset addr dwordAddr word_old
-    hne halign hvalid
+    halign hvalid
 
 end EvmAsm.Rv64
