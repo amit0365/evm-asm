@@ -624,6 +624,10 @@ prerequisites provide the pure spec and RISC-V infrastructure for that.
     one-byte closure (iter 2, fall-through) via
     `cpsTriple_seq_with_perm_same_cr`. Assumes both bytes live in the
     same doubleword.
+  - `rlp_phase2_long_loop_three_byte_spec`
+    (`EvmAsm/Rv64/RLP/Phase2LongLoopThree.lean`): three-iteration
+    closure (lenLen = 3). Composes body spec (iter 1) with two-byte
+    closure (iters 2–3). All three bytes assumed in same doubleword.
   - General `n`-iteration closure (induction over `cnt`) still pending.
 - Phase 3: Single-item flat decode (byte strings only)
 - Phase 4: HINT_READ integration (load RLP input into memory buffer)
