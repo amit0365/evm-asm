@@ -250,14 +250,12 @@ theorem signext_nochange_high_spec (sp base : Word)
   simp only [signExtend12_8] at h1
   -- Step 2: LD/OR at base+4
   have h2 := cpsTriple_extend_code (ld_or_16_sub_signextCode base)
-    (signext_ld_or_acc_spec sp b1 r10 b2 16 (base + 4)
-      (by simp only [signExtend12_16]; exact hv16))
+    (signext_ld_or_acc_spec sp b1 r10 b2 16 (base + 4))
   simp only [signExtend12_16] at h2
   rw [se_off_4] at h2
   -- Step 3: LD/OR at base+12
   have h3 := cpsTriple_extend_code (ld_or_24_sub_signextCode base)
-    (signext_ld_or_acc_spec sp (b1 ||| b2) b2 b3 24 (base + 12)
-      (by simp only [signExtend12_24]; exact hv24))
+    (signext_ld_or_acc_spec sp (b1 ||| b2) b2 b3 24 (base + 12))
   simp only [signExtend12_24] at h3
   rw [se_off_12] at h3
   -- Frame + compose linear chain
@@ -361,10 +359,10 @@ theorem signext_nochange_geq31_spec (sp base : Word)
     (ld_spec_gen .x5 .x12 sp r5 b1 8 base (by nofun))
   simp only [signExtend12_8] at h1
   have h2 := cpsTriple_extend_code (ld_or_16_sub_signextCode base)
-    (signext_ld_or_acc_spec sp b1 r10 b2 16 (base + 4) (by simp only [signExtend12_16]; exact hv16))
+    (signext_ld_or_acc_spec sp b1 r10 b2 16 (base + 4))
   simp only [signExtend12_16] at h2; rw [se_off_4] at h2
   have h3 := cpsTriple_extend_code (ld_or_24_sub_signextCode base)
-    (signext_ld_or_acc_spec sp (b1 ||| b2) b2 b3 24 (base + 12) (by simp only [signExtend12_24]; exact hv24))
+    (signext_ld_or_acc_spec sp (b1 ||| b2) b2 b3 24 (base + 12))
   simp only [signExtend12_24] at h3; rw [se_off_12] at h3
   have h1f := cpsTriple_frame_left base (base + 4) _ _ _
     ((.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ r10) **
@@ -569,10 +567,10 @@ theorem signext_body_spec (sp base : Word)
     (ld_spec_gen .x5 .x12 sp r5 b1 8 base (by nofun))
   simp only [signExtend12_8] at h1
   have h2 := cpsTriple_extend_code (ld_or_16_sub_signextCode base)
-    (signext_ld_or_acc_spec sp b1 r10 b2 16 (base + 4) (by simp only [signExtend12_16]; exact hv16))
+    (signext_ld_or_acc_spec sp b1 r10 b2 16 (base + 4))
   simp only [signExtend12_16] at h2; rw [se_off_4] at h2
   have h3 := cpsTriple_extend_code (ld_or_24_sub_signextCode base)
-    (signext_ld_or_acc_spec sp (b1 ||| b2) b2 b3 24 (base + 12) (by simp only [signExtend12_24]; exact hv24))
+    (signext_ld_or_acc_spec sp (b1 ||| b2) b2 b3 24 (base + 12))
   simp only [signExtend12_24] at h3; rw [se_off_12] at h3
   have h1f := cpsTriple_frame_left base (base + 4) _ _ _
     ((.x6 ↦ᵣ r6) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ r10) ** (sp ↦ₘ b0) ** ((sp + 16) ↦ₘ b2) ** ((sp + 24) ↦ₘ b3) **

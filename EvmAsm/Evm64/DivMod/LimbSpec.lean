@@ -28,8 +28,7 @@ abbrev divK_zeroPath_code (base : Word) : CodeReq :=
 /-- Zero path: advance sp by 32, store four zeros at the output location.
     Used when b = 0 (both DIV and MOD return 0). -/
 theorem divK_zeroPath_spec (sp : Word) (base : Word)
-    (m32 m40 m48 m56 : Word)
-    (_hvalid : ValidMemRange sp 8) :
+    (m32 m40 m48 m56 : Word) :
     let cr := divK_zeroPath_code base
     cpsTriple base (base + 20) cr
       ((.x12 ↦ᵣ sp) **
@@ -57,8 +56,7 @@ abbrev divK_phaseA_code (base : Word) : CodeReq :=
     Produces x5 = b0 ||| b1 ||| b2 ||| b3.
     The BEQ instruction at base+28 and x0 are preserved for branch composition. -/
 theorem divK_phaseA_body_spec (sp : Word) (base : Word)
-    (b0 b1 b2 b3 v5 v10 : Word)
-    (_hvalid : ValidMemRange sp 8) :
+    (b0 b1 b2 b3 v5 v10 : Word) :
     let cr := divK_phaseA_code base
     cpsTriple base (base + 28) cr
       (
@@ -84,8 +82,7 @@ theorem divK_phaseA_body_spec (sp : Word) (base : Word)
 
 /-- Phase A: OR-reduce b then BEQ to zero path. -/
 theorem divK_phaseA_spec (sp : Word) (base : Word)
-    (b0 b1 b2 b3 v5 v10 : Word)
-    (hvalid : ValidMemRange sp 8) :
+    (b0 b1 b2 b3 v5 v10 : Word) :
     let bor := b0 ||| b1 ||| b2 ||| b3
     let cr := divK_phaseA_code base
     let post :=
@@ -103,7 +100,7 @@ theorem divK_phaseA_spec (sp : Word) (base : Word)
       (base + 32) post := by
   intro bor cr post
   -- 1. Body: 7 straight-line instructions
-  have hbody := divK_phaseA_body_spec sp base b0 b1 b2 b3 v5 v10 hvalid
+  have hbody := divK_phaseA_body_spec sp base b0 b1 b2 b3 v5 v10
   -- 2. BEQ: branch at base + 28, drop pure facts
   have hbeq_raw := beq_spec_gen .x5 .x0 1020 bor (0 : Word) (base + 28)
   have ha1 : (base + 28 : Word) + 4 = base + 32 := by bv_addr
@@ -151,14 +148,7 @@ abbrev divK_phaseB_init1_code (base : Word) : CodeReq :=
 
 /-- Phase B init part 1: zero scratch q[0..3] and u[5..7]. 7 instructions. -/
 theorem divK_phaseB_init1_spec (sp : Word) (base : Word)
-    (q0 q1 q2 q3 u5 u6 u7 : Word)
-    (_hv_q0 : isValidDwordAccess (sp + signExtend12 4088) = true)
-    (_hv_q1 : isValidDwordAccess (sp + signExtend12 4080) = true)
-    (_hv_q2 : isValidDwordAccess (sp + signExtend12 4072) = true)
-    (_hv_q3 : isValidDwordAccess (sp + signExtend12 4064) = true)
-    (_hv_u5 : isValidDwordAccess (sp + signExtend12 4016) = true)
-    (_hv_u6 : isValidDwordAccess (sp + signExtend12 4008) = true)
-    (_hv_u7 : isValidDwordAccess (sp + signExtend12 4000) = true) :
+    (q0 q1 q2 q3 u5 u6 u7 : Word) :
     let cr := divK_phaseB_init1_code base
     cpsTriple base (base + 28) cr
       (
@@ -187,8 +177,7 @@ abbrev divK_phaseB_init2_code (base : Word) : CodeReq :=
 
 /-- Phase B init part 2: load b[1] and b[2]. 2 instructions. -/
 theorem divK_phaseB_init2_spec (sp : Word) (base : Word)
-    (b1 b2 : Word) (v6 v7 : Word)
-    (_hvalid : ValidMemRange sp 8) :
+    (b1 b2 : Word) (v6 v7 : Word) :
     let cr := divK_phaseB_init2_code base
     cpsTriple base (base + 8) cr
       (
@@ -210,13 +199,7 @@ abbrev divK_copyAU_code (base : Word) : CodeReq :=
 
 /-- Copy a[0..3] to u[0..3] and set u[4] = 0 (no shift needed). -/
 theorem divK_copyAU_spec (sp : Word) (base : Word)
-    (a0 a1 a2 a3 u0 u1 u2 u3 u4 : Word) (v5 : Word)
-    (_hvalid : ValidMemRange sp 8)
-    (_hv_u0 : isValidDwordAccess (sp + signExtend12 4056) = true)
-    (_hv_u1 : isValidDwordAccess (sp + signExtend12 4048) = true)
-    (_hv_u2 : isValidDwordAccess (sp + signExtend12 4040) = true)
-    (_hv_u3 : isValidDwordAccess (sp + signExtend12 4032) = true)
-    (_hv_u4 : isValidDwordAccess (sp + signExtend12 4024) = true) :
+    (a0 a1 a2 a3 u0 u1 u2 u3 u4 : Word) (v5 : Word) :
     let cr := divK_copyAU_code base
     cpsTriple base (base + 36) cr
       (
@@ -260,9 +243,7 @@ abbrev divK_normB_merge_code (high_off low_off : BitVec 12) (base : Word) : Code
     Computes result = (high <<< shift) ||| (low >>> anti_shift) and stores to high_off.
     x6 = shift, x2 = anti_shift (= 64 - shift as unsigned). -/
 theorem divK_normB_merge_spec (high_off low_off : BitVec 12)
-    (sp high low v5 v7 shift anti_shift : Word) (base : Word)
-    (_hvalid_high : isValidDwordAccess (sp + signExtend12 high_off) = true)
-    (_hvalid_low : isValidDwordAccess (sp + signExtend12 low_off) = true) :
+    (sp high low v5 v7 shift anti_shift : Word) (base : Word) :
     let shifted_high := high <<< (shift.toNat % 64)
     let shifted_low := low >>> (anti_shift.toNat % 64)
     let result := shifted_high ||| shifted_low
@@ -296,8 +277,7 @@ abbrev divK_normB_last_code (off : BitVec 12) (base : Word) : CodeReq :=
 /-- NormB last limb (3 instructions): LD, SLL, SD.
     Computes result = val <<< shift and stores to off. -/
 theorem divK_normB_last_spec (off : BitVec 12)
-    (sp val v5 shift : Word) (base : Word)
-    (_hvalid : isValidDwordAccess (sp + signExtend12 off) = true) :
+    (sp val v5 shift : Word) (base : Word) :
     let result := val <<< (shift.toNat % 64)
     let cr := divK_normB_last_code off base
     cpsTriple base (base + 12) cr
@@ -327,9 +307,7 @@ abbrev divK_normA_top_code (src_off dst_off : BitVec 12) (base : Word) : CodeReq
 /-- NormA top: LD a[3], SRL to x7, SD u[4]. 3 instructions.
     Computes u[4] = a[3] >>> anti_shift (overflow bits from top limb). -/
 theorem divK_normA_top_spec (src_off dst_off : BitVec 12)
-    (sp val v5 v7 anti_shift dst_old : Word) (base : Word)
-    (_hvalid_src : isValidDwordAccess (sp + signExtend12 src_off) = true)
-    (_hvalid_dst : isValidDwordAccess (sp + signExtend12 dst_off) = true) :
+    (sp val v5 v7 anti_shift dst_old : Word) (base : Word) :
     let result := val >>> (anti_shift.toNat % 64)
     let cr := divK_normA_top_code src_off dst_off base
     cpsTriple base (base + 12) cr
@@ -358,9 +336,7 @@ abbrev divK_normA_mergeA_code (next_off dst_off : BitVec 12) (base : Word) : Cod
     LD next into x7, SLL x5 by shift, SRL x10 from x7 by anti_shift, OR into x5, SD.
     Used for u[3] and u[1] computation. -/
 theorem divK_normA_mergeA_spec (next_off dst_off : BitVec 12)
-    (sp current next v7 v10 shift anti_shift dst_old : Word) (base : Word)
-    (_hvalid_next : isValidDwordAccess (sp + signExtend12 next_off) = true)
-    (_hvalid_dst : isValidDwordAccess (sp + signExtend12 dst_off) = true) :
+    (sp current next v7 v10 shift anti_shift dst_old : Word) (base : Word) :
     let shifted_curr := current <<< (shift.toNat % 64)
     let shifted_next := next >>> (anti_shift.toNat % 64)
     let result := shifted_curr ||| shifted_next
@@ -395,9 +371,7 @@ abbrev divK_normA_mergeB_code (next_off dst_off : BitVec 12) (base : Word) : Cod
     LD next into x5, SLL x7 by shift, SRL x10 from x5 by anti_shift, OR into x7, SD.
     Used for u[2] computation. -/
 theorem divK_normA_mergeB_spec (next_off dst_off : BitVec 12)
-    (sp current next v5 v10 shift anti_shift dst_old : Word) (base : Word)
-    (_hvalid_next : isValidDwordAccess (sp + signExtend12 next_off) = true)
-    (_hvalid_dst : isValidDwordAccess (sp + signExtend12 dst_off) = true) :
+    (sp current next v5 v10 shift anti_shift dst_old : Word) (base : Word) :
     let shifted_curr := current <<< (shift.toNat % 64)
     let shifted_next := next >>> (anti_shift.toNat % 64)
     let result := shifted_curr ||| shifted_next
@@ -430,8 +404,7 @@ abbrev divK_normA_last_code (dst_off : BitVec 12) (base : Word) : CodeReq :=
 /-- NormA last limb (2 instructions): SLL x7 by shift, SD to dst_off.
     Computes u[0] = a[0] <<< shift. -/
 theorem divK_normA_last_spec (dst_off : BitVec 12)
-    (sp val shift dst_old : Word) (base : Word)
-    (_hvalid_dst : isValidDwordAccess (sp + signExtend12 dst_off) = true) :
+    (sp val shift dst_old : Word) (base : Word) :
     let result := val <<< (shift.toNat % 64)
     let cr := divK_normA_last_code dst_off base
     cpsTriple base (base + 8) cr
@@ -462,9 +435,7 @@ abbrev divK_denorm_merge_code (curr_off next_off : BitVec 12) (base : Word) : Co
     Computes result = (curr >>> shift) ||| (next <<< anti_shift) and stores to curr_off.
     x6 = shift, x2 = anti_shift. -/
 theorem divK_denorm_merge_spec (curr_off next_off : BitVec 12)
-    (sp curr next v5 v7 shift anti_shift : Word) (base : Word)
-    (_hvalid_curr : isValidDwordAccess (sp + signExtend12 curr_off) = true)
-    (_hvalid_next : isValidDwordAccess (sp + signExtend12 next_off) = true) :
+    (sp curr next v5 v7 shift anti_shift : Word) (base : Word) :
     let shifted_curr := curr >>> (shift.toNat % 64)
     let shifted_next := next <<< (anti_shift.toNat % 64)
     let result := shifted_curr ||| shifted_next
@@ -498,8 +469,7 @@ abbrev divK_denorm_last_code (off : BitVec 12) (base : Word) : CodeReq :=
 /-- Denorm last limb (3 instructions): LD, SRL, SD.
     Computes result = val >>> shift and stores to off. -/
 theorem divK_denorm_last_spec (off : BitVec 12)
-    (sp val v5 shift : Word) (base : Word)
-    (_hvalid : isValidDwordAccess (sp + signExtend12 off) = true) :
+    (sp val v5 shift : Word) (base : Word) :
     let result := val >>> (shift.toNat % 64)
     let cr := divK_denorm_last_code off base
     cpsTriple base (base + 12) cr
@@ -529,11 +499,7 @@ abbrev divK_epilogue_load_code (off0 off1 off2 off3 : BitVec 12) (base : Word) :
 /-- Epilogue load phase: load 4 values from scratch space. 4 instructions.
     Loads q[0..3] (for DIV) or u[0..3] (for MOD) into x5, x6, x7, x10. -/
 theorem divK_epilogue_load_spec (off0 off1 off2 off3 : BitVec 12)
-    (sp r0 r1 r2 r3 v5 v6 v7 v10 : Word) (base : Word)
-    (_hv0 : isValidDwordAccess (sp + signExtend12 off0) = true)
-    (_hv1 : isValidDwordAccess (sp + signExtend12 off1) = true)
-    (_hv2 : isValidDwordAccess (sp + signExtend12 off2) = true)
-    (_hv3 : isValidDwordAccess (sp + signExtend12 off3) = true) :
+    (sp r0 r1 r2 r3 v5 v6 v7 v10 : Word) (base : Word) :
     let cr := divK_epilogue_load_code off0 off1 off2 off3 base
     cpsTriple base (base + 16) cr
       (
@@ -559,8 +525,7 @@ abbrev divK_epilogue_store_code (jal_off : BitVec 21) (base : Word) : CodeReq :=
 
 /-- Epilogue store phase: ADDI sp+32, store 4 values, JAL to exit. 6 instructions. -/
 theorem divK_epilogue_store_spec (sp : Word) (base : Word)
-    (r0 r1 r2 r3 m0 m8 m16 m24 : Word) (jal_off : BitVec 21)
-    (_hvalid : ValidMemRange sp 8) :
+    (r0 r1 r2 r3 m0 m8 m16 m24 : Word) (jal_off : BitVec 21) :
     let cr := divK_epilogue_store_code jal_off base
     cpsTriple base (base + 20 + signExtend21 jal_off) cr
       (
@@ -589,10 +554,7 @@ abbrev divK_phaseB_tail_code (base : Word) : CodeReq :=
 
 /-- Phase B tail: store n to scratch, compute sp + (n-1)*8, load b[n-1].
     x5 = n on entry. On exit, x5 = leading limb b[n-1]. -/
-theorem divK_phaseB_tail_spec (sp n leading_limb n_mem : Word) (base : Word)
-    (_hv_n : isValidDwordAccess (sp + signExtend12 3984) = true)
-    (_hv_limb : isValidDwordAccess
-      ((sp + ((n + signExtend12 4095) <<< (3 : BitVec 6).toNat)) + signExtend12 32) = true) :
+theorem divK_phaseB_tail_spec (sp n leading_limb n_mem : Word) (base : Word) :
     let nm1 := n + signExtend12 4095
     let nm1_x8 := nm1 <<< (3 : BitVec 6).toNat
     let addr_lead := sp + nm1_x8
@@ -626,8 +588,7 @@ abbrev divK_phaseC2_code (shift0_off : BitVec 13) (base : Word) : CodeReq :=
     The postcondition uses `signExtend12 (0 : BitVec 12) - shift` (= 0 - shift)
     to match the syntactic form produced by addi_x0_spec_gen + sub_spec_gen. -/
 theorem divK_phaseC2_body_spec (sp shift v2 shift_mem : Word)
-    (shift0_off : BitVec 13) (base : Word)
-    (_hv_shift : isValidDwordAccess (sp + signExtend12 3992) = true) :
+    (shift0_off : BitVec 13) (base : Word) :
     let cr := divK_phaseC2_code shift0_off base
     cpsTriple base (base + 12) cr
       (
@@ -653,8 +614,7 @@ set_option maxRecDepth 1024 in
     Not taken: shift ≠ 0, proceed to normalize.
     anti_shift = signExtend12 0 - shift (= 0 - shift = negation of shift amount). -/
 theorem divK_phaseC2_spec (sp shift v2 shift_mem : Word)
-    (shift0_off : BitVec 13) (base : Word)
-    (hv_shift : isValidDwordAccess (sp + signExtend12 3992) = true) :
+    (shift0_off : BitVec 13) (base : Word) :
     let cr := divK_phaseC2_code shift0_off base
     let post :=
       (.x12 ↦ᵣ sp) ** (.x6 ↦ᵣ shift) **
@@ -669,7 +629,7 @@ theorem divK_phaseC2_spec (sp shift v2 shift_mem : Word)
       -- Not taken: shift ≠ 0
       (base + 16) post := by
   intro cr post
-  have hbody := divK_phaseC2_body_spec sp shift v2 shift_mem shift0_off base hv_shift
+  have hbody := divK_phaseC2_body_spec sp shift v2 shift_mem shift0_off base
   have hbeq_raw := beq_spec_gen .x6 .x0 shift0_off shift (0 : Word) (base + 12)
   have ha1 : (base + 12 : Word) + 4 = base + 16 := by bv_addr
   rw [ha1] at hbeq_raw
@@ -795,8 +755,7 @@ abbrev divK_loopSetup_code (blt_off : BitVec 13) (base : Word) : CodeReq :=
 /-- Loop setup body: load n, compute m = 4 - n. 3 straight-line instructions.
     Uses signExtend12 4 directly to match addi_x0_spec_gen + sub_spec_gen output. -/
 theorem divK_loopSetup_body_spec (sp n v1 v5 : Word)
-    (blt_off : BitVec 13) (base : Word)
-    (_hv_n : isValidDwordAccess (sp + signExtend12 3984) = true) :
+    (blt_off : BitVec 13) (base : Word) :
     let cr := divK_loopSetup_code blt_off base
     cpsTriple base (base + 12) cr
       (
@@ -817,8 +776,7 @@ theorem divK_loopSetup_body_spec (sp n v1 v5 : Word)
     Taken: m < 0 (n > 4, impossible in practice but handled).
     Not taken: m >= 0, proceed to loop. -/
 theorem divK_loopSetup_spec (sp n v1 v5 : Word)
-    (blt_off : BitVec 13) (base : Word)
-    (hv_n : isValidDwordAccess (sp + signExtend12 3984) = true) :
+    (blt_off : BitVec 13) (base : Word) :
     let m := signExtend12 (4 : BitVec 12) - n
     let cr := divK_loopSetup_code blt_off base
     let post :=
@@ -833,7 +791,7 @@ theorem divK_loopSetup_spec (sp n v1 v5 : Word)
       -- Not taken: m >= 0
       (base + 16) post := by
   intro m cr post
-  have hbody := divK_loopSetup_body_spec sp n v1 v5 blt_off base hv_n
+  have hbody := divK_loopSetup_body_spec sp n v1 v5 blt_off base
   have hblt_raw := blt_spec_gen .x1 .x0 blt_off m (0 : Word) (base + 12)
   have ha1 : (base + 12 : Word) + 4 = base + 16 := by bv_addr
   rw [ha1] at hblt_raw
@@ -1180,8 +1138,7 @@ theorem divK_clz_last_ntaken_spec (val count v7 : Word) (base : Word)
 /-- Mul-sub limb Part A: LD v[i], MUL, MULHU, ADD, SLTU, ADD.
     6 instructions. Produces full_sub (x7) and partial_carry (x10). -/
 theorem divK_mulsub_partA_spec (sp q_hat carry_in v5_old v7_old v_i : Word)
-    (v_off : BitVec 12) (base : Word)
-    (_hv : isValidDwordAccess (sp + signExtend12 v_off) = true) :
+    (v_off : BitVec 12) (base : Word) :
     let prod_lo := q_hat * v_i
     let prod_hi := rv64_mulhu q_hat v_i
     let full_sub := prod_lo + carry_in
@@ -1213,8 +1170,7 @@ theorem divK_mulsub_partA_spec (sp q_hat carry_in v5_old v7_old v_i : Word)
 /-- Mul-sub limb Part B: LD u[j+i], SLTU, SUB, ADD, SD.
     5 instructions. Produces carry_out (x10) and stores u_new. -/
 theorem divK_mulsub_partB_spec (u_base partial_carry prod_hi full_sub v2_old u_i : Word)
-    (u_off : BitVec 12) (base : Word)
-    (_hv : isValidDwordAccess (u_base + signExtend12 u_off) = true) :
+    (u_off : BitVec 12) (base : Word) :
     let borrow_sub := if BitVec.ult u_i full_sub then (1 : Word) else 0
     let u_new := u_i - full_sub
     let carry_out := partial_carry + borrow_sub
@@ -1247,9 +1203,7 @@ theorem divK_mulsub_partB_spec (u_base partial_carry prod_hi full_sub v2_old u_i
 /-- Add-back Part A: LD v[i], LD u[j+i], ADD carry, SLTU carry1, ADD v[i].
     5 instructions. Produces sum (x2) and carry1 (x7). -/
 theorem divK_addback_partA_spec (sp u_base carry_in v5_old v2_old v_i u_i : Word)
-    (v_off : BitVec 12) (u_off : BitVec 12) (base : Word)
-    (_hv_v : isValidDwordAccess (sp + signExtend12 v_off) = true)
-    (_hv_u : isValidDwordAccess (u_base + signExtend12 u_off) = true) :
+    (v_off : BitVec 12) (u_off : BitVec 12) (base : Word) :
     let u_plus_carry := u_i + carry_in
     let carry1 := if BitVec.ult u_plus_carry carry_in then (1 : Word) else 0
     let u_new := u_plus_carry + v_i
@@ -1279,8 +1233,7 @@ theorem divK_addback_partA_spec (sp u_base carry_in v5_old v2_old v_i u_i : Word
 /-- Add-back Part B: SLTU carry2, OR carry_out, SD u_new.
     3 instructions. Produces carry_out (x7) and stores u_new. -/
 theorem divK_addback_partB_spec (u_base carry1 v_i u_new u_i : Word)
-    (u_off : BitVec 12) (base : Word)
-    (_hv_u : isValidDwordAccess (u_base + signExtend12 u_off) = true) :
+    (u_off : BitVec 12) (base : Word) :
     let carry2 := if BitVec.ult u_new v_i then (1 : Word) else 0
     let carry_out := carry1 ||| carry2
     let cr :=
@@ -1307,8 +1260,7 @@ theorem divK_addback_partB_spec (u_base carry1 v_i u_new u_i : Word)
 /-- Subtract carry from u[j+4].
     4 instructions: LD, SLTU, SUB, SD. Produces borrow (x7). -/
 theorem divK_sub_carry_spec (u_base carry_in v5_old v7_old u_top : Word)
-    (u_off : BitVec 12) (base : Word)
-    (_hv : isValidDwordAccess (u_base + signExtend12 u_off) = true) :
+    (u_off : BitVec 12) (base : Word) :
     let borrow := if BitVec.ult u_top carry_in then (1 : Word) else 0
     let u_new := u_top - carry_in
     let cr :=
@@ -1357,8 +1309,7 @@ theorem divK_store_qj_addr_spec (sp j v5_old v7_old : Word)
   runBlock I0 I1 I2
 
 /-- Store q[j]: SD q_hat at q_addr. 1 instruction. -/
-theorem divK_store_qj_write_spec (q_addr q_hat q_old : Word) (base : Word)
-    (hv : isValidDwordAccess q_addr = true) :
+theorem divK_store_qj_write_spec (q_addr q_hat q_old : Word) (base : Word) :
     let cr := CodeReq.singleton base (.SD .x7 .x11 0)
     cpsTriple base (base + 4) cr
       ((.x7 ↦ᵣ q_addr) ** (.x11 ↦ᵣ q_hat) ** (q_addr ↦ₘ q_old))
@@ -1366,7 +1317,6 @@ theorem divK_store_qj_write_spec (q_addr q_hat q_old : Word) (base : Word)
   intro cr
   have hse : signExtend12 (0 : BitVec 12) = (0 : Word) := by decide
   have haddr : q_addr + signExtend12 (0 : BitVec 12) = q_addr := by rw [hse]; bv_omega
-  have hv' : isValidDwordAccess (q_addr + signExtend12 0) = true := by rw [haddr]; exact hv
   have I0 := sd_spec_gen .x7 .x11 q_addr q_hat q_old 0 base
   rw [haddr] at I0
   runBlock I0
@@ -1378,8 +1328,7 @@ theorem divK_store_qj_write_spec (q_addr q_hat q_old : Word) (base : Word)
 
 /-- Add-back finalization after limb corrections. -/
 theorem divK_addback_final_spec (u_base carry q_hat v5_old u_top : Word)
-    (u_off : BitVec 12) (base : Word)
-    (_hv : isValidDwordAccess (u_base + signExtend12 u_off) = true) :
+    (u_off : BitVec 12) (base : Word) :
     let u_new := u_top + carry
     let q_hat' := q_hat + signExtend12 4095
     let cr :=
@@ -1463,8 +1412,7 @@ theorem divK_loop_control_spec (j : Word) (loop_back_off : BitVec 13)
 
 /-- Mul-sub setup: restore j from scratch, compute u_base, zero carry. -/
 theorem divK_mulsub_setup_spec (sp q_hat j v1_old v5_old v6_old v10_old : Word)
-    (base : Word)
-    (_hv : isValidDwordAccess (sp + signExtend12 3976) = true) :
+    (base : Word) :
     let j_x8 := j <<< (3 : BitVec 6).toNat
     let sp_m40 := sp + signExtend12 4056
     let u_base := sp_m40 - j_x8
@@ -1496,8 +1444,7 @@ theorem divK_mulsub_setup_spec (sp q_hat j v1_old v5_old v6_old v10_old : Word)
 -- ============================================================================
 
 /-- Save j to scratch memory. -/
-theorem divK_save_j_spec (sp j j_old : Word) (base : Word)
-    (_hv : isValidDwordAccess (sp + signExtend12 3976) = true) :
+theorem divK_save_j_spec (sp j j_old : Word) (base : Word) :
     let cr := CodeReq.singleton base (.SD .x12 .x1 3976)
     cpsTriple base (base + 4) cr
       ((.x12 ↦ᵣ sp) ** (.x1 ↦ᵣ j) ** (sp + signExtend12 3976 ↦ₘ j_old))
@@ -1552,9 +1499,7 @@ theorem divK_correction_branch_spec (borrow : Word) (skip_off : BitVec 13) (base
     u_hi = mem[u_addr], u_lo = mem[u_addr + 8]. -/
 theorem divK_trial_load_u_spec (sp j n v5_old v7_old u_hi u_lo : Word)
     (base : Word)
-    (_hv_n : isValidDwordAccess (sp + signExtend12 3984) = true)
-    (hv_uhi : isValidDwordAccess (sp + signExtend12 4056 - (j + n) <<< (3 : BitVec 6).toNat) = true)
-    (_hv_ulo : isValidDwordAccess ((sp + signExtend12 4056 - (j + n) <<< (3 : BitVec 6).toNat) + 8) = true) :
+    (hv_uhi : isValidDwordAccess (sp + signExtend12 4056 - (j + n) <<< (3 : BitVec 6).toNat) = true) :
     let jpn := j + n
     let jpn_x8 := jpn <<< (3 : BitVec 6).toNat
     let u0_base := sp + signExtend12 4056
@@ -1579,7 +1524,6 @@ theorem divK_trial_load_u_spec (sp j n v5_old v7_old u_hi u_lo : Word)
   intro jpn jpn_x8 u0_base u_addr cr
   have hse0 : signExtend12 (0 : BitVec 12) = (0 : Word) := by decide
   have haddr0 : u_addr + signExtend12 (0 : BitVec 12) = u_addr := by rw [hse0]; bv_omega
-  have hv_uhi' : isValidDwordAccess (u_addr + signExtend12 0) = true := by rw [haddr0]; exact hv_uhi
   have I0 := ld_spec_gen .x5 .x12 sp v5_old n 3984 base (by nofun)
   have I1 := add_spec_gen .x7 .x1 .x5 j n v7_old (base + 4) (by nofun)
   have I2 := slli_spec_gen_same .x7 jpn 3 (base + 8) (by nofun)
@@ -1599,9 +1543,7 @@ theorem divK_trial_load_u_spec (sp j n v5_old v7_old u_hi u_lo : Word)
     vtop_addr = sp + (n + signExtend12 4095) <<< 3.
     v_top = mem[vtop_addr + 32]. -/
 theorem divK_trial_load_vtop_spec (sp n v6_old v10_old v_top : Word)
-    (base : Word)
-    (_hv_n : isValidDwordAccess (sp + signExtend12 3984) = true)
-    (_hv_vtop : isValidDwordAccess (sp + (n + signExtend12 4095) <<< (3 : BitVec 6).toNat + signExtend12 32) = true) :
+    (base : Word) :
     let nm1 := n + signExtend12 4095
     let nm1_x8 := nm1 <<< (3 : BitVec 6).toNat
     let vtop_base := sp + nm1_x8
@@ -1653,10 +1595,7 @@ theorem divK_trial_max_spec (v11_old : Word) (base : Word) :
 
 /-- div128 Phase 1a: save x2 (return addr) and x10 (d), compute d_hi and d_lo. -/
 theorem divK_div128_save_split_d_spec (sp ret_addr d v1_old v6_old
-    ret_mem d_mem dlo_mem : Word) (base : Word)
-    (_hv_ret : isValidDwordAccess (sp + signExtend12 3968) = true)
-    (_hv_d   : isValidDwordAccess (sp + signExtend12 3960) = true)
-    (_hv_dlo : isValidDwordAccess (sp + signExtend12 3952) = true) :
+    ret_mem d_mem dlo_mem : Word) (base : Word) :
     let d_hi := d >>> (32 : BitVec 6).toNat
     let d_lo := (d <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat
     let cr :=
@@ -1692,8 +1631,7 @@ theorem divK_div128_save_split_d_spec (sp ret_addr d v1_old v6_old
 -- ============================================================================
 
 /-- div128 Phase 1b: split u_lo into un1 (x11) and un0 (x5), save un0. -/
-theorem divK_div128_split_ulo_spec (sp u_lo v11_old un0_mem : Word) (base : Word)
-    (_hv_un0 : isValidDwordAccess (sp + signExtend12 3944) = true) :
+theorem divK_div128_split_ulo_spec (sp u_lo v11_old un0_mem : Word) (base : Word) :
     let un1 := u_lo >>> (32 : BitVec 6).toNat
     let un0 := (u_lo <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat
     let cr :=
@@ -1744,8 +1682,7 @@ theorem divK_div128_step1_init_spec (u_hi d_hi v5_old v10_old : Word) (base : Wo
 
 /-- div128 un21 = rhat*2^32 + un1 - q1*d_lo.
     Loads d_lo from scratch memory. -/
-theorem divK_div128_compute_un21_spec (sp q1 rhat un1 v1_old v5_old dlo_mem : Word) (base : Word)
-    (_hv : isValidDwordAccess (sp + signExtend12 3952) = true) :
+theorem divK_div128_compute_un21_spec (sp q1 rhat un1 v1_old v5_old dlo_mem : Word) (base : Word) :
     let rhat_hi := rhat <<< (32 : BitVec 6).toNat
     let rhat_un1 := rhat_hi ||| un1
     let q1_dlo := q1 * dlo_mem
@@ -1778,8 +1715,7 @@ theorem divK_div128_compute_un21_spec (sp q1 rhat un1 v1_old v5_old dlo_mem : Wo
 -- ============================================================================
 
 /-- div128 product check body: compute q*d_lo and rhat*2^32+un1 for comparison. -/
-theorem divK_div128_prodcheck_body_spec (sp q rhat un1 v1_old v5_old dlo : Word) (base : Word)
-    (_hv : isValidDwordAccess (sp + signExtend12 3952) = true) :
+theorem divK_div128_prodcheck_body_spec (sp q rhat un1 v1_old v5_old dlo : Word) (base : Word) :
     let q_dlo := q * dlo
     let rhat_hi := rhat <<< (32 : BitVec 6).toNat
     let rhat_un1 := rhat_hi ||| un1
@@ -1893,9 +1829,7 @@ theorem divK_div128_step2_init_spec (un21 d_hi v1_old v5_old v11_old : Word) (ba
 
 /-- div128 product check 2: compute q0*d_lo and rhat2*2^32+un0 for comparison. -/
 theorem divK_div128_prodcheck2_body_spec (sp q0 rhat2 v1_old v7_old dlo un0 : Word)
-    (base : Word)
-    (_hv_dlo : isValidDwordAccess (sp + signExtend12 3952) = true)
-    (_hv_un0 : isValidDwordAccess (sp + signExtend12 3944) = true) :
+    (base : Word) :
     let q0_dlo := q0 * dlo
     let rhat2_hi := rhat2 <<< (32 : BitVec 6).toNat
     let rhat2_un0 := rhat2_hi ||| un0
@@ -1963,7 +1897,6 @@ theorem divK_div128_combine_q_spec (q1 q0 v11_old : Word) (base : Word) :
 
 /-- div128 restore and return: load return addr, JALR x0 x2 0. -/
 theorem divK_div128_restore_return_spec (sp v2_old ret_addr : Word) (base : Word)
-    (_hv : isValidDwordAccess (sp + signExtend12 3968) = true)
     (halign : (ret_addr + signExtend12 0) &&& ~~~1 = ret_addr) :
     let cr :=
       CodeReq.union (CodeReq.singleton base (.LD .x2 .x12 3968))
@@ -2091,8 +2024,7 @@ set_option maxRecDepth 8192 in
 /-- div128 product check 1: compute q1*d_lo vs rhat*2^32+un1, conditionally correct.
     Instrs [17]-[24]. Both BLTU paths merge at base+32. -/
 theorem divK_div128_prodcheck1_merged_spec
-    (sp q1 rhat d_hi un1 v1_old v5_old dlo : Word) (base : Word)
-    (_hv : isValidDwordAccess (sp + signExtend12 3952) = true) :
+    (sp q1 rhat d_hi un1 v1_old v5_old dlo : Word) (base : Word) :
     let q_dlo := q1 * dlo
     let rhat_un1 := (rhat <<< (32 : BitVec 6).toNat) ||| un1
     let q1' := if BitVec.ult rhat_un1 q_dlo then q1 + signExtend12 4095 else q1
@@ -2357,9 +2289,7 @@ set_option maxRecDepth 8192 in
 /-- div128 product check 2: compute q0*d_lo vs rhat2*2^32+un0, conditionally correct q0.
     Instrs [37]-[44]. Both BLTU paths merge at base+32. -/
 theorem divK_div128_prodcheck2_merged_spec
-    (sp q0 rhat2 v1_old v7_old dlo un0 : Word) (base : Word)
-    (_hv_dlo : isValidDwordAccess (sp + signExtend12 3952) = true)
-    (_hv_un0 : isValidDwordAccess (sp + signExtend12 3944) = true) :
+    (sp q0 rhat2 v1_old v7_old dlo un0 : Word) (base : Word) :
     let q0_dlo := q0 * dlo
     let rhat2_un0 := (rhat2 <<< (32 : BitVec 6).toNat) ||| un0
     let q0' := if BitVec.ult rhat2_un0 q0_dlo then q0 + signExtend12 4095 else q0
@@ -2608,7 +2538,7 @@ theorem divK_div128_step1_spec
     (fun h hp => by xperm_hyp hp) h1f h2f
   -- Sub-spec 3: prodcheck1 [17]-[24]
   have h3_raw := divK_div128_prodcheck1_merged_spec sp q1c rhatc d_hi un1
-    v1_old hi dlo (base + 28) hv
+    v1_old hi dlo (base + 28)
   have : (base + 28 : Word) + 4 = base + 32 := by bv_addr
   have : (base + 28 : Word) + 8 = base + 36 := by bv_addr
   have : (base + 28 : Word) + 12 = base + 40 := by bv_addr
@@ -2752,7 +2682,7 @@ theorem divK_div128_step2_spec
     (fun h hp => by xperm_hyp hp) h1f h2f
   -- Sub-spec 3: prodcheck2 [37]-[44]
   have h3_raw := divK_div128_prodcheck2_merged_spec sp q0c rhat2c hi
-    un21 dlo un0 (base + 28) hv_dlo hv_un0
+    un21 dlo un0 (base + 28)
   have : (base + 28 : Word) + 4 = base + 32 := by bv_addr
   have : (base + 28 : Word) + 8 = base + 36 := by bv_addr
   have : (base + 28 : Word) + 12 = base + 40 := by bv_addr
@@ -2804,11 +2734,7 @@ set_option maxRecDepth 2048 in
     Output: x6=d_hi, x11=un1, x5=un0 (saved), x7=u_hi (unchanged). -/
 theorem divK_div128_phase1_spec
     (sp ret_addr d u_lo u_hi v1_old v6_old v11_old
-     ret_mem d_mem dlo_mem un0_mem : Word) (base : Word)
-    (_hv_ret : isValidDwordAccess (sp + signExtend12 3968) = true)
-    (_hv_d   : isValidDwordAccess (sp + signExtend12 3960) = true)
-    (_hv_dlo : isValidDwordAccess (sp + signExtend12 3952) = true)
-    (_hv_un0 : isValidDwordAccess (sp + signExtend12 3944) = true) :
+     ret_mem d_mem dlo_mem un0_mem : Word) (base : Word) :
     let d_hi := d >>> (32 : BitVec 6).toNat
     let d_lo := (d <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat
     let un1 := u_lo >>> (32 : BitVec 6).toNat
@@ -2863,7 +2789,6 @@ set_option maxRecDepth 2048 in
     Instrs [45]-[48]. Exit to ret_addr. -/
 theorem divK_div128_end_spec
     (sp q1 q0 v2_old v11_old ret_addr : Word) (base : Word)
-    (_hv : isValidDwordAccess (sp + signExtend12 3968) = true)
     (halign : (ret_addr + signExtend12 0) &&& ~~~1 = ret_addr) :
     let q1_hi := q1 <<< (32 : BitVec 6).toNat
     let q := q1_hi ||| q0
@@ -2897,9 +2822,7 @@ set_option maxRecDepth 2048 in
     Output: carry_out (x10), u_new stored. -/
 theorem divK_mulsub_limb_spec
     (sp u_base q_hat carry_in v5_old v7_old v2_old v_i u_i : Word)
-    (v_off u_off : BitVec 12) (base : Word)
-    (_hv_v : isValidDwordAccess (sp + signExtend12 v_off) = true)
-    (_hv_u : isValidDwordAccess (u_base + signExtend12 u_off) = true) :
+    (v_off u_off : BitVec 12) (base : Word) :
     let prod_lo := q_hat * v_i
     let prod_hi := rv64_mulhu q_hat v_i
     let full_sub := prod_lo + carry_in
@@ -2952,9 +2875,7 @@ set_option maxRecDepth 2048 in
     Output: carry_out (x7), u_new stored. -/
 theorem divK_addback_limb_spec
     (sp u_base carry_in v5_old v2_old v_i u_i : Word)
-    (v_off u_off : BitVec 12) (base : Word)
-    (_hv_v : isValidDwordAccess (sp + signExtend12 v_off) = true)
-    (_hv_u : isValidDwordAccess (u_base + signExtend12 u_off) = true) :
+    (v_off u_off : BitVec 12) (base : Word) :
     let u_plus_carry := u_i + carry_in
     let carry1 := if BitVec.ult u_plus_carry carry_in then (1 : Word) else 0
     let u_new := u_plus_carry + v_i
@@ -3002,10 +2923,7 @@ set_option maxRecDepth 2048 in
 theorem divK_trial_load_spec
     (sp j n v5_old v6_old v7_old v10_old u_hi u_lo v_top : Word)
     (base : Word)
-    (_hv_n1 : isValidDwordAccess (sp + signExtend12 3984) = true)
-    (hv_uhi : isValidDwordAccess (sp + signExtend12 4056 - (j + n) <<< (3 : BitVec 6).toNat) = true)
-    (_hv_ulo : isValidDwordAccess ((sp + signExtend12 4056 - (j + n) <<< (3 : BitVec 6).toNat) + 8) = true)
-    (_hv_vtop : isValidDwordAccess (sp + (n + signExtend12 4095) <<< (3 : BitVec 6).toNat + signExtend12 32) = true) :
+    (hv_uhi : isValidDwordAccess (sp + signExtend12 4056 - (j + n) <<< (3 : BitVec 6).toNat) = true) :
     let u_addr := sp + signExtend12 4056 - (j + n) <<< (3 : BitVec 6).toNat
     let vtop_base := sp + (n + signExtend12 4095) <<< (3 : BitVec 6).toNat
     let cr :=
@@ -3041,7 +2959,6 @@ theorem divK_trial_load_spec
   let u0_base := sp + signExtend12 4056
   have hse0 : signExtend12 (0 : BitVec 12) = (0 : Word) := by decide
   have haddr0 : u_addr + signExtend12 (0 : BitVec 12) = u_addr := by rw [hse0]; bv_omega
-  have hv_uhi' : isValidDwordAccess (u_addr + signExtend12 0) = true := by rw [haddr0]; exact hv_uhi
   have I0 := ld_spec_gen .x5 .x12 sp v5_old n 3984 base (by nofun)
   have I1 := add_spec_gen .x7 .x1 .x5 j n v7_old (base + 4) (by nofun)
   have I2 := slli_spec_gen_same .x7 jpn 3 (base + 8) (by nofun)

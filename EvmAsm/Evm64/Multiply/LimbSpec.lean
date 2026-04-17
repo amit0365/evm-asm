@@ -33,8 +33,7 @@ abbrev mul_col3_code (base : Word) : CodeReq :=
 /-- Column 3: multiply b[3] × a[0], add to r3 accumulator, store result.
     5 instructions: LD b3; LD a0; MUL a0*b3; ADD acc; SD result. -/
 theorem mul_col3_spec (sp : Word) (base : Word)
-    (a0 b3 r3_in v5 v6 : Word)
-    (_hvalid : ValidMemRange sp 8) :
+    (a0 b3 r3_in v5 v6 : Word) :
     let code := mul_col3_code base
     cpsTriple base (base + 20) code
       ((.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ v5) ** (.x6 ↦ᵣ v6) ** (.x10 ↦ᵣ r3_in) **
@@ -59,8 +58,7 @@ abbrev mul_col2_code (base : Word) : CodeReq :=
     13 instructions. Input: x11 = r2 acc, sp+16 = r3 partial.
     Output: x10 = r3 total, sp+48 = r2 stored. -/
 theorem mul_col2_spec (sp : Word) (base : Word)
-    (a0 a1 b2 r2_in r3p v5 v6 v7 v10 : Word)
-    (_hvalid : ValidMemRange sp 8) :
+    (a0 a1 b2 r2_in r3p v5 v6 v7 v10 : Word) :
     let lo_a0b2 := a0 * b2
     let hi_a0b2 := rv64_mulhu a0 b2
     let r2_out := r2_in + lo_a0b2
@@ -103,8 +101,7 @@ abbrev mul_col1_partA_code (base : Word) : CodeReq :=
 /-- Column 1 part A: load b1, multiply a0×b1, store r1, begin r2 accumulation.
     10 instructions at base..base+36. -/
 theorem mul_col1_partA_spec (sp : Word) (base : Word)
-    (a0 b1 r1_in r2_in v5 v6 v7 : Word)
-    (_hvalid : ValidMemRange sp 8) :
+    (a0 b1 r1_in r2_in v5 v6 v7 : Word) :
     let lo_a0b1 := a0 * b1
     let hi_a0b1 := rv64_mulhu a0 b1
     let r1_out := r1_in + lo_a0b1
@@ -141,8 +138,7 @@ abbrev mul_col1_partB_code (base : Word) : CodeReq :=
 /-- Column 1 part B: multiply a1×b1, a2×b1, accumulate r2/r3, store r3 spill.
     13 instructions at base+40..base+88. -/
 theorem mul_col1_partB_spec (sp : Word) (base : Word)
-    (a1 a2 b1 r3p0 v6 v7 carry_r2_1 r2_acc1 : Word)
-    (_hvalid : ValidMemRange sp 8) :
+    (a1 a2 b1 r3p0 v6 v7 carry_r2_1 r2_acc1 : Word) :
     let lo_a1b1 := a1 * b1
     let hi_a1b1 := rv64_mulhu a1 b1
     let r2_out := r2_acc1 + lo_a1b1
@@ -181,8 +177,7 @@ abbrev mul_col1_code (base : Word) : CodeReq :=
     23 instructions. Input: x10 = r1 acc, x11 = r2 acc, sp+24 = r3 partial from col0.
     Output: x11 = r2 acc, sp+16 = r3 partial, sp+40 = r1 stored. -/
 theorem mul_col1_spec (sp : Word) (base : Word)
-    (a0 a1 a2 b1 r1_in r2_in r3p0 v5 v6 v7 : Word)
-    (hvalid : ValidMemRange sp 8) :
+    (a0 a1 a2 b1 r1_in r2_in r3p0 v5 v6 v7 : Word) :
     let lo_a0b1 := a0 * b1
     let hi_a0b1 := rv64_mulhu a0 b1
     let r1_out := r1_in + lo_a0b1
@@ -207,8 +202,8 @@ theorem mul_col1_spec (sp : Word) (base : Word)
        (sp ↦ₘ a0) ** ((sp + 8) ↦ₘ a1) ** ((sp + 16) ↦ₘ r3_spill) **
        ((sp + 24) ↦ₘ r3p0) ** ((sp + 40) ↦ₘ r1_out)) := by
   intro lo_a0b1 hi_a0b1 r1_out carry01 r2_contrib1 r2_acc1 carry_r2_1 lo_a1b1 hi_a1b1 r2_out carry_r2_2 r3_contrib1 r3_spill
-  have PA := mul_col1_partA_spec sp base a0 b1 r1_in r2_in v5 v6 v7 hvalid
-  have PB := mul_col1_partB_spec sp base a1 a2 b1 r3p0 r2_contrib1 carry01 carry_r2_1 r2_acc1 hvalid
+  have PA := mul_col1_partA_spec sp base a0 b1 r1_in r2_in v5 v6 v7
+  have PB := mul_col1_partB_spec sp base a1 a2 b1 r3p0 r2_contrib1 carry01 carry_r2_1 r2_acc1
   runBlock PA PB
 
 -- ============================================================================
@@ -223,8 +218,7 @@ abbrev mul_col0_partA_code (base : Word) : CodeReq :=
 /-- Column 0 part A: load b0, multiply a0×b0 and a1×b0, store r0, begin r1/r2 accumulation.
     11 instructions at base..base+40. -/
 theorem mul_col0_partA_spec (sp : Word) (base : Word)
-    (a0 a1 b0 v5 v6 v7 v10 v11 : Word)
-    (_hvalid : ValidMemRange sp 8) :
+    (a0 a1 b0 v5 v6 v7 v10 v11 : Word) :
     let r0 := a0 * b0
     let hi_a0b0 := rv64_mulhu a0 b0
     let lo_a1b0 := a1 * b0
@@ -261,8 +255,7 @@ abbrev mul_col0_partB_code (base : Word) : CodeReq :=
 /-- Column 0 part B: multiply a2×b0 and a3×b0, accumulate r2, store r3 partial.
     10 instructions at base+44..base+80. -/
 theorem mul_col0_partB_spec (sp : Word) (base : Word)
-    (a2 a3 b0 v6 v7 r2_partial : Word)
-    (_hvalid : ValidMemRange sp 8) :
+    (a2 a3 b0 v6 v7 r2_partial : Word) :
     let lo_a2b0 := a2 * b0
     let hi_a2b0 := rv64_mulhu a2 b0
     let r2_acc := r2_partial + lo_a2b0
@@ -296,8 +289,7 @@ abbrev mul_col0_code (base : Word) : CodeReq :=
 /-- Column 0: multiply b[0] × {a[0],a[1],a[2],a[3]}, store r[0], spill r[3] partial.
     21 instructions. Output: x10 = r1 acc, x11 = r2 acc, sp+24 = r3p, sp+32 = r0. -/
 theorem mul_col0_spec (sp : Word) (base : Word)
-    (a0 a1 a2 a3 b0 v5 v6 v7 v10 v11 : Word)
-    (hvalid : ValidMemRange sp 8) :
+    (a0 a1 a2 a3 b0 v5 v6 v7 v10 v11 : Word) :
     let r0 := a0 * b0
     let hi_a0b0 := rv64_mulhu a0 b0
     let lo_a1b0 := a1 * b0
@@ -320,8 +312,8 @@ theorem mul_col0_spec (sp : Word) (base : Word)
        (sp ↦ₘ a0) ** ((sp + 8) ↦ₘ a1) ** ((sp + 16) ↦ₘ a2) **
        ((sp + 24) ↦ₘ r3p) ** ((sp + 32) ↦ₘ r0)) := by
   intro r0 hi_a0b0 lo_a1b0 hi_a1b0 r1_acc carry_r1 lo_a2b0 hi_a2b0 r2_acc carry_r2 r3p
-  have PA := mul_col0_partA_spec sp base a0 a1 b0 v5 v6 v7 v10 v11 hvalid
-  have PB := mul_col0_partB_spec sp base a2 a3 b0 carry_r1 lo_a1b0 (hi_a1b0 + carry_r1) hvalid
+  have PA := mul_col0_partA_spec sp base a0 a1 b0 v5 v6 v7 v10 v11
+  have PB := mul_col0_partB_spec sp base a2 a3 b0 carry_r1 lo_a1b0 (hi_a1b0 + carry_r1)
   runBlock PA PB
 
 -- ============================================================================
@@ -336,8 +328,7 @@ abbrev evm_mul_code01 (base : Word) : CodeReq :=
 /-- Intermediate: compose col0 + col1. 44 instructions at base..base+176. -/
 theorem evm_mul_cols01_spec (sp : Word) (base : Word)
     (a0 a1 a2 a3 b0 b1 : Word)
-    (v5 v6 v7 v10 v11 : Word)
-    (hvalid : ValidMemRange sp 8) :
+    (v5 v6 v7 v10 v11 : Word) :
     -- Col0 intermediates
     let c0_r0 := a0 * b0
     let c0_hi_a0b0 := rv64_mulhu a0 b0
@@ -375,8 +366,8 @@ theorem evm_mul_cols01_spec (sp : Word) (base : Word)
        (sp ↦ₘ a0) ** ((sp + 8) ↦ₘ a1) ** ((sp + 16) ↦ₘ c1_r3p) **
        ((sp + 24) ↦ₘ c0_r3p) ** ((sp + 32) ↦ₘ c0_r0) ** ((sp + 40) ↦ₘ c1_r1)) := by
   intro c0_r0 c0_hi_a0b0 c0_lo_a1b0 c0_hi_a1b0 c0_r1 c0_c1 c0_lo_a2b0 c0_hi_a2b0 c0_r2 c0_c2 c0_r3p c1_lo c1_hi c1_r1 c1_c1 c1_rc c1_r2a c1_cr1 c1_lo2 c1_hi2 c1_r2 c1_cr2 c1_rc2 c1_r3p
-  have C0 := mul_col0_spec sp base a0 a1 a2 a3 b0 v5 v6 v7 v10 v11 hvalid
-  have C1 := mul_col1_spec sp (base + 84) a0 a1 a2 b1 c0_r1 c0_r2 c0_r3p b0 c0_r3p (a3 * b0) hvalid
+  have C0 := mul_col0_spec sp base a0 a1 a2 a3 b0 v5 v6 v7 v10 v11
+  have C1 := mul_col1_spec sp (base + 84) a0 a1 a2 b1 c0_r1 c0_r2 c0_r3p b0 c0_r3p (a3 * b0)
   runBlock C0 C1
 
 -- Intermediate code: columns 2 + 3 + epilogue
@@ -387,8 +378,7 @@ abbrev evm_mul_cols23ep_code (base : Word) : CodeReq :=
 
 /-- Intermediate: compose col2 + col3 + epilogue. 19 instructions at base+176..base+252. -/
 theorem evm_mul_cols23ep_spec (sp : Word) (base : Word)
-    (a0 a1 b2 b3 r2_in r3p_in v5 v6 v7 v10 : Word)
-    (hvalid : ValidMemRange sp 8) :
+    (a0 a1 b2 b3 r2_in r3p_in v5 v6 v7 v10 : Word) :
     -- Col2 intermediates
     let c2_lo := a0 * b2
     let c2_hi := rv64_mulhu a0 b2
@@ -409,8 +399,8 @@ theorem evm_mul_cols23ep_spec (sp : Word) (base : Word)
        (sp ↦ₘ a0) ** ((sp + 8) ↦ₘ a1) ** ((sp + 16) ↦ₘ r3p_in) **
        ((sp + 48) ↦ₘ c2_r2) ** ((sp + 56) ↦ₘ r3_final)) := by
   intro c2_lo c2_hi c2_r2 c2_c c2_rc c2_r3 r3_final
-  have C2 := mul_col2_spec sp (base + 176) a0 a1 b2 r2_in r3p_in v5 v6 v7 v10 hvalid
-  have C3 := mul_col3_spec sp (base + 228) a0 b3 c2_r3 b2 c2_rc hvalid
+  have C2 := mul_col2_spec sp (base + 176) a0 a1 b2 r2_in r3p_in v5 v6 v7 v10
+  have C3 := mul_col3_spec sp (base + 228) a0 b3 c2_r3 b2 c2_rc
   have EP := addi_spec_gen_same .x12 sp 32 (base + 248) (by nofun)
   runBlock C2 C3 EP
 
@@ -476,8 +466,8 @@ theorem evm_mul_spec (sp : Word) (base : Word)
   -- Introduce all let bindings
   intro c0_r0 c0_hi_a0b0 c0_lo_a1b0 c0_hi_a1b0 c0_r1 c0_c1 c0_lo_a2b0 c0_hi_a2b0 c0_r2 c0_c2 c0_r3p c1_lo c1_hi c1_r1 c1_c1 c1_rc c1_r2a c1_cr1 c1_lo2 c1_hi2 c1_r2 c1_cr2 c1_rc2 c1_r3p c2_lo c2_hi c2_r2 c2_c c2_rc c2_r3 r3_final
   -- Compose intermediate triples
-  have S01 := evm_mul_cols01_spec sp base a0 a1 a2 a3 b0 b1 v5 v6 v7 v10 v11 hvalid
-  have S23EP := evm_mul_cols23ep_spec sp base a0 a1 b2 b3 c1_r2 c1_r3p b1 c0_r3p c1_cr2 c1_r3p hvalid
+  have S01 := evm_mul_cols01_spec sp base a0 a1 a2 a3 b0 b1 v5 v6 v7 v10 v11
+  have S23EP := evm_mul_cols23ep_spec sp base a0 a1 b2 b3 c1_r2 c1_r3p b1 c0_r3p c1_cr2 c1_r3p
   runBlock S01 S23EP
 
 end EvmAsm.Evm64

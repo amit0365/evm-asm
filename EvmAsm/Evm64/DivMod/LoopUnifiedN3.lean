@@ -79,9 +79,9 @@ theorem divK_loop_n3_unified_spec (bltu_1 bltu_0 : Bool)
       rw [show BitVec.ult _ v2 = false from hbltu_0.symm]; decide
     have hMM := divK_loop_n3_max_max_spec sp j_old v5_old v6_old v7_old v10_old v11_old v2_old
       v0 v1 v2 v3 u0 u1 u2 u3 u_top u0_orig q1_old q0_old base
-      hv_j hv_n1 hv_uhi_1 hv_ulo_1 hv_vtop hv_v0 hv_v1 hv_v2 hv_v3
-      hv_u0_1 hv_u1_1 hv_u2_1 hv_u3_1 hv_u4_1 hv_q1
-      hv_uhi_0 hv_ulo_0 hv_u0_0 hv_q0
+
+
+
       hbltu_1' hbltu_0' hcarry2
     have hMMF := cpsTriple_frame_left _ _ _ _ _
       ((sp + signExtend12 3968 ↦ₘ ret_mem) **
@@ -101,11 +101,11 @@ theorem divK_loop_n3_unified_spec (bltu_1 bltu_0 : Bool)
     have hMC := divK_loop_n3_max_call_spec sp j_old v5_old v6_old v7_old v10_old v11_old v2_old
       v0 v1 v2 v3 u0 u1 u2 u3 u_top u0_orig q1_old q0_old
       ret_mem d_mem dlo_mem scratch_un0 base
-      hv_j hv_n1 hv_uhi_1 hv_ulo_1 hv_vtop
+
       hv_ret hv_d hv_dlo hv_scratch_un0 halign
-      hv_v0 hv_v1 hv_v2 hv_v3
-      hv_u0_1 hv_u1_1 hv_u2_1 hv_u3_1 hv_u4_1 hv_q1
-      hv_uhi_0 hv_ulo_0 hv_u0_0 hv_q0
+
+
+
       hbltu_1' hbltu_0' hcarry2
     exact cpsTriple_consequence _ _ _ _ _ _ _
       (fun h hp => hp)
@@ -118,11 +118,11 @@ theorem divK_loop_n3_unified_spec (bltu_1 bltu_0 : Bool)
     have hCM := divK_loop_n3_call_max_spec sp j_old v5_old v6_old v7_old v10_old v11_old v2_old
       v0 v1 v2 v3 u0 u1 u2 u3 u_top u0_orig q1_old q0_old
       ret_mem d_mem dlo_mem scratch_un0 base
-      hv_j hv_n1 hv_uhi_1 hv_ulo_1 hv_vtop
+
       hv_ret hv_d hv_dlo hv_scratch_un0 halign
-      hv_v0 hv_v1 hv_v2 hv_v3
-      hv_u0_1 hv_u1_1 hv_u2_1 hv_u3_1 hv_u4_1 hv_q1
-      hv_uhi_0 hv_ulo_0 hv_u0_0 hv_q0
+
+
+
       hbltu_1' hbltu_0' hcarry2
     exact cpsTriple_consequence _ _ _ _ _ _ _
       (fun h hp => hp)
@@ -135,11 +135,11 @@ theorem divK_loop_n3_unified_spec (bltu_1 bltu_0 : Bool)
     have hCC := divK_loop_n3_call_call_spec sp j_old v5_old v6_old v7_old v10_old v11_old v2_old
       v0 v1 v2 v3 u0 u1 u2 u3 u_top u0_orig q1_old q0_old
       ret_mem d_mem dlo_mem scratch_un0 base
-      hv_j hv_n1 hv_uhi_1 hv_ulo_1 hv_vtop
+
       hv_ret hv_d hv_dlo hv_scratch_un0 halign
-      hv_v0 hv_v1 hv_v2 hv_v3
-      hv_u0_1 hv_u1_1 hv_u2_1 hv_u3_1 hv_u4_1 hv_q1
-      hv_uhi_0 hv_ulo_0 hv_u0_0 hv_q0
+
+
+
       hbltu_1' hbltu_0' hcarry2
     exact cpsTriple_consequence _ _ _ _ _ _ _
       (fun h hp => hp)

@@ -47,12 +47,12 @@ theorem evm_eq_spec (sp : Word) (base : Word)
        ((sp + 32) ↦ₘ eq_result) ** ((sp + 40) ↦ₘ 0) ** ((sp + 48) ↦ₘ 0) ** ((sp + 56) ↦ₘ 0)) := by
   intro acc0 acc1 acc2 acc3 eq_result
   -- Per-limb EQ specs
-  have L0 := eq_limb0_spec 0 32 sp a0 b0 v7 v6 base (by validMem) (by validMem)
-  have L1 := eq_or_limb_spec 8 40 sp a1 b1 b0 v5 (a0 ^^^ b0) (base + 12) (by validMem) (by validMem)
+  have L0 := eq_limb0_spec 0 32 sp a0 b0 v7 v6 base
+  have L1 := eq_or_limb_spec 8 40 sp a1 b1 b0 v5 (a0 ^^^ b0) (base + 12)
   have L2 := eq_or_limb_spec 16 48 sp a2 b2 (a1 ^^^ b1) b1
-    ((a0 ^^^ b0) ||| (a1 ^^^ b1)) (base + 28) (by validMem) (by validMem)
+    ((a0 ^^^ b0) ||| (a1 ^^^ b1)) (base + 28)
   have L3 := eq_or_limb_spec 24 56 sp a3 b3 (a2 ^^^ b2) b2
-    ((a0 ^^^ b0) ||| (a1 ^^^ b1) ||| (a2 ^^^ b2)) (base + 44) (by validMem) (by validMem)
+    ((a0 ^^^ b0) ||| (a1 ^^^ b1) ||| (a2 ^^^ b2)) (base + 44)
   -- Store phase: SLTIU + ADDI + SD eq_result + 3×SD 0
   have T := sltiu_spec_gen_same .x7
     ((a0 ^^^ b0) ||| (a1 ^^^ b1) ||| (a2 ^^^ b2) ||| (a3 ^^^ b3)) 1 (base + 60) (by nofun)

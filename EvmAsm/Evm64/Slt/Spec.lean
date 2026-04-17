@@ -69,15 +69,15 @@ theorem evm_slt_spec (sp : Word) (base : Word)
     subst h
     simp only [ite_true]
     -- MSB load phase
-    have M := slt_msb_load_spec 24 56 sp a3 a3 v7 v6 base (by validMem) (by validMem)
+    have M := slt_msb_load_spec 24 56 sp a3 a3 v7 v6 base
     -- BEQ taken (a3 = a3)
     have B := beq_eq_spec .x7 .x6 (12 : BitVec 13) a3 (base + 8)
     have hsig13 : signExtend13 (12 : BitVec 13) = (12 : Word) := by decide
     simp only [hsig13] at B
     -- Lower limb borrow chain
-    have L0 := lt_limb0_spec 0 32 sp a0 b0 a3 a3 v5 (base + 20) (by validMem) (by validMem)
-    have L1 := lt_limb_carry_spec 8 40 sp a1 b1 a0 b0 borrow0 v11 (base + 32) (by validMem) (by validMem)
-    have L2 := lt_limb_carry_spec 16 48 sp a2 b2 temp1 borrow1b borrow1 borrow1a (base + 56) (by validMem) (by validMem)
+    have L0 := lt_limb0_spec 0 32 sp a0 b0 a3 a3 v5 (base + 20)
+    have L1 := lt_limb_carry_spec 8 40 sp a1 b1 a0 b0 borrow0 v11 (base + 32)
+    have L2 := lt_limb_carry_spec 16 48 sp a2 b2 temp1 borrow1b borrow1 borrow1a (base + 56)
     -- Store phase
     have A := addi_spec_gen_same .x12 sp 32 (base + 80) (by nofun)
     simp only [signExtend12_32] at A
@@ -89,7 +89,7 @@ theorem evm_slt_spec (sp : Word) (base : Word)
   · -- Case: MSB limbs differ → BEQ not taken, SLT + JAL path
     simp only [if_neg h]
     -- MSB load phase
-    have M := slt_msb_load_spec 24 56 sp a3 b3 v7 v6 base (by validMem) (by validMem)
+    have M := slt_msb_load_spec 24 56 sp a3 b3 v7 v6 base
     -- BEQ not taken (a3 ≠ b3)
     have B := beq_ne_spec .x7 .x6 (12 : BitVec 13) a3 b3 h (base + 8)
     -- SLT instruction

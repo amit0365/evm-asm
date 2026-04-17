@@ -75,7 +75,6 @@ theorem evm_div_n4_preloop_shift0_call_skip_spec (sp base : Word)
     (hbnz : b0 ||| b1 ||| b2 ||| b3 ≠ 0)
     (hb3nz : b3 ≠ 0)
     (hshift_z : (clzResult b3).1 = 0)
-    (hvalid : ValidMemRange sp 8)
     (hv_q0 : isValidDwordAccess (sp + signExtend12 4088) = true)
     (hv_q1 : isValidDwordAccess (sp + signExtend12 4080) = true)
     (hv_q2 : isValidDwordAccess (sp + signExtend12 4072) = true)
@@ -130,9 +129,9 @@ theorem evm_div_n4_preloop_shift0_call_skip_spec (sp base : Word)
   have hPre := evm_div_n4_shift0_to_loopSetup_spec sp base
     a0 a1 a2 a3 b0 b1 b2 b3 v5 v6 v7 v10
     q0 q1 q2 q3 u0_old u1_old u2_old u3_old u4_old u5 u6 u7 n_mem shift_mem
-    hbnz hb3nz hshift_z hvalid
-    hv_q0 hv_q1 hv_q2 hv_q3 hv_u0 hv_u1 hv_u2 hv_u3 hv_u4
-    hv_u5 hv_u6 hv_u7 hv_n hv_shift
+    hbnz hb3nz hshift_z
+
+
   -- Frame preloop with x11, j_mem, ret_mem, d_mem, dlo_mem, scratch_un0
   have hPreF := cpsTriple_frame_left _ _ _ _ _
     ((.x11 ↦ᵣ v11_old) ** ((sp + signExtend12 3976) ↦ₘ j_mem) **
@@ -147,7 +146,7 @@ theorem evm_div_n4_preloop_shift0_call_skip_spec (sp base : Word)
     b0 b1 b2 b3 a0 a1 a2 a3 (0 : Word) (0 : Word)
     ret_mem d_mem dlo_mem scratch_un0
     hv_j hv_n hv_uhi hv_ulo hv_vtop hv_ret hv_d hv_dlo hv_scratch_un0 halign
-    hv_v0 hv_u0 hv_v1 hv_u1 hv_v2 hv_u2 hv_v3 hv_u3 hv_u4 hv_q0
+
     hbltu
   intro_lets at hLoop
   have hLoop' := hLoop hborrow
@@ -260,7 +259,6 @@ theorem evm_div_n4_full_shift0_call_skip_spec (sp base : Word)
     (hbnz : b0 ||| b1 ||| b2 ||| b3 ≠ 0)
     (hb3nz : b3 ≠ 0)
     (hshift_z : (clzResult b3).1 = 0)
-    (hvalid : ValidMemRange sp 8)
     (hv_q0 : isValidDwordAccess (sp + signExtend12 4088) = true)
     (hv_q1 : isValidDwordAccess (sp + signExtend12 4080) = true)
     (hv_q2 : isValidDwordAccess (sp + signExtend12 4072) = true)
@@ -309,9 +307,9 @@ theorem evm_div_n4_full_shift0_call_skip_spec (sp base : Word)
     a0 a1 a2 a3 b0 b1 b2 b3 v5 v6 v7 v10 v11_old
     q0 q1 q2 q3 u0_old u1_old u2_old u3_old u4_old u5 u6 u7 n_mem shift_mem j_mem
     ret_mem d_mem dlo_mem scratch_un0
-    hbnz hb3nz hshift_z hvalid
-    hv_q0 hv_q1 hv_q2 hv_q3 hv_u0 hv_u1 hv_u2 hv_u3 hv_u4
-    hv_u5 hv_u6 hv_u7 hv_n hv_shift hv_j hv_ret hv_d hv_dlo hv_scratch_un0
+    hbnz hb3nz hshift_z
+
+
     hv_uhi hv_ulo hv_vtop halign hborrow
   -- 2. Post-loop: base+904 → base+1068 (shift=0 epilogue)
   have hB := evm_div_shift0_epilogue_spec sp base
@@ -320,7 +318,7 @@ theorem evm_div_n4_full_shift0_call_skip_spec (sp base : Word)
     ms.2.2.2.2
     q_hat 0 0 0
     b0 b1 b2 b3
-    rfl hvalid hv_shift hv_q0 hv_q1 hv_q2 hv_q3
+    rfl
   -- Frame post-loop with remaining atoms
   have hBF := cpsTriple_frame_left _ _ _ _ _
     (((sp + 0) ↦ₘ a0) ** ((sp + 8) ↦ₘ a1) **

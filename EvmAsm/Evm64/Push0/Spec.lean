@@ -18,8 +18,7 @@ open EvmAsm.Rv64
 /-- PUSH0: writes 4 zero limbs at nsp, moves SP backward by 32.
     5 instructions = 20 bytes. nsp is the NEW stack pointer (after decrement). -/
 theorem evm_push0_spec (nsp base : Word)
-    (d0 d1 d2 d3 : Word)
-    (_hvalid : ValidMemRange nsp 4) :
+    (d0 d1 d2 d3 : Word) :
     let code := evm_push0_code base
     cpsTriple base (base + 20) code
       ((.x12 ↦ᵣ (nsp + 32)) **
@@ -37,8 +36,7 @@ theorem evm_push0_spec (nsp base : Word)
 
 /-- PUSH0 stack spec: pushes EvmWord 0 onto stack. -/
 theorem evm_push0_stack_spec (nsp base : Word)
-    (d0 d1 d2 d3 : Word) (rest : List EvmWord)
-    (hvalid : ValidMemRange nsp 4) :
+    (d0 d1 d2 d3 : Word) (rest : List EvmWord) :
     let code := evm_push0_code base
     cpsTriple base (base + 20) code
       ((.x12 ↦ᵣ (nsp + 32)) **
@@ -51,6 +49,6 @@ theorem evm_push0_stack_spec (nsp base : Word)
     (cpsTriple_frame_left _ _ _ _ _
       (evmStackIs (nsp + 32) rest)
       (by exact pcFree_evmStackIs (nsp + 32) rest)
-      (evm_push0_spec nsp base d0 d1 d2 d3 hvalid))
+      (evm_push0_spec nsp base d0 d1 d2 d3))
 
 end EvmAsm.Evm64

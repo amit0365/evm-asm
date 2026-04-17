@@ -98,7 +98,6 @@ theorem mod_denorm_body_spec (sp u0 u1 u2 u3 v2 v5 v7 shift : Word) (base : Word
     (fun h hp => by xperm_hyp hp) haddief hsubf
   -- Merge u[0] with u[1] (base+924 → base+948)
   have hm0 := divK_denorm_merge_spec 4056 4048 sp u0 u1 v5 v7 shift anti_shift (base + 924)
-    hv_u0 hv_u1
   rw [show (base + 924 : Word) + 24 = base + 948 from by bv_addr] at hm0
   have hm0e := cpsTriple_extend_code (hmono := fun a i h =>
     divK_denorm_code_sub_modCode base a i
@@ -114,7 +113,6 @@ theorem mod_denorm_body_spec (sp u0 u1 u2 u3 v2 v5 v7 shift : Word) (base : Word
   -- Merge u[1] with u[2] (base+948 → base+972)
   have hm1 := divK_denorm_merge_spec 4048 4040 sp u1 u2
     u0' (u1 <<< (anti_shift.toNat % 64)) shift anti_shift (base + 948)
-    hv_u1 hv_u2
   rw [show (base + 948 : Word) + 24 = base + 972 from by bv_addr] at hm1
   have hm1e := cpsTriple_extend_code (hmono := fun a i h =>
     divK_denorm_code_sub_modCode base a i
@@ -130,7 +128,6 @@ theorem mod_denorm_body_spec (sp u0 u1 u2 u3 v2 v5 v7 shift : Word) (base : Word
   -- Merge u[2] with u[3] (base+972 → base+996)
   have hm2 := divK_denorm_merge_spec 4040 4032 sp u2 u3
     u1' (u2 <<< (anti_shift.toNat % 64)) shift anti_shift (base + 972)
-    hv_u2 hv_u3
   rw [show (base + 972 : Word) + 24 = base + 996 from by bv_addr] at hm2
   have hm2e := cpsTriple_extend_code (hmono := fun a i h =>
     divK_denorm_code_sub_modCode base a i
@@ -144,7 +141,7 @@ theorem mod_denorm_body_spec (sp u0 u1 u2 u3 v2 v5 v7 shift : Word) (base : Word
   have h_m2 := cpsTriple_seq_with_perm_same_cr _ _ _ _ _ _ _ _
     (fun h hp => by xperm_hyp hp) h_m1 hm2ef
   -- Last u[3] (base+996 → base+1008)
-  have hl := divK_denorm_last_spec 4032 sp u3 u2' shift (base + 996) hv_u3
+  have hl := divK_denorm_last_spec 4032 sp u3 u2' shift (base + 996)
   rw [show (base + 996 : Word) + 12 = base + 1008 from by bv_addr] at hl
   have hle := cpsTriple_extend_code (hmono := fun a i h =>
     divK_denorm_code_sub_modCode base a i

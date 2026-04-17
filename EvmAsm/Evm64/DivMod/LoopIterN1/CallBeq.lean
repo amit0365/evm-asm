@@ -118,11 +118,11 @@ theorem divK_loop_body_n1_call_addback_j0_beq_spec
     else carry
   have MCA := divK_mulsub_correction_addback_beq_spec sp q_hat (0 : Word) v0 v1 v2 v3 u0 u1 u2 u3 u_top
     rhat2_un0 q0' d_hi q0_dlo q1' (base + 516) base
-    hv_j hv_v0 hv_u0 hv_v1 hv_u1 hv_v2 hv_u2 hv_v3 hv_u3 hv_u4
+
   intro_lets at MCA
   unfold isAddbackCarry2NzN1Call isAddbackCarry2Nz div128Quot at hcarry2_nz
   have MCA0 := MCA hcarry2_nz hborrow
-  have SL := divK_store_loop_j0_spec sp q_out u4_out carry_out q_old base hv_q
+  have SL := divK_store_loop_j0_spec sp q_out u4_out carry_out q_old base
   intro_lets at SL
   have TFf := cpsTriple_frame_left _ _ _ _ _
     (((sp + signExtend12 40) ↦ₘ v1) ** ((u_base + signExtend12 4080) ↦ₘ u2) **
@@ -256,7 +256,7 @@ theorem divK_loop_body_n1_call_addback_j1_beq_spec
     else carry
   have MCA := divK_mulsub_correction_addback_beq_spec sp q_hat (1 : Word) v0 v1 v2 v3 u0 u1 u2 u3 u_top
     rhat2_un0 q0' d_hi q0_dlo q1' (base + 516) base
-    hv_j hv_v0 hv_u0 hv_v1 hv_u1 hv_v2 hv_u2 hv_v3 hv_u3 hv_u4
+
   intro_lets at MCA
   unfold isAddbackCarry2NzN1Call isAddbackCarry2Nz div128Quot at hcarry2_nz
   have MCA0 := MCA hcarry2_nz hborrow
@@ -395,7 +395,7 @@ theorem divK_loop_body_n1_call_addback_j2_beq_spec
     else carry
   have MCA := divK_mulsub_correction_addback_beq_spec sp q_hat (2 : Word) v0 v1 v2 v3 u0 u1 u2 u3 u_top
     rhat2_un0 q0' d_hi q0_dlo q1' (base + 516) base
-    hv_j hv_v0 hv_u0 hv_v1 hv_u1 hv_v2 hv_u2 hv_v3 hv_u3 hv_u4
+
   intro_lets at MCA
   unfold isAddbackCarry2NzN1Call isAddbackCarry2Nz div128Quot at hcarry2_nz
   have MCA0 := MCA hcarry2_nz hborrow
@@ -534,7 +534,7 @@ theorem divK_loop_body_n1_call_addback_j3_beq_spec
     else carry
   have MCA := divK_mulsub_correction_addback_beq_spec sp q_hat (3 : Word) v0 v1 v2 v3 u0 u1 u2 u3 u_top
     rhat2_un0 q0' d_hi q0_dlo q1' (base + 516) base
-    hv_j hv_v0 hv_u0 hv_v1 hv_u1 hv_v2 hv_u2 hv_v3 hv_u3 hv_u4
+
   intro_lets at MCA
   unfold isAddbackCarry2NzN1Call isAddbackCarry2Nz div128Quot at hcarry2_nz
   have MCA0 := MCA hcarry2_nz hborrow

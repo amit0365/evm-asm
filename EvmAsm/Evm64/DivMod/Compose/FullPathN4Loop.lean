@@ -117,7 +117,7 @@ theorem divK_loop_body_n4_max_skip_j0_divCode
   exact cpsTriple_extend_code (hmono := sharedDivModCode_sub_divCode base)
     (divK_loop_body_n4_max_skip_j0_spec sp j_old v5_old v6_old v7_old v10_old v11_old v2_old
       v0 v1 v2 v3 u0 u1 u2 u3 u_top q_old base
-      hv_j hv_n1 hv_uhi hv_ulo hv_vtop hv_v0 hv_u0 hv_v1 hv_u1 hv_v2 hv_u2
+
       hv_v3 hv_u3 hv_u4 hv_q hbltu hborrow)
 
 -- ============================================================================
@@ -258,7 +258,7 @@ theorem divK_loop_body_n4_max_addback_j0_beq_divCode
   exact cpsTriple_extend_code (hmono := sharedDivModCode_sub_divCode base)
     (divK_loop_body_n4_max_addback_j0_beq_spec sp j_old v5_old v6_old v7_old v10_old v11_old v2_old
       v0 v1 v2 v3 u0 u1 u2 u3 u_top q_old base
-      hv_j hv_n1 hv_uhi hv_ulo hv_vtop hv_v0 hv_u0 hv_v1 hv_u1 hv_v2 hv_u2
+
       hv_v3 hv_u3 hv_u4 hv_q hbltu hcarry2_nz hborrow)
 
 /-- Extend call_addback (BEQ double-addback) j=0 loop body from sharedDivModCode to divCode. -/

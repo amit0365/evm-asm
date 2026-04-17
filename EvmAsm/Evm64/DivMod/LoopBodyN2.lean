@@ -140,11 +140,11 @@ theorem divK_loop_body_n2_max_skip_spec
   -- 2. Mulsub + correction skip (base+516 → base+880)
   have MCS := divK_mulsub_correction_skip_spec sp q_hat j v0 v1 v2 v3 u0 u1 u2 u3 u_top
     j u1 vtop_base u2 v1 v2_old base
-    hv_j hv_v0 hv_u0 hv_v1 hv_u1 hv_v2 hv_u2 hv_v3 hv_u3 hv_u4
+
   intro_lets at MCS
   have MCS0 := MCS hborrow
   -- 3. Store loop cpsBranch (base+880 → base+448/904)
-  have SL := divK_store_loop_spec sp j q_hat u4_new (0 : Word) q_old base hv_q
+  have SL := divK_store_loop_spec sp j q_hat u4_new (0 : Word) q_old base
   intro_lets at SL
   -- 4. Frame TF with mulsub cells that DON'T overlap
   --    (u_base+4080 ↦ₘ u2, u_base+4088 ↦ₘ u1, sp+40 ↦ₘ v1 are already in TF)
@@ -257,11 +257,11 @@ theorem divK_loop_body_n2_max_addback_spec
   -- 2. Mulsub + correction addback + BEQ (base+516 → base+884)
   have MCA := divK_mulsub_correction_addback_beq_spec sp q_hat j v0 v1 v2 v3 u0 u1 u2 u3 u_top
     j u1 vtop_base u2 v1 v2_old base
-    hv_j hv_v0 hv_u0 hv_v1 hv_u1 hv_v2 hv_u2 hv_v3 hv_u3 hv_u4
+
   intro_lets at MCA
   have MCA0 := MCA hcarry2_nz hborrow
   -- 3. Store loop cpsBranch (base+880 → base+448/904)
-  have SL := divK_store_loop_spec sp j q_out u4_out carry_out q_old base hv_q
+  have SL := divK_store_loop_spec sp j q_out u4_out carry_out q_old base
   intro_lets at SL
   -- 4. Frame TF with non-overlapping cells
   have TFf := cpsTriple_frame_left _ _ _ _ _
@@ -429,11 +429,11 @@ theorem divK_loop_body_n2_call_skip_spec
   -- 2. Mulsub + correction skip (base+516 → base+880)
   have MCS := divK_mulsub_correction_skip_spec sp q_hat j v0 v1 v2 v3 u0 u1 u2 u3 u_top
     rhat2_un0 q0' d_hi q0_dlo q1' (base + 516) base
-    hv_j hv_v0 hv_u0 hv_v1 hv_u1 hv_v2 hv_u2 hv_v3 hv_u3 hv_u4
+
   intro_lets at MCS
   have MCS0 := MCS hborrow
   -- 3. Store loop cpsBranch (base+880 → base+448/904)
-  have SL := divK_store_loop_spec sp j q_hat u4_new (0 : Word) q_old base hv_q
+  have SL := divK_store_loop_spec sp j q_hat u4_new (0 : Word) q_old base
   intro_lets at SL
   -- 4. Frame TF (trial_call includes scratch memory, so don't add those to frame)
   --    For n=2: u_base+4080 ↦ u2, u_base+4088 ↦ u1, sp+40 ↦ v1 are in the trial
@@ -597,11 +597,11 @@ theorem divK_loop_body_n2_call_addback_spec
   -- 2. Mulsub + correction addback + BEQ (base+516 → base+884)
   have MCA := divK_mulsub_correction_addback_beq_spec sp q_hat j v0 v1 v2 v3 u0 u1 u2 u3 u_top
     rhat2_un0 q0' d_hi q0_dlo q1' (base + 516) base
-    hv_j hv_v0 hv_u0 hv_v1 hv_u1 hv_v2 hv_u2 hv_v3 hv_u3 hv_u4
+
   intro_lets at MCA
   have MCA0 := MCA hcarry2_nz hborrow
   -- 3. Store loop cpsBranch (base+880 → base+448/904)
-  have SL := divK_store_loop_spec sp j q_out u4_out carry_out q_old base hv_q
+  have SL := divK_store_loop_spec sp j q_out u4_out carry_out q_old base
   intro_lets at SL
   -- 4. Frame TF
   have TFf := cpsTriple_frame_left _ _ _ _ _

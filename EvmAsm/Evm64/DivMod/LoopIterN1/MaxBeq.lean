@@ -84,11 +84,11 @@ theorem divK_loop_body_n1_max_addback_j0_beq_spec
   rw [vtop_eq_v0_n1 sp] at TF
   have MCA := divK_mulsub_correction_addback_beq_spec sp q_hat (0 : Word) v0 v1 v2 v3 u0 u1 u2 u3 u_top
     (0 : Word) u0 vtop_base u1 v0 v2_old base
-    hv_j hv_v0 hv_u0 hv_v1 hv_u1 hv_v2 hv_u2 hv_v3 hv_u3 hv_u4
+
   intro_lets at MCA
   unfold isAddbackCarry2NzN1Max isAddbackCarry2Nz at hcarry2_nz
   have MCA0 := MCA hcarry2_nz hborrow
-  have SL := divK_store_loop_j0_spec sp q_out u4_out carry_out q_old base hv_q
+  have SL := divK_store_loop_j0_spec sp q_out u4_out carry_out q_old base
   intro_lets at SL
   have TFf := cpsTriple_frame_left _ _ _ _ _
     ((.x2 ↦ᵣ v2_old) **
@@ -182,7 +182,7 @@ theorem divK_loop_body_n1_max_addback_j3_beq_spec
   rw [vtop_eq_v0_n1 sp] at TF
   have MCA := divK_mulsub_correction_addback_beq_spec sp q_hat (3 : Word) v0 v1 v2 v3 u0 u1 u2 u3 u_top
     (3 : Word) u0 vtop_base u1 v0 v2_old base
-    hv_j hv_v0 hv_u0 hv_v1 hv_u1 hv_v2 hv_u2 hv_v3 hv_u3 hv_u4
+
   intro_lets at MCA
   unfold isAddbackCarry2NzN1Max isAddbackCarry2Nz at hcarry2_nz
   have MCA0 := MCA hcarry2_nz hborrow
@@ -281,7 +281,7 @@ theorem divK_loop_body_n1_max_addback_j1_beq_spec
   rw [vtop_eq_v0_n1 sp] at TF
   have MCA := divK_mulsub_correction_addback_beq_spec sp q_hat (1 : Word) v0 v1 v2 v3 u0 u1 u2 u3 u_top
     (1 : Word) u0 vtop_base u1 v0 v2_old base
-    hv_j hv_v0 hv_u0 hv_v1 hv_u1 hv_v2 hv_u2 hv_v3 hv_u3 hv_u4
+
   intro_lets at MCA
   unfold isAddbackCarry2NzN1Max isAddbackCarry2Nz at hcarry2_nz
   have MCA0 := MCA hcarry2_nz hborrow
@@ -380,7 +380,7 @@ theorem divK_loop_body_n1_max_addback_j2_beq_spec
   rw [vtop_eq_v0_n1 sp] at TF
   have MCA := divK_mulsub_correction_addback_beq_spec sp q_hat (2 : Word) v0 v1 v2 v3 u0 u1 u2 u3 u_top
     (2 : Word) u0 vtop_base u1 v0 v2_old base
-    hv_j hv_v0 hv_u0 hv_v1 hv_u1 hv_v2 hv_u2 hv_v3 hv_u3 hv_u4
+
   intro_lets at MCA
   unfold isAddbackCarry2NzN1Max isAddbackCarry2Nz at hcarry2_nz
   have MCA0 := MCA hcarry2_nz hborrow

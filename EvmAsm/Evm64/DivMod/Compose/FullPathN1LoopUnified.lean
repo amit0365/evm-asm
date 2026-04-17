@@ -205,11 +205,11 @@ private theorem evm_div_n1_loop_unified_inst
     u2_s u1_s u0_s (0 : Word) (0 : Word) (0 : Word) (0 : Word)
     ret_mem d_mem dlo_mem scratch_un0 base
     hv_j hv_n1 hv_uhi_3 hv_ulo_3 hv_vtop hv_ret hv_d hv_dlo hv_scratch_un0 halign
-    hv_v0 hv_v1 hv_v2 hv_v3
-    hv_u0_3 hv_u1_3 hv_u2_3 hv_u3_3 hv_u4_3 hv_q3
-    hv_uhi_2 hv_ulo_2 hv_u0_2 hv_q2
-    hv_uhi_1 hv_ulo_1 hv_u0_1 hv_q1
-    hv_uhi_0 hv_ulo_0 hv_u0_0 hv_q0
+
+
+
+
+
     hbltu_3 hbltu_2 hbltu_1 hbltu_0 hcarry2
 
 -- ============================================================================
@@ -230,7 +230,6 @@ theorem evm_div_n1_preloop_loop_unified_spec
     (hbnz : b0 ||| b1 ||| b2 ||| b3 ≠ 0)
     (hb3z : b3 = 0) (hb2z : b2 = 0) (hb1z : b1 = 0)
     (hshift_nz : (clzResult b0).1 ≠ 0)
-    (hvalid : ValidMemRange sp 8)
     (hv_q0 : isValidDwordAccess (sp + signExtend12 4088) = true)
     (hv_q1 : isValidDwordAccess (sp + signExtend12 4080) = true)
     (hv_q2 : isValidDwordAccess (sp + signExtend12 4072) = true)
@@ -287,9 +286,9 @@ theorem evm_div_n1_preloop_loop_unified_spec
   have hPre := evm_div_n1_to_loopSetup_spec sp base
     a0 a1 a2 a3 b0 b1 b2 b3 v5 v6 v7 v10
     q0 q1 q2 q3 u0_old u1_old u2_old u3_old u4_old u5 u6 u7 n_mem shift_mem
-    hbnz hb3z hb2z hb1z hshift_nz hvalid
-    hv_q0 hv_q1 hv_q2 hv_q3 hv_u0 hv_u1 hv_u2 hv_u3 hv_u4
-    hv_u5 hv_u6 hv_u7 hv_n hv_shift
+    hbnz hb3z hb2z hb1z hshift_nz
+
+
   -- Frame preloop with .x11, j_mem, scratch cells
   have hPreF := cpsTriple_frame_left _ _ _ _ _
     ((.x11 ↦ᵣ v11_old) ** ((sp + signExtend12 3976) ↦ₘ j_mem) **
@@ -313,7 +312,7 @@ theorem evm_div_n1_preloop_loop_unified_spec
     (a0 >>> ((signExtend12 (0 : BitVec 12) - (clzResult b0).1).toNat % 64))
     v11_old j_mem
     ret_mem d_mem dlo_mem scratch_un0
-    hv_j hv_n
+
     (by rw [n1_uhi_3_addr]; exact hv_u4) (by rw [n1_ulo_3_addr]; exact hv_u3)
     (by rw [n1_vtop_addr, se12_32]; exact hvalid 4 (by omega))
     hv_ret hv_d hv_dlo hv_scratch_un0 halign

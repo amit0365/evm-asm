@@ -101,11 +101,11 @@ theorem divK_loop_body_n3_max_skip_j0_spec
   -- 2. Mulsub + correction skip (base+516 → base+880)
   have MCS := divK_mulsub_correction_skip_spec sp q_hat (0 : Word) v0 v1 v2 v3 u0 u1 u2 u3 u_top
     (0 : Word) u2 vtop_base u3 v2 v2_old base
-    hv_j hv_v0 hv_u0 hv_v1 hv_u1 hv_v2 hv_u2 hv_v3 hv_u3 hv_u4
+
   intro_lets at MCS
   have MCS0 := MCS hborrow
   -- 3. Store + loop exit j=0 (cpsTriple base+880 → base+904)
-  have SL := divK_store_loop_j0_spec sp q_hat u4_new (0 : Word) q_old base hv_q
+  have SL := divK_store_loop_j0_spec sp q_hat u4_new (0 : Word) q_old base
   intro_lets at SL
   -- 4. Frame TF with mulsub cells
   have TFf := cpsTriple_frame_left _ _ _ _ _
@@ -230,7 +230,7 @@ theorem divK_loop_body_n3_call_skip_j0_spec
   -- 2. Mulsub + correction skip (base+516 → base+880)
   have MCS := divK_mulsub_correction_skip_spec sp q_hat (0 : Word) v0 v1 v2 v3 u0 u1 u2 u3 u_top
     rhat2_un0 q0' d_hi q0_dlo q1' (base + 516) base
-    hv_j hv_v0 hv_u0 hv_v1 hv_u1 hv_v2 hv_u2 hv_v3 hv_u3 hv_u4
+
   intro_lets at MCS
   have MCS0 := MCS hborrow
   -- Mulsub intermediates for store spec
@@ -253,7 +253,7 @@ theorem divK_loop_body_n3_call_skip_j0_spec
   let un3 := u3 - fs3; let c3 := pc3 + bs3
   let u4_new := u_top - c3
   -- 3. Store + loop exit j=0 (cpsTriple base+880 → base+904)
-  have SL := divK_store_loop_j0_spec sp q_hat u4_new (0 : Word) q_old base hv_q
+  have SL := divK_store_loop_j0_spec sp q_hat u4_new (0 : Word) q_old base
   intro_lets at SL
   -- 4. Frame TF (for n=3: v2, u2, u3 consumed by trial; v3, u_top in frame)
   have TFf := cpsTriple_frame_left _ _ _ _ _
@@ -373,7 +373,7 @@ theorem divK_loop_body_n3_max_skip_j1_spec
   -- 2. Mulsub + correction skip (base+516 → base+880)
   have MCS := divK_mulsub_correction_skip_spec sp q_hat (1 : Word) v0 v1 v2 v3 u0 u1 u2 u3 u_top
     (1 : Word) u2 vtop_base u3 v2 v2_old base
-    hv_j hv_v0 hv_u0 hv_v1 hv_u1 hv_v2 hv_u2 hv_v3 hv_u3 hv_u4
+
   intro_lets at MCS
   have MCS0 := MCS hborrow
   -- 3. Store + loop continue j=1 (cpsTriple base+880 → base+448)
@@ -503,7 +503,7 @@ theorem divK_loop_body_n3_call_skip_j1_spec
   -- 2. Mulsub + correction skip (base+516 → base+880)
   have MCS := divK_mulsub_correction_skip_spec sp q_hat (1 : Word) v0 v1 v2 v3 u0 u1 u2 u3 u_top
     rhat2_un0 q0' d_hi q0_dlo q1' (base + 516) base
-    hv_j hv_v0 hv_u0 hv_v1 hv_u1 hv_v2 hv_u2 hv_v3 hv_u3 hv_u4
+
   intro_lets at MCS
   have MCS0 := MCS hborrow
   -- Mulsub intermediates for store spec
@@ -639,11 +639,11 @@ theorem divK_loop_body_n3_max_addback_beq_j0_spec
   -- 2. Mulsub + correction addback + BEQ (base+516 → base+884)
   have MCA := divK_mulsub_correction_addback_beq_spec sp q_hat (0 : Word) v0 v1 v2 v3 u0 u1 u2 u3 u_top
     (0 : Word) u2 vtop_base u3 v2 v2_old base
-    hv_j hv_v0 hv_u0 hv_v1 hv_u1 hv_v2 hv_u2 hv_v3 hv_u3 hv_u4
+
   intro_lets at MCA
   have MCA0 := MCA hcarry2_nz hborrow
   -- 3. Store + loop exit j=0 (cpsTriple base+884 → base+908)
-  have SL := divK_store_loop_j0_spec sp q_out u4_out carry_out q_old base hv_q
+  have SL := divK_store_loop_j0_spec sp q_out u4_out carry_out q_old base
   intro_lets at SL
   have TFf := cpsTriple_frame_left _ _ _ _ _
     ((.x2 ↦ᵣ v2_old) **
@@ -780,12 +780,12 @@ theorem divK_loop_body_n3_call_addback_beq_j0_spec
   -- 2. Mulsub + correction addback + BEQ (base+516 → base+884)
   have MCA := divK_mulsub_correction_addback_beq_spec sp q_hat (0 : Word) v0 v1 v2 v3 u0 u1 u2 u3 u_top
     rhat2_un0 q0' d_hi q0_dlo q1' (base + 516) base
-    hv_j hv_v0 hv_u0 hv_v1 hv_u1 hv_v2 hv_u2 hv_v3 hv_u3 hv_u4
+
   intro_lets at MCA
   unfold isAddbackCarry2NzN3Call isAddbackCarry2Nz div128Quot at hcarry2_nz
   have MCA0 := MCA hcarry2_nz hborrow
   -- 3. Store + loop exit j=0 (cpsTriple base+884 → base+908)
-  have SL := divK_store_loop_j0_spec sp q_out u4_out carry_out q_old base hv_q
+  have SL := divK_store_loop_j0_spec sp q_out u4_out carry_out q_old base
   intro_lets at SL
   -- 4. Frame TF
   have TFf := cpsTriple_frame_left _ _ _ _ _
@@ -897,7 +897,7 @@ theorem divK_loop_body_n3_max_addback_beq_j1_spec
   -- 2. Mulsub + correction addback + BEQ (base+516 → base+884)
   have MCA := divK_mulsub_correction_addback_beq_spec sp q_hat (1 : Word) v0 v1 v2 v3 u0 u1 u2 u3 u_top
     (1 : Word) u2 vtop_base u3 v2 v2_old base
-    hv_j hv_v0 hv_u0 hv_v1 hv_u1 hv_v2 hv_u2 hv_v3 hv_u3 hv_u4
+
   intro_lets at MCA
   have MCA0 := MCA hcarry2_nz hborrow
   -- 3. Store + loop continue j=1 (cpsTriple base+884 → base+448)
@@ -1039,7 +1039,7 @@ theorem divK_loop_body_n3_call_addback_beq_j1_spec
   -- 2. Mulsub + correction addback + BEQ (base+516 → base+884)
   have MCA := divK_mulsub_correction_addback_beq_spec sp q_hat (1 : Word) v0 v1 v2 v3 u0 u1 u2 u3 u_top
     rhat2_un0 q0' d_hi q0_dlo q1' (base + 516) base
-    hv_j hv_v0 hv_u0 hv_v1 hv_u1 hv_v2 hv_u2 hv_v3 hv_u3 hv_u4
+
   intro_lets at MCA
   unfold isAddbackCarry2NzN3Call isAddbackCarry2Nz div128Quot at hcarry2_nz
   have MCA0 := MCA hcarry2_nz hborrow

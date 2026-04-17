@@ -34,10 +34,7 @@ abbrev byte_phase_a_code (base : Word) : CodeReq :=
 
 /-- Phase A OR-reduce body: LD idx[1], LD idx[2], OR, LD idx[3], OR.
     Produces x5 = idx1 ||| idx2 ||| idx3. Uses full phase_a code. -/
-theorem byte_phase_a_or_reduce_spec (sp v5 v10 idx1 idx2 idx3 : Word) (base : Word)
-    (_hv1 : isValidDwordAccess (sp + signExtend12 (8 : BitVec 12)) = true)
-    (_hv2 : isValidDwordAccess (sp + signExtend12 (16 : BitVec 12)) = true)
-    (_hv3 : isValidDwordAccess (sp + signExtend12 (24 : BitVec 12)) = true) :
+theorem byte_phase_a_or_reduce_spec (sp v5 v10 idx1 idx2 idx3 : Word) (base : Word) :
     let or_high := idx1 ||| idx2 ||| idx3
     let cr := byte_phase_a_code base
     cpsTriple base (base + 20) cr
@@ -62,8 +59,7 @@ theorem byte_phase_a_or_reduce_spec (sp v5 v10 idx1 idx2 idx3 : Word) (base : Wo
 
 /-- Phase A low-check: LD idx[0] into x5, SLTIU x10 = (idx0 < 32).
     Located at offset 24 within byte_phase_a (after OR-reduce + BNE). -/
-theorem byte_phase_a_low_check_spec (sp v5 idx0 v10 : Word) (base : Word)
-    (_hvalid : isValidDwordAccess (sp + signExtend12 (0 : BitVec 12)) = true) :
+theorem byte_phase_a_low_check_spec (sp v5 idx0 v10 : Word) (base : Word) :
     let cr := byte_phase_a_code base
     cpsTriple (base + 24) (base + 32) cr
       ((.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ v5) ** (.x10 ↦ᵣ v10) **
@@ -115,8 +111,7 @@ abbrev byte_body_3_code (base : Word) : CodeReq :=
   CodeReq.ofProg base byte_body_3
 
 /-- body_3 spec: load limb 0 from sp+32, extract byte, jump to store. -/
-theorem byte_body_3_spec (sp v5 shift_amount limb : Word) (base : Word)
-    (_hvalid : isValidDwordAccess (sp + signExtend12 (32 : BitVec 12)) = true) :
+theorem byte_body_3_spec (sp v5 shift_amount limb : Word) (base : Word) :
     let result := (limb >>> (shift_amount.toNat % 64)) &&& signExtend12 (255 : BitVec 12)
     let code := byte_body_3_code base
     cpsTriple base ((base + 12) + signExtend21 (48 : BitVec 21)) code
@@ -137,8 +132,7 @@ abbrev byte_body_2_code (base : Word) : CodeReq :=
   CodeReq.ofProg base byte_body_2
 
 /-- body_2 spec: load limb 1 from sp+40, extract byte, jump to store. -/
-theorem byte_body_2_spec (sp v5 shift_amount limb : Word) (base : Word)
-    (_hvalid : isValidDwordAccess (sp + signExtend12 (40 : BitVec 12)) = true) :
+theorem byte_body_2_spec (sp v5 shift_amount limb : Word) (base : Word) :
     let result := (limb >>> (shift_amount.toNat % 64)) &&& signExtend12 (255 : BitVec 12)
     let code := byte_body_2_code base
     cpsTriple base ((base + 12) + signExtend21 (32 : BitVec 21)) code
@@ -159,8 +153,7 @@ abbrev byte_body_1_code (base : Word) : CodeReq :=
   CodeReq.ofProg base byte_body_1
 
 /-- body_1 spec: load limb 2 from sp+48, extract byte, jump to store. -/
-theorem byte_body_1_spec (sp v5 shift_amount limb : Word) (base : Word)
-    (_hvalid : isValidDwordAccess (sp + signExtend12 (48 : BitVec 12)) = true) :
+theorem byte_body_1_spec (sp v5 shift_amount limb : Word) (base : Word) :
     let result := (limb >>> (shift_amount.toNat % 64)) &&& signExtend12 (255 : BitVec 12)
     let code := byte_body_1_code base
     cpsTriple base ((base + 12) + signExtend21 (16 : BitVec 21)) code
@@ -181,8 +174,7 @@ abbrev byte_body_0_code (base : Word) : CodeReq :=
   CodeReq.ofProg base byte_body_0
 
 /-- body_0 spec: load limb 3 from sp+56, extract byte. Falls through to store. -/
-theorem byte_body_0_spec (sp v5 shift_amount limb : Word) (base : Word)
-    (_hvalid : isValidDwordAccess (sp + signExtend12 (56 : BitVec 12)) = true) :
+theorem byte_body_0_spec (sp v5 shift_amount limb : Word) (base : Word) :
     let result := (limb >>> (shift_amount.toNat % 64)) &&& signExtend12 (255 : BitVec 12)
     let code := byte_body_0_code base
     cpsTriple base (base + 12) code
@@ -204,8 +196,7 @@ abbrev byte_store_code (base : Word) : CodeReq :=
 
 /-- Store spec: ADDI x12 32, SD result, SD 0×3, JAL 24.
     Pops the index word (sp → sp+32), writes result at sp+32 and zeros at sp+40..56. -/
-theorem byte_store_spec (sp result m0 m8 m16 m24 : Word) (base : Word)
-    (_hvalid : ValidMemRange sp 8) :
+theorem byte_store_spec (sp result m0 m8 m16 m24 : Word) (base : Word) :
     let nsp := sp + signExtend12 (32 : BitVec 12)
     let code := byte_store_code base
     cpsTriple base ((base + 20) + signExtend21 (24 : BitVec 21)) code
@@ -232,8 +223,7 @@ abbrev byte_zero_path_code (base : Word) : CodeReq :=
 
 /-- Zero path spec: ADDI x12 32, SD 0×4.
     Pops the index word (sp → sp+32), writes zeros at sp+32..56. -/
-theorem byte_zero_path_spec (sp m0 m8 m16 m24 : Word) (base : Word)
-    (_hvalid : ValidMemRange sp 8) :
+theorem byte_zero_path_spec (sp m0 m8 m16 m24 : Word) (base : Word) :
     let nsp := sp + signExtend12 (32 : BitVec 12)
     let code := byte_zero_path_code base
     cpsTriple base (base + 20) code

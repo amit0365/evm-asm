@@ -200,8 +200,7 @@ set_option maxRecDepth 2048 in
     Execution path: phaseA body (7 instrs), BEQ taken, zeroPath (5 instrs). -/
 theorem evm_div_bzero_spec (sp base : Word)
     (b0 b1 b2 b3 v5 v10 : Word)
-    (hbz : b0 ||| b1 ||| b2 ||| b3 = 0)
-    (hvalid : ValidMemRange sp 8) :
+    (hbz : b0 ||| b1 ||| b2 ||| b3 = 0) :
     cpsTriple base (base + 1068) (divCode base)
       ((.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ v5) ** (.x10 ↦ᵣ v10) ** (.x0 ↦ᵣ (0 : Word)) **
        ((sp + 32) ↦ₘ b0) ** ((sp + 40) ↦ₘ b1) **
@@ -212,7 +211,7 @@ theorem evm_div_bzero_spec (sp base : Word)
   -- Step 1: Phase A body (base → base+28, 7 straight-line instructions)
   -- Extend to divCode CodeReq
   have hbody := cpsTriple_extend_code (divK_phaseA_code_sub_divCode base)
-    (divK_phaseA_body_spec sp base b0 b1 b2 b3 v5 v10 hvalid)
+    (divK_phaseA_body_spec sp base b0 b1 b2 b3 v5 v10)
   -- Step 2: BEQ at base+28, eliminate ntaken via hbz
   have hbeq_raw := beq_spec_gen .x5 .x0 1020 (b0 ||| b1 ||| b2 ||| b3) (0 : Word) (base + 28)
   rw [show (base + 28 : Word) + signExtend13 1020 = base + 1048 from by
@@ -236,7 +235,7 @@ theorem evm_div_bzero_spec (sp base : Word)
   -- Step 5: ZeroPath (base+1048 → base+1068)
   -- Extend to divCode CodeReq
   have hzp := cpsTriple_extend_code (divK_zeroPath_code_sub_divCode base)
-    (divK_zeroPath_spec sp (base + 1048) b0 b1 b2 b3 hvalid)
+    (divK_zeroPath_spec sp (base + 1048) b0 b1 b2 b3)
   rw [show (base + 1048 : Word) + 20 = base + 1068 from by bv_addr] at hzp
   -- Frame ZP with x5 + x10 + x0
   have hzp_framed := cpsTriple_frame_left _ _ _ _ _
@@ -261,8 +260,7 @@ set_option maxRecDepth 2048 in
     Execution path: phaseA body (7 instrs), BEQ not taken. -/
 theorem evm_div_phaseA_ntaken_spec (sp base : Word)
     (b0 b1 b2 b3 v5 v10 : Word)
-    (hbnz : b0 ||| b1 ||| b2 ||| b3 ≠ 0)
-    (hvalid : ValidMemRange sp 8) :
+    (hbnz : b0 ||| b1 ||| b2 ||| b3 ≠ 0) :
     cpsTriple base (base + 32) (divCode base)
       ((.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ v5) ** (.x10 ↦ᵣ v10) ** (.x0 ↦ᵣ (0 : Word)) **
        ((sp + 32) ↦ₘ b0) ** ((sp + 40) ↦ₘ b1) **
@@ -272,7 +270,7 @@ theorem evm_div_phaseA_ntaken_spec (sp base : Word)
        ((sp + 48) ↦ₘ b2) ** ((sp + 56) ↦ₘ b3)) := by
   -- Step 1: Phase A body (base → base+28, 7 straight-line instructions)
   have hbody := cpsTriple_extend_code (divK_phaseA_code_sub_divCode base)
-    (divK_phaseA_body_spec sp base b0 b1 b2 b3 v5 v10 hvalid)
+    (divK_phaseA_body_spec sp base b0 b1 b2 b3 v5 v10)
   -- Step 2: BEQ at base+28, eliminate taken path (b=0 absurd since hbnz)
   have hbeq_raw := beq_spec_gen .x5 .x0 1020 (b0 ||| b1 ||| b2 ||| b3) (0 : Word) (base + 28)
   rw [show (base + 28 : Word) + signExtend13 1020 = base + 1048 from by
@@ -313,7 +311,6 @@ theorem evm_div_phaseB_n4_spec (sp base : Word)
     (b1 b2 b3 : Word) (v5 v6 v7 : Word)
     (q0 q1 q2 q3 u5 u6 u7 n_mem : Word)
     (hb3nz : b3 ≠ 0)
-    (hvalid : ValidMemRange sp 8)
     (hv_q0 : isValidDwordAccess (sp + signExtend12 4088) = true)
     (hv_q1 : isValidDwordAccess (sp + signExtend12 4080) = true)
     (hv_q2 : isValidDwordAccess (sp + signExtend12 4072) = true)
@@ -341,7 +338,6 @@ theorem evm_div_phaseB_n4_spec (sp base : Word)
        ((sp + signExtend12 3984) ↦ₘ (4 : Word))) := by
   -- ---- Step 1: init1 (base+32 → base+60) — zero q[0..3] and u[5..7]
   have hinit1_raw := divK_phaseB_init1_spec sp (base + 32) q0 q1 q2 q3 u5 u6 u7
-    hv_q0 hv_q1 hv_q2 hv_q3 hv_u5 hv_u6 hv_u7
   simp only [phB_off_28] at hinit1_raw
   have hinit1 := cpsTriple_extend_code (divK_phaseB_init1_code_sub_divCode base) hinit1_raw
   have hinit1f := cpsTriple_frame_left _ _ _ _ _
@@ -350,7 +346,7 @@ theorem evm_div_phaseB_n4_spec (sp base : Word)
      ((sp + signExtend12 3984) ↦ₘ n_mem))
     (by pcFree) hinit1
   -- ---- Step 2: init2 (base+60 → base+68) — load b[1], b[2]
-  have hinit2_raw := divK_phaseB_init2_spec sp (base + 60) b1 b2 v6 v7 hvalid
+  have hinit2_raw := divK_phaseB_init2_spec sp (base + 60) b1 b2 v6 v7
   simp only [phB_i2_8] at hinit2_raw
   have hinit2 := cpsTriple_extend_code (divK_phaseB_init2_code_sub_divCode base) hinit2_raw
   seqFrame hinit1f hinit2
@@ -375,7 +371,7 @@ theorem evm_div_phaseB_n4_spec (sp base : Word)
        + signExtend12 (32 : BitVec 12)) = true := by
     rw [divK_phaseB_n4_nm1_x8, divK_se12_32, phB_sp24_32]
     exact hvalid.get (show 7 < 8 from by omega)
-  have htail_raw := divK_phaseB_tail_spec sp (4 : Word) b3 n_mem (base + 96) hv_n hv_limb
+  have htail_raw := divK_phaseB_tail_spec sp (4 : Word) b3 n_mem (base + 96)
   simp only [phB_t_20, divK_phaseB_n4_nm1_x8, divK_se12_32, phB_sp24_32] at htail_raw
   have htail := cpsTriple_extend_code (divK_phaseB_tail_code_sub_divCode base) htail_raw
   seqFrame hinit1fhinit2haddihbne htail
@@ -400,7 +396,6 @@ theorem evm_div_phaseAB_n4_spec (sp base : Word)
     (q0 q1 q2 q3 u5 u6 u7 n_mem : Word)
     (hbnz : b0 ||| b1 ||| b2 ||| b3 ≠ 0)
     (hb3nz : b3 ≠ 0)
-    (hvalid : ValidMemRange sp 8)
     (hv_q0 : isValidDwordAccess (sp + signExtend12 4088) = true)
     (hv_q1 : isValidDwordAccess (sp + signExtend12 4080) = true)
     (hv_q2 : isValidDwordAccess (sp + signExtend12 4072) = true)
@@ -426,7 +421,7 @@ theorem evm_div_phaseAB_n4_spec (sp base : Word)
        ((sp + signExtend12 4072) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4064) ↦ₘ (0 : Word)) **
        ((sp + signExtend12 4016) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4008) ↦ₘ (0 : Word)) **
        ((sp + signExtend12 4000) ↦ₘ (0 : Word)) ** ((sp + signExtend12 3984) ↦ₘ (4 : Word))) := by
-  have hA := evm_div_phaseA_ntaken_spec sp base b0 b1 b2 b3 v5 v10 hbnz hvalid
+  have hA := evm_div_phaseA_ntaken_spec sp base b0 b1 b2 b3 v5 v10 hbnz
   have hAf := cpsTriple_frame_left _ _ _ _ _
     ((.x6 ↦ᵣ v6) ** (.x7 ↦ᵣ v7) **
      ((sp + signExtend12 4088) ↦ₘ q0) ** ((sp + signExtend12 4080) ↦ₘ q1) **
@@ -436,7 +431,7 @@ theorem evm_div_phaseAB_n4_spec (sp base : Word)
     (by pcFree) hA
   have hB := evm_div_phaseB_n4_spec sp base b1 b2 b3
     (b0 ||| b1 ||| b2 ||| b3) v6 v7 q0 q1 q2 q3 u5 u6 u7 n_mem
-    hb3nz hvalid hv_q0 hv_q1 hv_q2 hv_q3 hv_u5 hv_u6 hv_u7 hv_n
+    hb3nz
   have hBf := cpsTriple_frame_left _ _ _ _ _
     (((sp + 32) ↦ₘ b0))
     (by pcFree) hB
@@ -564,7 +559,6 @@ theorem evm_div_phaseB_n3_spec (sp base : Word)
     (b1 b2 b3 : Word) (v5 v6 v7 : Word)
     (q0 q1 q2 q3 u5 u6 u7 n_mem : Word)
     (hb3z : b3 = 0) (hb2nz : b2 ≠ 0)
-    (hvalid : ValidMemRange sp 8)
     (hv_q0 : isValidDwordAccess (sp + signExtend12 4088) = true)
     (hv_q1 : isValidDwordAccess (sp + signExtend12 4080) = true)
     (hv_q2 : isValidDwordAccess (sp + signExtend12 4072) = true)
@@ -592,7 +586,6 @@ theorem evm_div_phaseB_n3_spec (sp base : Word)
        ((sp + signExtend12 3984) ↦ₘ (3 : Word))) := by
   -- ---- init1 (base+32 → base+60)
   have hinit1_raw := divK_phaseB_init1_spec sp (base + 32) q0 q1 q2 q3 u5 u6 u7
-    hv_q0 hv_q1 hv_q2 hv_q3 hv_u5 hv_u6 hv_u7
   simp only [phB_off_28] at hinit1_raw
   have hinit1 := cpsTriple_extend_code (divK_phaseB_init1_code_sub_divCode base) hinit1_raw
   have hinit1f := cpsTriple_frame_left _ _ _ _ _
@@ -601,7 +594,7 @@ theorem evm_div_phaseB_n3_spec (sp base : Word)
      ((sp + signExtend12 3984) ↦ₘ n_mem))
     (by pcFree) hinit1
   -- ---- init2 (base+60 → base+68)
-  have hinit2_raw := divK_phaseB_init2_spec sp (base + 60) b1 b2 v6 v7 hvalid
+  have hinit2_raw := divK_phaseB_init2_spec sp (base + 60) b1 b2 v6 v7
   simp only [phB_i2_8] at hinit2_raw
   have hinit2 := cpsTriple_extend_code (divK_phaseB_init2_code_sub_divCode base) hinit2_raw
   have hinit2f := cpsTriple_frame_left _ _ _ _ _
@@ -691,7 +684,7 @@ theorem evm_div_phaseB_n3_spec (sp base : Word)
        + signExtend12 (32 : BitVec 12)) = true := by
     rw [divK_phaseB_n3_nm1_x8, divK_se12_32, phB_sp16_32]
     exact hvalid.get (show 6 < 8 from by omega)
-  have htail_raw := divK_phaseB_tail_spec sp (3 : Word) b2 n_mem (base + 96) hv_n hv_limb
+  have htail_raw := divK_phaseB_tail_spec sp (3 : Word) b2 n_mem (base + 96)
   simp only [phB_t_20, divK_phaseB_n3_nm1_x8, divK_se12_32, phB_sp16_32] at htail_raw
   have htail := cpsTriple_extend_code (divK_phaseB_tail_code_sub_divCode base) htail_raw
   have htailf := cpsTriple_frame_left _ _ _ _ _
@@ -724,7 +717,6 @@ theorem evm_div_phaseB_n2_spec (sp base : Word)
     (b1 b2 b3 : Word) (v5 v6 v7 : Word)
     (q0 q1 q2 q3 u5 u6 u7 n_mem : Word)
     (hb3z : b3 = 0) (hb2z : b2 = 0) (hb1nz : b1 ≠ 0)
-    (hvalid : ValidMemRange sp 8)
     (hv_q0 : isValidDwordAccess (sp + signExtend12 4088) = true)
     (hv_q1 : isValidDwordAccess (sp + signExtend12 4080) = true)
     (hv_q2 : isValidDwordAccess (sp + signExtend12 4072) = true)
@@ -752,7 +744,6 @@ theorem evm_div_phaseB_n2_spec (sp base : Word)
        ((sp + signExtend12 3984) ↦ₘ (2 : Word))) := by
   -- ---- init1 (base+32 → base+60)
   have hinit1_raw := divK_phaseB_init1_spec sp (base + 32) q0 q1 q2 q3 u5 u6 u7
-    hv_q0 hv_q1 hv_q2 hv_q3 hv_u5 hv_u6 hv_u7
   simp only [phB_off_28] at hinit1_raw
   have hinit1 := cpsTriple_extend_code (divK_phaseB_init1_code_sub_divCode base) hinit1_raw
   have hinit1f := cpsTriple_frame_left _ _ _ _ _
@@ -761,7 +752,7 @@ theorem evm_div_phaseB_n2_spec (sp base : Word)
      ((sp + signExtend12 3984) ↦ₘ n_mem))
     (by pcFree) hinit1
   -- ---- init2 (base+60 → base+68)
-  have hinit2_raw := divK_phaseB_init2_spec sp (base + 60) b1 b2 v6 v7 hvalid
+  have hinit2_raw := divK_phaseB_init2_spec sp (base + 60) b1 b2 v6 v7
   simp only [phB_i2_8] at hinit2_raw
   have hinit2 := cpsTriple_extend_code (divK_phaseB_init2_code_sub_divCode base) hinit2_raw
   have hinit2f := cpsTriple_frame_left _ _ _ _ _
@@ -886,7 +877,7 @@ theorem evm_div_phaseB_n2_spec (sp base : Word)
        + signExtend12 (32 : BitVec 12)) = true := by
     rw [divK_phaseB_n2_nm1_x8, divK_se12_32, phB_sp8_32]
     exact hvalid.get (show 5 < 8 from by omega)
-  have htail_raw := divK_phaseB_tail_spec sp (2 : Word) b1 n_mem (base + 96) hv_n hv_limb
+  have htail_raw := divK_phaseB_tail_spec sp (2 : Word) b1 n_mem (base + 96)
   simp only [phB_t_20, divK_phaseB_n2_nm1_x8, divK_se12_32, phB_sp8_32] at htail_raw
   have htail := cpsTriple_extend_code (divK_phaseB_tail_code_sub_divCode base) htail_raw
   have htailf := cpsTriple_frame_left _ _ _ _ _
@@ -920,7 +911,6 @@ theorem evm_div_phaseB_n1_spec (sp base : Word)
     (b0 b1 b2 b3 : Word) (v5 v6 v7 : Word)
     (q0 q1 q2 q3 u5 u6 u7 n_mem : Word)
     (hb3z : b3 = 0) (hb2z : b2 = 0) (hb1z : b1 = 0)
-    (hvalid : ValidMemRange sp 8)
     (hv_q0 : isValidDwordAccess (sp + signExtend12 4088) = true)
     (hv_q1 : isValidDwordAccess (sp + signExtend12 4080) = true)
     (hv_q2 : isValidDwordAccess (sp + signExtend12 4072) = true)
@@ -948,7 +938,6 @@ theorem evm_div_phaseB_n1_spec (sp base : Word)
        ((sp + signExtend12 3984) ↦ₘ (1 : Word))) := by
   -- ---- init1 (base+32 → base+60)
   have hinit1_raw := divK_phaseB_init1_spec sp (base + 32) q0 q1 q2 q3 u5 u6 u7
-    hv_q0 hv_q1 hv_q2 hv_q3 hv_u5 hv_u6 hv_u7
   simp only [phB_off_28] at hinit1_raw
   have hinit1 := cpsTriple_extend_code (divK_phaseB_init1_code_sub_divCode base) hinit1_raw
   have hinit1f := cpsTriple_frame_left _ _ _ _ _
@@ -957,7 +946,7 @@ theorem evm_div_phaseB_n1_spec (sp base : Word)
      ((sp + signExtend12 3984) ↦ₘ n_mem))
     (by pcFree) hinit1
   -- ---- init2 (base+60 → base+68)
-  have hinit2_raw := divK_phaseB_init2_spec sp (base + 60) b1 b2 v6 v7 hvalid
+  have hinit2_raw := divK_phaseB_init2_spec sp (base + 60) b1 b2 v6 v7
   simp only [phB_i2_8] at hinit2_raw
   have hinit2 := cpsTriple_extend_code (divK_phaseB_init2_code_sub_divCode base) hinit2_raw
   have hinit2f := cpsTriple_frame_left _ _ _ _ _
@@ -1097,7 +1086,7 @@ theorem evm_div_phaseB_n1_spec (sp base : Word)
        + signExtend12 (32 : BitVec 12)) = true := by
     rw [divK_phaseB_n1_nm1_x8, divK_se12_32, phB_sp0_32]
     exact hvalid.get (show 4 < 8 from by omega)
-  have htail_raw := divK_phaseB_tail_spec sp (1 : Word) b0 n_mem (base + 96) hv_n hv_limb
+  have htail_raw := divK_phaseB_tail_spec sp (1 : Word) b0 n_mem (base + 96)
   simp only [phB_t_20, divK_phaseB_n1_nm1_x8, divK_se12_32, phB_sp0_32] at htail_raw
   have htail := cpsTriple_extend_code (divK_phaseB_tail_code_sub_divCode base) htail_raw
   have htailf := cpsTriple_frame_left _ _ _ _ _

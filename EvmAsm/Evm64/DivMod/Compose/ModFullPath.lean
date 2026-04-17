@@ -29,7 +29,6 @@ theorem evm_mod_phaseAB_n4_spec (sp base : Word)
     (q0 q1 q2 q3 u5 u6 u7 n_mem : Word)
     (hbnz : b0 ||| b1 ||| b2 ||| b3 ≠ 0)
     (hb3nz : b3 ≠ 0)
-    (hvalid : ValidMemRange sp 8)
     (hv_q0 : isValidDwordAccess (sp + signExtend12 4088) = true)
     (hv_q1 : isValidDwordAccess (sp + signExtend12 4080) = true)
     (hv_q2 : isValidDwordAccess (sp + signExtend12 4072) = true)
@@ -55,7 +54,7 @@ theorem evm_mod_phaseAB_n4_spec (sp base : Word)
        ((sp + signExtend12 4072) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4064) ↦ₘ (0 : Word)) **
        ((sp + signExtend12 4016) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4008) ↦ₘ (0 : Word)) **
        ((sp + signExtend12 4000) ↦ₘ (0 : Word)) ** ((sp + signExtend12 3984) ↦ₘ (4 : Word))) := by
-  have hA := evm_mod_phaseA_ntaken_spec sp base b0 b1 b2 b3 v5 v10 hbnz hvalid
+  have hA := evm_mod_phaseA_ntaken_spec sp base b0 b1 b2 b3 v5 v10 hbnz
   have hAf := cpsTriple_frame_left _ _ _ _ _
     ((.x6 ↦ᵣ v6) ** (.x7 ↦ᵣ v7) **
      ((sp + signExtend12 4088) ↦ₘ q0) ** ((sp + signExtend12 4080) ↦ₘ q1) **
@@ -65,7 +64,7 @@ theorem evm_mod_phaseAB_n4_spec (sp base : Word)
     (by pcFree) hA
   have hB := evm_mod_phaseB_n4_spec sp base b1 b2 b3
     (b0 ||| b1 ||| b2 ||| b3) v6 v7 q0 q1 q2 q3 u5 u6 u7 n_mem
-    hb3nz hvalid hv_q0 hv_q1 hv_q2 hv_q3 hv_u5 hv_u6 hv_u7 hv_n
+    hb3nz
   have hBf := cpsTriple_frame_left _ _ _ _ _
     (((sp + 32) ↦ₘ b0))
     (by pcFree) hB
@@ -87,7 +86,6 @@ theorem evm_mod_phaseAB_n4_clz_spec (sp base : Word)
     (q0 q1 q2 q3 u5 u6 u7 n_mem : Word)
     (hbnz : b0 ||| b1 ||| b2 ||| b3 ≠ 0)
     (hb3nz : b3 ≠ 0)
-    (hvalid : ValidMemRange sp 8)
     (hv_q0 : isValidDwordAccess (sp + signExtend12 4088) = true)
     (hv_q1 : isValidDwordAccess (sp + signExtend12 4080) = true)
     (hv_q2 : isValidDwordAccess (sp + signExtend12 4072) = true)
@@ -114,7 +112,7 @@ theorem evm_mod_phaseAB_n4_clz_spec (sp base : Word)
        ((sp + signExtend12 4016) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4008) ↦ₘ (0 : Word)) **
        ((sp + signExtend12 4000) ↦ₘ (0 : Word)) ** ((sp + signExtend12 3984) ↦ₘ (4 : Word))) := by
   have hAB := evm_mod_phaseAB_n4_spec sp base b0 b1 b2 b3 v5 v6 v7 v10
-    q0 q1 q2 q3 u5 u6 u7 n_mem hbnz hb3nz hvalid hv_q0 hv_q1 hv_q2 hv_q3 hv_u5 hv_u6 hv_u7 hv_n
+    q0 q1 q2 q3 u5 u6 u7 n_mem hbnz hb3nz
   have hCLZ := mod_clz_spec b3 b1 b2 base
   have hCLZf := cpsTriple_frame_left _ _ _ _ _
     ((.x12 ↦ᵣ sp) ** (.x10 ↦ᵣ b3) **
@@ -144,7 +142,6 @@ theorem evm_mod_n4_to_normB_spec (sp base : Word)
     (hbnz : b0 ||| b1 ||| b2 ||| b3 ≠ 0)
     (hb3nz : b3 ≠ 0)
     (hshift_nz : (clzResult b3).1 ≠ 0)
-    (hvalid : ValidMemRange sp 8)
     (hv_q0 : isValidDwordAccess (sp + signExtend12 4088) = true)
     (hv_q1 : isValidDwordAccess (sp + signExtend12 4080) = true)
     (hv_q2 : isValidDwordAccess (sp + signExtend12 4072) = true)
@@ -168,7 +165,7 @@ theorem evm_mod_n4_to_normB_spec (sp base : Word)
   let shift := (clzResult b3).1
   let anti_shift := signExtend12 (0 : BitVec 12) - shift
   have hABCLZ := evm_mod_phaseAB_n4_clz_spec sp base b0 b1 b2 b3 v5 v6 v7 v10
-    q0 q1 q2 q3 u5 u6 u7 n_mem hbnz hb3nz hvalid hv_q0 hv_q1 hv_q2 hv_q3 hv_u5 hv_u6 hv_u7 hv_n
+    q0 q1 q2 q3 u5 u6 u7 n_mem hbnz hb3nz
   have hABCLZf := cpsTriple_frame_left _ _ _ _ _
     ((.x2 ↦ᵣ (clzResult b3).2 >>> (63 : Nat)) **
      ((sp + signExtend12 3992) ↦ₘ shift_mem))
@@ -191,7 +188,7 @@ theorem evm_mod_n4_to_normB_spec (sp base : Word)
   -- NormB
   have hNB := mod_normB_full_spec sp b0 b1 b2 b3
     (clzResult b3).2 ((clzResult b3).2 >>> (63 : Nat))
-    shift anti_shift base hvalid
+    shift anti_shift base
   intro_lets at hNB
   have hNBf := cpsTriple_frame_left _ _ _ _ _
     ((.x10 ↦ᵣ b3) ** (.x0 ↦ᵣ (0 : Word)) **
@@ -220,7 +217,6 @@ theorem evm_mod_n4_to_loopSetup_spec (sp base : Word)
     (hbnz : b0 ||| b1 ||| b2 ||| b3 ≠ 0)
     (hb3nz : b3 ≠ 0)
     (hshift_nz : (clzResult b3).1 ≠ 0)
-    (hvalid : ValidMemRange sp 8)
     (hv_q0 : isValidDwordAccess (sp + signExtend12 4088) = true)
     (hv_q1 : isValidDwordAccess (sp + signExtend12 4080) = true)
     (hv_q2 : isValidDwordAccess (sp + signExtend12 4072) = true)
@@ -265,8 +261,8 @@ theorem evm_mod_n4_to_loopSetup_spec (sp base : Word)
   let u0 := a0 <<< (shift.toNat % 64)
   -- Step 1: Through NormB (base → base+312)
   have hNormB := evm_mod_n4_to_normB_spec sp base b0 b1 b2 b3 v5 v6 v7 v10
-    q0 q1 q2 q3 u5 u6 u7 n_mem shift_mem hbnz hb3nz hshift_nz hvalid
-    hv_q0 hv_q1 hv_q2 hv_q3 hv_u5 hv_u6 hv_u7 hv_n hv_shift
+    q0 q1 q2 q3 u5 u6 u7 n_mem shift_mem hbnz hb3nz hshift_nz
+
   have hNormBf := cpsTriple_frame_left _ _ _ _ _
     ((.x1 ↦ᵣ signExtend12 (4 : BitVec 12) - (4 : Word)) **
      ((sp + 0) ↦ₘ a0) ** ((sp + 8) ↦ₘ a1) **
@@ -278,7 +274,7 @@ theorem evm_mod_n4_to_loopSetup_spec (sp base : Word)
   -- Step 2: NormA (base+312 → base+432)
   have hNormA := mod_normA_full_spec sp a0 a1 a2 a3
     b0' (b0 >>> (anti_shift.toNat % 64)) b3 shift anti_shift
-    u0_old u1_old u2_old u3_old u4_old base hvalid hv_u0 hv_u1 hv_u2 hv_u3 hv_u4
+    u0_old u1_old u2_old u3_old u4_old base
   intro_lets at hNormA
   have hNormAf := cpsTriple_frame_left _ _ _ _ _
     ((.x0 ↦ᵣ (0 : Word)) **
@@ -295,7 +291,7 @@ theorem evm_mod_n4_to_loopSetup_spec (sp base : Word)
     (fun h hp => by delta normBPost at hp; xperm_hyp hp) hNormBf hNormAf
   -- Step 3: LoopSetup ntaken (base+432 → base+448)
   have hLS := mod_loopSetup_ntaken_spec sp (4 : Word)
-    (signExtend12 (4 : BitVec 12) - (4 : Word)) u1 base hv_n
+    (signExtend12 (4 : BitVec 12) - (4 : Word)) u1 base
     (by decide)
   have hLSf := cpsTriple_frame_left _ _ _ _ _
     ((.x10 ↦ᵣ (a0 >>> (anti_shift.toNat % 64))) **
@@ -332,7 +328,6 @@ theorem evm_mod_n4_shift0_to_loopSetup_spec (sp base : Word)
     (hbnz : b0 ||| b1 ||| b2 ||| b3 ≠ 0)
     (hb3nz : b3 ≠ 0)
     (hshift_z : (clzResult b3).1 = 0)
-    (hvalid : ValidMemRange sp 8)
     (hv_q0 : isValidDwordAccess (sp + signExtend12 4088) = true)
     (hv_q1 : isValidDwordAccess (sp + signExtend12 4080) = true)
     (hv_q2 : isValidDwordAccess (sp + signExtend12 4072) = true)
@@ -381,7 +376,7 @@ theorem evm_mod_n4_shift0_to_loopSetup_spec (sp base : Word)
        ((sp + signExtend12 3992) ↦ₘ (clzResult b3).1)) := by
   -- Step 1: PhaseAB(n=4) + CLZ (base → base+212)
   have hABCLZ := evm_mod_phaseAB_n4_clz_spec sp base b0 b1 b2 b3 v5 v6 v7 v10
-    q0 q1 q2 q3 u5 u6 u7 n_mem hbnz hb3nz hvalid hv_q0 hv_q1 hv_q2 hv_q3 hv_u5 hv_u6 hv_u7 hv_n
+    q0 q1 q2 q3 u5 u6 u7 n_mem hbnz hb3nz
   have hABCLZf := cpsTriple_frame_left _ _ _ _ _
     ((.x2 ↦ᵣ (clzResult b3).2 >>> (63 : Nat)) **
      (.x1 ↦ᵣ signExtend12 (4 : BitVec 12) - (4 : Word)) **
@@ -416,7 +411,7 @@ theorem evm_mod_n4_shift0_to_loopSetup_spec (sp base : Word)
   -- Step 3: CopyAU (base+396 → base+432)
   have hCopy := mod_copyAU_full_spec sp a0 a1 a2 a3
     u0_old u1_old u2_old u3_old u4_old ((clzResult b3).2) base
-    hvalid hv_u0 hv_u1 hv_u2 hv_u3 hv_u4
+
   simp only [show signExtend12 (0 : BitVec 12) = (0 : Word) from by decide] at hCopy
   have hCopyf := cpsTriple_frame_left _ _ _ _ _
     ((.x6 ↦ᵣ (clzResult b3).1) **
@@ -436,7 +431,7 @@ theorem evm_mod_n4_shift0_to_loopSetup_spec (sp base : Word)
     (fun h hp => by xperm_hyp hp) hABC2 hCopyf
   -- Step 4: LoopSetup ntaken (base+432 → base+448)
   have hLS := mod_loopSetup_ntaken_spec sp (4 : Word)
-    (signExtend12 (4 : BitVec 12) - (4 : Word)) a3 base hv_n
+    (signExtend12 (4 : BitVec 12) - (4 : Word)) a3 base
     (by decide)
   have hLSf := cpsTriple_frame_left _ _ _ _ _
     ((.x10 ↦ᵣ b3) **

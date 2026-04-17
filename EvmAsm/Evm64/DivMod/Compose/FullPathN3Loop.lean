@@ -125,7 +125,7 @@ theorem divK_loop_n3_unified_divCode (bltu_1 bltu_0 : Bool)
       v0 v1 v2 v3 u0 u1 u2 u3 u_top u0_orig q1_old q0_old
       ret_mem d_mem dlo_mem scratch_un0 base
       hv_j hv_n1 hv_uhi_1 hv_ulo_1 hv_vtop hv_ret hv_d hv_dlo hv_scratch_un0 halign
-      hv_v0 hv_v1 hv_v2 hv_v3
-      hv_u0_1 hv_u1_1 hv_u2_1 hv_u3_1 hv_u4_1 hv_q1
-      hv_uhi_0 hv_ulo_0 hv_u0_0 hv_q0
+
+
+
       hbltu_1 hbltu_0 hcarry2)

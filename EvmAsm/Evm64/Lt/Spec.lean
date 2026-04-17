@@ -55,10 +55,10 @@ theorem evm_lt_spec (sp : Word) (base : Word)
        ((sp + 32) ↦ₘ borrow3) ** ((sp + 40) ↦ₘ 0) ** ((sp + 48) ↦ₘ 0) ** ((sp + 56) ↦ₘ 0)) := by
   intro borrow0 borrow1a temp1 borrow1b borrow1 borrow2a temp2 borrow2b borrow2 borrow3a temp3 borrow3b borrow3
   -- Per-limb borrow specs
-  have L0 := lt_limb0_spec 0 32 sp a0 b0 v7 v6 v5 base (by validMem) (by validMem)
-  have L1 := lt_limb_carry_spec 8 40 sp a1 b1 a0 b0 borrow0 v11 (base + 12) (by validMem) (by validMem)
-  have L2 := lt_limb_carry_spec 16 48 sp a2 b2 temp1 borrow1b borrow1 borrow1a (base + 36) (by validMem) (by validMem)
-  have L3 := lt_limb_carry_spec 24 56 sp a3 b3 temp2 borrow2b borrow2 borrow2a (base + 60) (by validMem) (by validMem)
+  have L0 := lt_limb0_spec 0 32 sp a0 b0 v7 v6 v5 base
+  have L1 := lt_limb_carry_spec 8 40 sp a1 b1 a0 b0 borrow0 v11 (base + 12)
+  have L2 := lt_limb_carry_spec 16 48 sp a2 b2 temp1 borrow1b borrow1 borrow1a (base + 36)
+  have L3 := lt_limb_carry_spec 24 56 sp a3 b3 temp2 borrow2b borrow2 borrow2a (base + 60)
   -- Store phase
   have A := addi_spec_gen_same .x12 sp 32 (base + 84) (by nofun)
   simp only [signExtend12_32] at A

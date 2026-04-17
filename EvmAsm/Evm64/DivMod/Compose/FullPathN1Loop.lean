@@ -221,11 +221,11 @@ theorem divK_loop_n1_unified_divCode (bltu_3 bltu_2 bltu_1 bltu_0 : Bool)
       q3_old q2_old q1_old q0_old
       ret_mem d_mem dlo_mem scratch_un0 base
       hv_j hv_n1 hv_uhi_3 hv_ulo_3 hv_vtop hv_ret hv_d hv_dlo hv_scratch_un0 halign
-      hv_v0 hv_v1 hv_v2 hv_v3
-      hv_u0_3 hv_u1_3 hv_u2_3 hv_u3_3 hv_u4_3 hv_q3
-      hv_uhi_2 hv_ulo_2 hv_u0_2 hv_q2
-      hv_uhi_1 hv_ulo_1 hv_u0_1 hv_q1
-      hv_uhi_0 hv_ulo_0 hv_u0_0 hv_q0
+
+
+
+
+
       hbltu_3 hbltu_2 hbltu_1 hbltu_0 hcarry2)
 
 end EvmAsm.Evm64

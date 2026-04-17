@@ -40,9 +40,9 @@ theorem evm_iszero_spec (sp : Word) (base : Word)
   -- LD x7 x12 0 (load limb 0 into x7)
   have L0 := ld_spec_gen .x7 .x12 sp v7 a0 0 base (by nofun)
   -- OR limbs 1-3
-  have O1 := iszero_or_limb_spec 8 sp a1 v6 a0 (base + 4) (by validMem)
-  have O2 := iszero_or_limb_spec 16 sp a2 a1 (a0 ||| a1) (base + 12) (by validMem)
-  have O3 := iszero_or_limb_spec 24 sp a3 a2 (a0 ||| a1 ||| a2) (base + 20) (by validMem)
+  have O1 := iszero_or_limb_spec 8 sp a1 v6 a0 (base + 4)
+  have O2 := iszero_or_limb_spec 16 sp a2 a1 (a0 ||| a1) (base + 12)
+  have O3 := iszero_or_limb_spec 24 sp a3 a2 (a0 ||| a1 ||| a2) (base + 20)
   -- SLTIU
   have T := sltiu_spec_gen_same .x7 (a0 ||| a1 ||| a2 ||| a3) 1 (base + 28) (by nofun)
   simp only [signExtend12_1] at T

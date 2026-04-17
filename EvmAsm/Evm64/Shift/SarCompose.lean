@@ -307,14 +307,12 @@ theorem evm_sar_sign_fill_high_spec (sp base : Word)
   simp only [signExtend12_8] at h1
   -- Step 2: LD/OR at base+4 → extend to sarCode
   have h2 := cpsTriple_extend_code (ld_or_16_sub_sarCode base)
-    (shr_ld_or_acc_spec sp s1 r10 s2 16 (base + 4)
-      (by simp only [signExtend12_16]; exact hv16))
+    (shr_ld_or_acc_spec sp s1 r10 s2 16 (base + 4))
   simp only [signExtend12_16] at h2
   rw [sar_off_4] at h2
   -- Step 3: LD/OR at base+12 → extend to sarCode
   have h3 := cpsTriple_extend_code (ld_or_24_sub_sarCode base)
-    (shr_ld_or_acc_spec sp (s1 ||| s2) s2 s3 24 (base + 12)
-      (by simp only [signExtend12_24]; exact hv24))
+    (shr_ld_or_acc_spec sp (s1 ||| s2) s2 s3 24 (base + 12))
   simp only [signExtend12_24] at h3
   rw [sar_off_12] at h3
   -- Frame and compose LD → LD/OR → LD/OR
@@ -360,7 +358,7 @@ theorem evm_sar_sign_fill_high_spec (sp base : Word)
     (fun h hp => by xperm_hyp hp) h123 hbne_framed
   -- Step 5: Sign-fill path (base+352 → base+380) → extend to sarCode
   have hsfp := cpsTriple_extend_code (sign_fill_sub_sarCode base)
-    (sar_sign_fill_path_spec sp (s1 ||| s2 ||| s3) s3 v0 v1 v2 v3 (base + 352) hv56 hv32)
+    (sar_sign_fill_path_spec sp (s1 ||| s2 ||| s3) s3 v0 v1 v2 v3 (base + 352))
   rw [sar_off_352_28] at hsfp
   -- Frame sign-fill path with remaining state
   have hsfp_framed := cpsTriple_frame_left (base + 352) (base + 380) _ _ _
@@ -428,10 +426,10 @@ theorem evm_sar_sign_fill_large_spec (sp base : Word)
     (ld_spec_gen .x5 .x12 sp r5 s1 8 base (by nofun))
   simp only [signExtend12_8] at h1
   have h2 := cpsTriple_extend_code (ld_or_16_sub_sarCode base)
-    (shr_ld_or_acc_spec sp s1 r10 s2 16 (base + 4) (by simp only [signExtend12_16]; exact hv16))
+    (shr_ld_or_acc_spec sp s1 r10 s2 16 (base + 4))
   simp only [signExtend12_16] at h2; rw [sar_off_4] at h2
   have h3 := cpsTriple_extend_code (ld_or_24_sub_sarCode base)
-    (shr_ld_or_acc_spec sp (s1 ||| s2) s2 s3 24 (base + 12) (by simp only [signExtend12_24]; exact hv24))
+    (shr_ld_or_acc_spec sp (s1 ||| s2) s2 s3 24 (base + 12))
   simp only [signExtend12_24] at h3; rw [sar_off_12] at h3
   -- Frame + compose linear chain
   have h1f := cpsTriple_frame_left base (base + 4) _ _ _
@@ -519,7 +517,7 @@ theorem evm_sar_sign_fill_large_spec (sp base : Word)
     (fun h hp => by xperm_hyp hp) h123456 hbeq_framed
   -- Step 8: Sign-fill path (base+352 → base+380)
   have hsfp := cpsTriple_extend_code (sign_fill_sub_sarCode base)
-    (sar_sign_fill_path_spec sp s0 sltiu_val v0 v1 v2 v3 (base + 352) hv56 hv32)
+    (sar_sign_fill_path_spec sp s0 sltiu_val v0 v1 v2 v3 (base + 352))
   rw [sar_off_352_28] at hsfp
   have hsfp_framed := cpsTriple_frame_left (base + 352) (base + 380) _ _ _
     ((.x0 ↦ᵣ (0 : Word)) **
@@ -931,10 +929,10 @@ theorem evm_sar_body_evmWord_spec (sp base : Word)
     (ld_spec_gen .x5 .x12 sp r5 s1 8 base (by nofun))
   simp only [signExtend12_8] at h1
   have h2 := cpsTriple_extend_code (ld_or_16_sub_sarCode base)
-    (shr_ld_or_acc_spec sp s1 r10 s2 16 (base + 4) (by simp only [signExtend12_16]; exact hv16))
+    (shr_ld_or_acc_spec sp s1 r10 s2 16 (base + 4))
   simp only [signExtend12_16] at h2; rw [sar_off_4] at h2
   have h3 := cpsTriple_extend_code (ld_or_24_sub_sarCode base)
-    (shr_ld_or_acc_spec sp (s1 ||| s2) s2 s3 24 (base + 12) (by simp only [signExtend12_24]; exact hv24))
+    (shr_ld_or_acc_spec sp (s1 ||| s2) s2 s3 24 (base + 12))
   simp only [signExtend12_24] at h3; rw [sar_off_12] at h3
   have h1f := cpsTriple_frame_left base (base + 4) _ _ _
     ((.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ r10) ** (.x6 ↦ᵣ r6) ** (.x7 ↦ᵣ r7) ** (.x11 ↦ᵣ r11) **

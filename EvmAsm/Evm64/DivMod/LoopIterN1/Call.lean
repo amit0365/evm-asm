@@ -102,7 +102,7 @@ theorem divK_loop_body_n1_call_skip_j0_spec
   rw [vtop_eq_v0_n1 sp] at TF
   have MCS := divK_mulsub_correction_skip_spec sp q_hat (0 : Word) v0 v1 v2 v3 u0 u1 u2 u3 u_top
     rhat2_un0 q0' d_hi q0_dlo q1' (base + 516) base
-    hv_j hv_v0 hv_u0 hv_v1 hv_u1 hv_v2 hv_u2 hv_v3 hv_u3 hv_u4
+
   intro_lets at MCS
   have MCS0 := MCS hborrow
   let p0_lo := q_hat * v0; let p0_hi := rv64_mulhu q_hat v0
@@ -123,7 +123,7 @@ theorem divK_loop_body_n1_call_skip_j0_spec
   let pc3 := ba3 + p3_hi; let bs3 := if BitVec.ult u3 fs3 then (1 : Word) else 0
   let un3 := u3 - fs3; let c3 := pc3 + bs3
   let u4_new := u_top - c3
-  have SL := divK_store_loop_j0_spec sp q_hat u4_new (0 : Word) q_old base hv_q
+  have SL := divK_store_loop_j0_spec sp q_hat u4_new (0 : Word) q_old base
   intro_lets at SL
   have TFf := cpsTriple_frame_left _ _ _ _ _
     (((sp + signExtend12 40) ↦ₘ v1) ** ((u_base + signExtend12 4080) ↦ₘ u2) **
@@ -245,7 +245,7 @@ theorem divK_loop_body_n1_call_skip_j1_spec
   rw [vtop_eq_v0_n1 sp] at TF
   have MCS := divK_mulsub_correction_skip_spec sp q_hat (1 : Word) v0 v1 v2 v3 u0 u1 u2 u3 u_top
     rhat2_un0 q0' d_hi q0_dlo q1' (base + 516) base
-    hv_j hv_v0 hv_u0 hv_v1 hv_u1 hv_v2 hv_u2 hv_v3 hv_u3 hv_u4
+
   intro_lets at MCS
   have MCS0 := MCS hborrow
   let p0_lo := q_hat * v0; let p0_hi := rv64_mulhu q_hat v0
@@ -389,7 +389,7 @@ theorem divK_loop_body_n1_call_skip_j2_spec
   rw [vtop_eq_v0_n1 sp] at TF
   have MCS := divK_mulsub_correction_skip_spec sp q_hat (2 : Word) v0 v1 v2 v3 u0 u1 u2 u3 u_top
     rhat2_un0 q0' d_hi q0_dlo q1' (base + 516) base
-    hv_j hv_v0 hv_u0 hv_v1 hv_u1 hv_v2 hv_u2 hv_v3 hv_u3 hv_u4
+
   intro_lets at MCS
   have MCS0 := MCS hborrow
   let p0_lo := q_hat * v0; let p0_hi := rv64_mulhu q_hat v0
@@ -533,7 +533,7 @@ theorem divK_loop_body_n1_call_skip_j3_spec
   rw [vtop_eq_v0_n1 sp] at TF
   have MCS := divK_mulsub_correction_skip_spec sp q_hat (3 : Word) v0 v1 v2 v3 u0 u1 u2 u3 u_top
     rhat2_un0 q0' d_hi q0_dlo q1' (base + 516) base
-    hv_j hv_v0 hv_u0 hv_v1 hv_u1 hv_v2 hv_u2 hv_v3 hv_u3 hv_u4
+
   intro_lets at MCS
   have MCS0 := MCS hborrow
   let p0_lo := q_hat * v0; let p0_hi := rv64_mulhu q_hat v0
