@@ -17,8 +17,7 @@ abbrev evm_or_code (base : Word) : CodeReq :=
 
 /-- Full 256-bit EVM OR: composes 4 per-limb OR specs + sp adjustment. -/
 theorem evm_or_spec (sp base : Word)
-    (a0 a1 a2 a3 b0 b1 b2 b3 v7 v6 : Word)
-    (hvalid : ValidMemRange sp 8) :
+    (a0 a1 a2 a3 b0 b1 b2 b3 v7 v6 : Word) :
     let code := evm_or_code base
     cpsTriple base (base + 68) code
       ((.x12 ↦ᵣ sp) ** (.x7 ↦ᵣ v7) ** (.x6 ↦ᵣ v6) **
@@ -36,8 +35,7 @@ theorem evm_or_spec (sp base : Word)
 
 /-- Stack-level 256-bit EVM OR. -/
 theorem evm_or_stack_spec (sp base : Word)
-    (a b : EvmWord) (v7 v6 : Word)
-    (hvalid : ValidMemRange sp 8) :
+    (a b : EvmWord) (v7 v6 : Word) :
     let code := evm_or_code base
     cpsTriple base (base + 68) code
       ((.x12 ↦ᵣ sp) ** (.x7 ↦ᵣ v7) ** (.x6 ↦ᵣ v6) **
@@ -47,7 +45,7 @@ theorem evm_or_stack_spec (sp base : Word)
   have h_main := evm_or_spec sp base
     (a.getLimbN 0) (a.getLimbN 1) (a.getLimbN 2) (a.getLimbN 3)
     (b.getLimbN 0) (b.getLimbN 1) (b.getLimbN 2) (b.getLimbN 3)
-    v7 v6 hvalid
+    v7 v6
   exact cpsTriple_consequence _ _ _ _ _ _ _
     (fun h hp => by
       simp only [evmWordIs] at hp

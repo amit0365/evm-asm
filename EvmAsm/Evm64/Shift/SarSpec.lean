@@ -87,8 +87,7 @@ theorem sar_body_3_spec (sp : Word)
     (v5 v10 bit_shift anti_shift mask : Word)
     (v0 v1 v2 v3 : Word)
     (base exit : Word) (jal_off : BitVec 21)
-    (hexit : (base + 28) + signExtend21 jal_off = exit)
-    (hvalid : ValidMemRange sp 4) :
+    (hexit : (base + 28) + signExtend21 jal_off = exit) :
     let result0 := BitVec.sshiftRight v3 (bit_shift.toNat % 64)
     let sign_ext := BitVec.sshiftRight result0 63
     let cr := sar_body_3_code base jal_off
@@ -122,8 +121,7 @@ theorem sar_body_2_spec (sp : Word)
     (v5 v10 bit_shift anti_shift mask : Word)
     (v0 v1 v2 v3 : Word)
     (base exit : Word) (jal_off : BitVec 21)
-    (hexit : (base + 52) + signExtend21 jal_off = exit)
-    (hvalid : ValidMemRange sp 4) :
+    (hexit : (base + 52) + signExtend21 jal_off = exit) :
     let result0 := (v2 >>> (bit_shift.toNat % 64)) ||| ((v3 <<< (anti_shift.toNat % 64)) &&& mask)
     let result1 := BitVec.sshiftRight v3 (bit_shift.toNat % 64)
     let sign_ext := BitVec.sshiftRight result1 63
@@ -164,8 +162,7 @@ theorem sar_body_1_spec (sp : Word)
     (v5 v10 bit_shift anti_shift mask : Word)
     (v0 v1 v2 v3 : Word)
     (base exit : Word) (jal_off : BitVec 21)
-    (hexit : (base + 76) + signExtend21 jal_off = exit)
-    (hvalid : ValidMemRange sp 4) :
+    (hexit : (base + 76) + signExtend21 jal_off = exit) :
     let result0 := (v1 >>> (bit_shift.toNat % 64)) ||| ((v2 <<< (anti_shift.toNat % 64)) &&& mask)
     let result1 := (v2 >>> (bit_shift.toNat % 64)) ||| ((v3 <<< (anti_shift.toNat % 64)) &&& mask)
     let result2 := BitVec.sshiftRight v3 (bit_shift.toNat % 64)
@@ -210,8 +207,7 @@ theorem sar_body_0_spec (sp : Word)
     (v5 v10 bit_shift anti_shift mask : Word)
     (v0 v1 v2 v3 : Word)
     (base exit : Word) (jal_off : BitVec 21)
-    (hexit : (base + 96) + signExtend21 jal_off = exit)
-    (hvalid : ValidMemRange sp 4) :
+    (hexit : (base + 96) + signExtend21 jal_off = exit) :
     let result0 := (v0 >>> (bit_shift.toNat % 64)) ||| ((v1 <<< (anti_shift.toNat % 64)) &&& mask)
     let result1 := (v1 >>> (bit_shift.toNat % 64)) ||| ((v2 <<< (anti_shift.toNat % 64)) &&& mask)
     let result2 := (v2 >>> (bit_shift.toNat % 64)) ||| ((v3 <<< (anti_shift.toNat % 64)) &&& mask)

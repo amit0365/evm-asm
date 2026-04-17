@@ -25,8 +25,7 @@ abbrev evm_sub_code (base : Word) : CodeReq :=
     Borrow propagates through limbs via x5. -/
 theorem evm_sub_spec (sp : Word) (base : Word)
     (a0 a1 a2 a3 b0 b1 b2 b3 : Word)
-    (v7 v6 v5 v11 : Word)
-    (hvalid : ValidMemRange sp 8) :
+    (v7 v6 v5 v11 : Word) :
     let borrow0 := if BitVec.ult a0 b0 then (1 : Word) else 0
     let diff0 := a0 - b0
     let borrow1a := if BitVec.ult a1 b1 then (1 : Word) else 0
@@ -68,8 +67,7 @@ theorem evm_sub_spec (sp : Word) (base : Word)
 
 /-- Stack-level 256-bit EVM SUB: operates on two EvmWords via evmWordIs. -/
 theorem evm_sub_stack_spec (sp base : Word)
-    (a b : EvmWord) (v7 v6 v5 v11 : Word)
-    (hvalid : ValidMemRange sp 8) :
+    (a b : EvmWord) (v7 v6 v5 v11 : Word) :
     let a0 := a.getLimbN 0; let b0 := b.getLimbN 0
     let a1 := a.getLimbN 1; let b1 := b.getLimbN 1
     let a2 := a.getLimbN 2; let b2 := b.getLimbN 2
@@ -104,7 +102,7 @@ theorem evm_sub_stack_spec (sp base : Word)
   have h_main := evm_sub_spec sp base
     (a.getLimbN 0) (a.getLimbN 1) (a.getLimbN 2) (a.getLimbN 3)
     (b.getLimbN 0) (b.getLimbN 1) (b.getLimbN 2) (b.getLimbN 3)
-    v7 v6 v5 v11 hvalid
+    v7 v6 v5 v11
   -- Get the borrow chain correctness
   have ⟨h0, h1, h2, h3⟩ := EvmWord.sub_borrow_chain_correct a b
   exact cpsTriple_consequence _ _ _ _ _ _ _

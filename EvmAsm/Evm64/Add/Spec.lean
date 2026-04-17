@@ -25,8 +25,7 @@ abbrev evm_add_code (base : Word) : CodeReq :=
     Carry propagates through limbs via x5. -/
 theorem evm_add_spec (sp : Word) (base : Word)
     (a0 a1 a2 a3 b0 b1 b2 b3 : Word)
-    (v7 v6 v5 v11 : Word)
-    (hvalid : ValidMemRange sp 8) :
+    (v7 v6 v5 v11 : Word) :
     let sum0 := a0 + b0
     let carry0 := if BitVec.ult sum0 b0 then (1 : Word) else 0
     let psum1 := a1 + b1
@@ -68,8 +67,7 @@ theorem evm_add_spec (sp : Word) (base : Word)
 
 /-- Stack-level 256-bit EVM ADD: operates on two EvmWords via evmWordIs. -/
 theorem evm_add_stack_spec (sp base : Word)
-    (a b : EvmWord) (v7 v6 v5 v11 : Word)
-    (hvalid : ValidMemRange sp 8) :
+    (a b : EvmWord) (v7 v6 v5 v11 : Word) :
     let a0 := a.getLimbN 0; let b0 := b.getLimbN 0
     let a1 := a.getLimbN 1; let b1 := b.getLimbN 1
     let a2 := a.getLimbN 2; let b2 := b.getLimbN 2
@@ -104,7 +102,7 @@ theorem evm_add_stack_spec (sp base : Word)
   have h_main := evm_add_spec sp base
     (a.getLimbN 0) (a.getLimbN 1) (a.getLimbN 2) (a.getLimbN 3)
     (b.getLimbN 0) (b.getLimbN 1) (b.getLimbN 2) (b.getLimbN 3)
-    v7 v6 v5 v11 hvalid
+    v7 v6 v5 v11
   -- Get the carry chain correctness
   have ⟨h0, h1, h2, h3⟩ := EvmWord.add_carry_chain_correct a b
   exact cpsTriple_consequence _ _ _ _ _ _ _

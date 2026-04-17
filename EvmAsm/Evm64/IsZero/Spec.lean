@@ -24,8 +24,7 @@ abbrev evm_iszero_code (base : Word) : CodeReq :=
     12 instructions = 48 bytes. -/
 theorem evm_iszero_spec (sp : Word) (base : Word)
     (a0 a1 a2 a3 : Word)
-    (v7 v6 : Word)
-    (hvalid : ValidMemRange sp 4) :
+    (v7 v6 : Word) :
     let or_all := a0 ||| a1 ||| a2 ||| a3
     let result := if BitVec.ult or_all (1 : Word) then (1 : Word) else 0
     let code := evm_iszero_code base
@@ -61,8 +60,7 @@ theorem evm_iszero_spec (sp : Word) (base : Word)
 
 /-- Stack-level 256-bit EVM ISZERO: operates on an EvmWord via evmWordIs. -/
 theorem evm_iszero_stack_spec (sp base : Word)
-    (a : EvmWord) (v7 v6 : Word)
-    (hvalid : ValidMemRange sp 4) :
+    (a : EvmWord) (v7 v6 : Word) :
     let or_all := a.getLimbN 0 ||| a.getLimbN 1 ||| a.getLimbN 2 ||| a.getLimbN 3
     let result := if BitVec.ult or_all 1 then (1 : Word) else 0
     let code := evm_iszero_code base
@@ -76,7 +74,7 @@ theorem evm_iszero_stack_spec (sp base : Word)
   intro or_all result
   have h_main := evm_iszero_spec sp base
     (a.getLimbN 0) (a.getLimbN 1) (a.getLimbN 2) (a.getLimbN 3)
-    v7 v6 hvalid
+    v7 v6
   exact cpsTriple_consequence _ _ _ _ _ _ _
     (fun h hp => by
       simp only [evmWordIs] at hp

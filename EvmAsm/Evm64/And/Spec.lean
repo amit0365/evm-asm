@@ -23,8 +23,7 @@ abbrev evm_and_code (base : Word) : CodeReq :=
     17 instructions total. Pops 2 stack words (A at sp, B at sp+32),
     writes A &&& B to sp+32..sp+56, advances sp by 32. -/
 theorem evm_and_spec (sp base : Word)
-    (a0 a1 a2 a3 b0 b1 b2 b3 v7 v6 : Word)
-    (hvalid : ValidMemRange sp 8) :
+    (a0 a1 a2 a3 b0 b1 b2 b3 v7 v6 : Word) :
     let code := evm_and_code base
     cpsTriple base (base + 68) code
       (-- Registers + memory
@@ -48,8 +47,7 @@ theorem evm_and_spec (sp base : Word)
 
 /-- Stack-level 256-bit EVM AND: operates on two EvmWords via evmWordIs. -/
 theorem evm_and_stack_spec (sp base : Word)
-    (a b : EvmWord) (v7 v6 : Word)
-    (hvalid : ValidMemRange sp 8) :
+    (a b : EvmWord) (v7 v6 : Word) :
     let code := evm_and_code base
     cpsTriple base (base + 68) code
       (-- Registers + memory
@@ -61,7 +59,7 @@ theorem evm_and_stack_spec (sp base : Word)
   have h_main := evm_and_spec sp base
     (a.getLimbN 0) (a.getLimbN 1) (a.getLimbN 2) (a.getLimbN 3)
     (b.getLimbN 0) (b.getLimbN 1) (b.getLimbN 2) (b.getLimbN 3)
-    v7 v6 hvalid
+    v7 v6
   exact cpsTriple_consequence _ _ _ _ _ _ _
     (fun h hp => by
       simp only [evmWordIs] at hp

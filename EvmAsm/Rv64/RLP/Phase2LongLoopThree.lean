@@ -68,9 +68,6 @@ theorem rlp_phase2_long_loop_three_byte_spec
     (hvalid2 : isValidByteAccess (ptr + 1) = true)
     (hvalid3 : isValidByteAccess (ptr + 2) = true)
     (hback : (base + 20) + signExtend13 back = base) :
-    let byte1 := (extractByte word_val (byteOffset ptr)).zeroExtend 64
-    let byte2 := (extractByte word_val (byteOffset (ptr + 1))).zeroExtend 64
-    let byte3 := (extractByte word_val (byteOffset (ptr + 2))).zeroExtend 64
     cpsTriple base (base + 24)
       (CodeReq.ofProg base (rlp_phase2_long_loop_body_prog back))
       ((.x11 ↦ᵣ len) ** (.x13 ↦ᵣ ptr) ** (.x14 ↦ᵣ (3 : Word)) **
