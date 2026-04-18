@@ -54,6 +54,51 @@ theorem isSkipBorrowN4MaxEvm_def (a b : EvmWord) :
 -- Stack-level post state for n=4 max-skip DIV
 -- ============================================================================
 
+/-- Semantic-correctness precondition for the n=4 max+skip sub-path: the
+    mulsub carry on **un-normalized** `a`, `b` limbs with the maximum trial
+    quotient (`signExtend12 4095 = 2^64 - 1`) is zero.
+
+    This is what `n4_max_skip_div_mod_getLimbN` consumes to conclude
+    `(EvmWord.div a b).getLimbN k` values. It is distinct from the runtime
+    borrow check `isSkipBorrowN4MaxEvm` (which inspects the **normalized**
+    mulsub carry), so the forthcoming stack spec takes both as separate
+    hypotheses. Packaging the long equality behind a named predicate keeps
+    the stack-spec signature readable. -/
+def n4MaxSkipSemanticHolds (a b : EvmWord) : Prop :=
+  (mulsubN4 (signExtend12 4095)
+      (b.getLimbN 0) (b.getLimbN 1) (b.getLimbN 2) (b.getLimbN 3)
+      (a.getLimbN 0) (a.getLimbN 1) (a.getLimbN 2) (a.getLimbN 3)).2.2.2.2 = 0
+
+theorem n4MaxSkipSemanticHolds_def (a b : EvmWord) :
+    n4MaxSkipSemanticHolds a b =
+    ((mulsubN4 (signExtend12 4095)
+        (b.getLimbN 0) (b.getLimbN 1) (b.getLimbN 2) (b.getLimbN 3)
+        (a.getLimbN 0) (a.getLimbN 1) (a.getLimbN 2) (a.getLimbN 3)).2.2.2.2 = 0) :=
+  rfl
+
+/-- Semantic-correctness precondition for the n=4 max+addback sub-path: on
+    **un-normalized** `a`, `b` limbs with the maximum trial quotient, the
+    mulsub carry is `1` *and* the addback carry is `1`. Together these two
+    facts feed `n4_max_addback_div_mod_getLimbN` to conclude the per-limb
+    `EvmWord.div` / `EvmWord.mod` equalities. -/
+def n4MaxAddbackSemanticHolds (a b : EvmWord) : Prop :=
+  let ms := mulsubN4 (signExtend12 4095)
+    (b.getLimbN 0) (b.getLimbN 1) (b.getLimbN 2) (b.getLimbN 3)
+    (a.getLimbN 0) (a.getLimbN 1) (a.getLimbN 2) (a.getLimbN 3)
+  ms.2.2.2.2 = 1 ∧
+  addbackN4_carry ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1
+    (b.getLimbN 0) (b.getLimbN 1) (b.getLimbN 2) (b.getLimbN 3) = 1
+
+theorem n4MaxAddbackSemanticHolds_def (a b : EvmWord) :
+    n4MaxAddbackSemanticHolds a b =
+    (let ms := mulsubN4 (signExtend12 4095)
+        (b.getLimbN 0) (b.getLimbN 1) (b.getLimbN 2) (b.getLimbN 3)
+        (a.getLimbN 0) (a.getLimbN 1) (a.getLimbN 2) (a.getLimbN 3)
+     ms.2.2.2.2 = 1 ∧
+     addbackN4_carry ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1
+       (b.getLimbN 0) (b.getLimbN 1) (b.getLimbN 2) (b.getLimbN 3) = 1) :=
+  rfl
+
 /-- Stack-level postcondition shape for the n=4 DIV max+skip path.
 
     * `.x12 ↦ᵣ (sp+32)` — EVM stack pointer advanced past the popped second operand.
@@ -74,6 +119,39 @@ def divN4MaxSkipStackPost (sp : Word) (a b : EvmWord) : Assertion :=
   regOwn .x10 ** regOwn .x11 ** (.x0 ↦ᵣ (0 : Word)) **
   evmWordIs sp a ** evmWordIs (sp + 32) (EvmWord.div a b) **
   divScratchOwn sp
+
+theorem pcFree_divScratchOwn (sp : Word) : (divScratchOwn sp).pcFree := by
+  unfold divScratchOwn; pcFree
+
+instance (sp : Word) : Assertion.PCFree (divScratchOwn sp) :=
+  ⟨pcFree_divScratchOwn sp⟩
+
+theorem pcFree_divN4MaxSkipStackPost (sp : Word) (a b : EvmWord) :
+    (divN4MaxSkipStackPost sp a b).pcFree := by
+  unfold divN4MaxSkipStackPost; pcFree
+
+instance (sp : Word) (a b : EvmWord) :
+    Assertion.PCFree (divN4MaxSkipStackPost sp a b) :=
+  ⟨pcFree_divN4MaxSkipStackPost sp a b⟩
+
+/-- MOD counterpart of `divN4MaxSkipStackPost`: same structure, same register
+    and scratch handling, but the second operand slot holds `EvmWord.mod a b`
+    instead of `EvmWord.div a b`. Target shape for the forthcoming MOD stack
+    spec on the n=4 max+skip sub-path. -/
+def modN4MaxSkipStackPost (sp : Word) (a b : EvmWord) : Assertion :=
+  (.x12 ↦ᵣ (sp + 32)) ** regOwn .x1 ** regOwn .x2 **
+  regOwn .x5 ** regOwn .x6 ** regOwn .x7 **
+  regOwn .x10 ** regOwn .x11 ** (.x0 ↦ᵣ (0 : Word)) **
+  evmWordIs sp a ** evmWordIs (sp + 32) (EvmWord.mod a b) **
+  divScratchOwn sp
+
+theorem pcFree_modN4MaxSkipStackPost (sp : Word) (a b : EvmWord) :
+    (modN4MaxSkipStackPost sp a b).pcFree := by
+  unfold modN4MaxSkipStackPost; pcFree
+
+instance (sp : Word) (a b : EvmWord) :
+    Assertion.PCFree (modN4MaxSkipStackPost sp a b) :=
+  ⟨pcFree_modN4MaxSkipStackPost sp a b⟩
 
 /-- EvmWord-level wrapper around `evm_div_n4_full_max_skip_spec`. Same
     guarantee (full-path DIV from `base` to `base + nopOff` on the n=4 max+skip
