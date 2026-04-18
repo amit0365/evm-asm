@@ -120,6 +120,20 @@ def divN4MaxSkipStackPost (sp : Word) (a b : EvmWord) : Assertion :=
   evmWordIs sp a ** evmWordIs (sp + 32) (EvmWord.div a b) **
   divScratchOwn sp
 
+theorem pcFree_divScratchOwn (sp : Word) : (divScratchOwn sp).pcFree := by
+  unfold divScratchOwn; pcFree
+
+instance (sp : Word) : Assertion.PCFree (divScratchOwn sp) :=
+  ⟨pcFree_divScratchOwn sp⟩
+
+theorem pcFree_divN4MaxSkipStackPost (sp : Word) (a b : EvmWord) :
+    (divN4MaxSkipStackPost sp a b).pcFree := by
+  unfold divN4MaxSkipStackPost; pcFree
+
+instance (sp : Word) (a b : EvmWord) :
+    Assertion.PCFree (divN4MaxSkipStackPost sp a b) :=
+  ⟨pcFree_divN4MaxSkipStackPost sp a b⟩
+
 /-- EvmWord-level wrapper around `evm_div_n4_full_max_skip_spec`. Same
     guarantee (full-path DIV from `base` to `base + nopOff` on the n=4 max+skip
     sub-path), but with the operands bundled as `evmWordIs sp a` /
