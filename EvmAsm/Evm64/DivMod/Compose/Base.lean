@@ -220,6 +220,54 @@ theorem sharedDivModCode_sub_modCode (base : Word) :
 -- Used by all 8 _to_loopSetup_spec theorems (n=1..4, DIV and MOD).
 -- ============================================================================
 
+-- ============================================================================
+-- Scratch region bundle: 15 memory cells used by the 256-bit DIV/MOD program
+-- ============================================================================
+
+/-- The 15 scratch memory cells that the DIV/MOD program reads and writes
+    during execution. All live at negative offsets from the stack pointer
+    (`sp + signExtend12 …` with 12-bit values ≥ 2048 wrapping to negative).
+
+    Layout:
+    - `q0..q3` at `sp + signExtend12 4088/4080/4072/4064` — accumulated quotient digits
+    - `u0..u4` at `sp + signExtend12 4056/4048/4040/4032/4024` — normalized dividend
+    - `u5..u7` at `sp + signExtend12 4016/4008/4000` — overflow/scratch
+    - `shift_mem` at `sp + signExtend12 3992`, `n_mem` at `sp + signExtend12 3984`
+    - `j_mem` at `sp + signExtend12 3976`
+
+    This is the precondition shape — specific starting values for every cell.
+    The full-path specs universally-quantify over these values since the program
+    overwrites them; the predicate packages them so stack specs aren't littered
+    with fifteen `↦ₘ` lines at every call site. -/
+def divScratchValues (sp q0 q1 q2 q3 u0 u1 u2 u3 u4 u5 u6 u7
+    shift_mem n_mem j_mem : Word) : Assertion :=
+  ((sp + signExtend12 4088) ↦ₘ q0) ** ((sp + signExtend12 4080) ↦ₘ q1) **
+  ((sp + signExtend12 4072) ↦ₘ q2) ** ((sp + signExtend12 4064) ↦ₘ q3) **
+  ((sp + signExtend12 4056) ↦ₘ u0) ** ((sp + signExtend12 4048) ↦ₘ u1) **
+  ((sp + signExtend12 4040) ↦ₘ u2) ** ((sp + signExtend12 4032) ↦ₘ u3) **
+  ((sp + signExtend12 4024) ↦ₘ u4) ** ((sp + signExtend12 4016) ↦ₘ u5) **
+  ((sp + signExtend12 4008) ↦ₘ u6) ** ((sp + signExtend12 4000) ↦ₘ u7) **
+  ((sp + signExtend12 3992) ↦ₘ shift_mem) **
+  ((sp + signExtend12 3984) ↦ₘ n_mem) **
+  ((sp + signExtend12 3976) ↦ₘ j_mem)
+
+/-- Unfold `divScratchValues` into its 15 underlying memory atoms. Since
+    `divScratchValues` is not `@[irreducible]` the `delta`/`unfold` tactics
+    reduce it directly, but this named rewrite is convenient at call sites. -/
+theorem divScratchValues_unfold (sp q0 q1 q2 q3 u0 u1 u2 u3 u4 u5 u6 u7
+    shift_mem n_mem j_mem : Word) :
+    divScratchValues sp q0 q1 q2 q3 u0 u1 u2 u3 u4 u5 u6 u7
+        shift_mem n_mem j_mem =
+    (((sp + signExtend12 4088) ↦ₘ q0) ** ((sp + signExtend12 4080) ↦ₘ q1) **
+     ((sp + signExtend12 4072) ↦ₘ q2) ** ((sp + signExtend12 4064) ↦ₘ q3) **
+     ((sp + signExtend12 4056) ↦ₘ u0) ** ((sp + signExtend12 4048) ↦ₘ u1) **
+     ((sp + signExtend12 4040) ↦ₘ u2) ** ((sp + signExtend12 4032) ↦ₘ u3) **
+     ((sp + signExtend12 4024) ↦ₘ u4) ** ((sp + signExtend12 4016) ↦ₘ u5) **
+     ((sp + signExtend12 4008) ↦ₘ u6) ** ((sp + signExtend12 4000) ↦ₘ u7) **
+     ((sp + signExtend12 3992) ↦ₘ shift_mem) **
+     ((sp + signExtend12 3984) ↦ₘ n_mem) **
+     ((sp + signExtend12 3976) ↦ₘ j_mem)) := rfl
+
 /-- Postcondition for the shift≠0 path from entry to loop setup.
     Encapsulates the shift/anti_shift computation, normalized b'[0..3],
     and normalized u[0..4] as internal let bindings.
