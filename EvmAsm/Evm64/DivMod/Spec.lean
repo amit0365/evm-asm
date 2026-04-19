@@ -52,6 +52,20 @@ namespace EvmAsm.Evm64
 
 open EvmAsm.Rv64
 
+/-- `evmWordIs addr (EvmWord.div a 0) = evmWordIs addr 0`. Specialized
+    rewrite for the zero-divisor path, bundling `evmWordIs_congr` +
+    `EvmWord.div_zero_right` into a single named lemma. Saves the inline
+    `rw [evmWordIs_congr addr (EvmWord.div_zero_right a)]` idiom at each
+    bzero spec's postcondition site. -/
+theorem evmWordIs_div_zero_right (addr : Word) (a : EvmWord) :
+    evmWordIs addr (EvmWord.div a 0) = evmWordIs addr (0 : EvmWord) :=
+  evmWordIs_congr addr (EvmWord.div_zero_right a)
+
+/-- MOD counterpart of `evmWordIs_div_zero_right`. -/
+theorem evmWordIs_mod_zero_right (addr : Word) (a : EvmWord) :
+    evmWordIs addr (EvmWord.mod a 0) = evmWordIs addr (0 : EvmWord) :=
+  evmWordIs_congr addr (EvmWord.mod_zero_right a)
+
 -- ============================================================================
 -- EvmWord-level runtime condition predicates for the n=4 max path
 -- ============================================================================
