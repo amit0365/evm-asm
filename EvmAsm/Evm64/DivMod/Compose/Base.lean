@@ -438,6 +438,16 @@ theorem loopSetupPost_unfold (sp n_val shift a0 a1 a2 a3 b0 b1 b2 b3 : Word) :
     ((sp + signExtend12 3992) ↦ₘ shift) := by
   delta loopSetupPost; rfl
 
+/-- `loopSetupPost` is pc-free: all its atoms are `regIs` / `memIs`. -/
+theorem pcFree_loopSetupPost (sp n_val shift a0 a1 a2 a3 b0 b1 b2 b3 : Word) :
+    (loopSetupPost sp n_val shift a0 a1 a2 a3 b0 b1 b2 b3).pcFree := by
+  rw [loopSetupPost_unfold]; pcFree
+
+instance pcFreeInst_loopSetupPost
+    (sp n_val shift a0 a1 a2 a3 b0 b1 b2 b3 : Word) :
+    Assertion.PCFree (loopSetupPost sp n_val shift a0 a1 a2 a3 b0 b1 b2 b3) :=
+  ⟨pcFree_loopSetupPost sp n_val shift a0 a1 a2 a3 b0 b1 b2 b3⟩
+
 -- ============================================================================
 -- Postcondition bundles for denorm + epilogue paths
 -- ============================================================================
@@ -568,6 +578,15 @@ theorem normBPost_unfold (sp n_val shift b0 b1 b2 b3 : Word) :
     ((sp + signExtend12 4000) ↦ₘ (0 : Word)) ** ((sp + signExtend12 3984) ↦ₘ n_val) **
     ((sp + signExtend12 3992) ↦ₘ shift) := by
   delta normBPost; rfl
+
+/-- `normBPost` is pc-free: all its atoms are `regIs` / `memIs`. -/
+theorem pcFree_normBPost (sp n_val shift b0 b1 b2 b3 : Word) :
+    (normBPost sp n_val shift b0 b1 b2 b3).pcFree := by
+  rw [normBPost_unfold]; pcFree
+
+instance pcFreeInst_normBPost (sp n_val shift b0 b1 b2 b3 : Word) :
+    Assertion.PCFree (normBPost sp n_val shift b0 b1 b2 b3) :=
+  ⟨pcFree_normBPost sp n_val shift b0 b1 b2 b3⟩
 
 -- ============================================================================
 -- `se12_32`/`se12_40`/`se12_48`/`se12_56` were deleted by issue #493 / #494:
