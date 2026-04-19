@@ -103,7 +103,6 @@ theorem val256_lt_of_b3_bound (b0 b1 b2 b3 : Word) (s : Nat) (hs : s ≤ 64)
   nlinarith [h0, h1, h2, hb3_bound,
              (show 0 < 2 ^ (64 - s) from by positivity)]
 
-
 end EvmWord
 
 end EvmAsm.Evm64
