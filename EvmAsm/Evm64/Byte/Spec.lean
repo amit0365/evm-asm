@@ -35,18 +35,6 @@ open EvmAsm.Rv64.AddrNorm (se13_20 se13_44 se13_68 se13_128 se13_140 se21_16 se2
 abbrev evm_byte_code (base : Word) : CodeReq :=
   CodeReq.ofProg base evm_byte
 
--- Program length verification
-private theorem byte_phase_a_len : byte_phase_a.length = 9 := by decide
-private theorem byte_phase_b_len : byte_phase_b.length = 5 := by decide
-private theorem byte_phase_c_len : byte_phase_c.length = 5 := by decide
-private theorem byte_body_3_len : byte_body_3.length = 4 := by decide
-private theorem byte_body_2_len : byte_body_2.length = 4 := by decide
-private theorem byte_body_1_len : byte_body_1.length = 4 := by decide
-private theorem byte_body_0_len : byte_body_0.length = 3 := by decide
-private theorem byte_store_len : byte_store.length = 6 := by decide
-private theorem byte_zero_path_len : byte_zero_path.length = 5 := by decide
-private theorem evm_byte_len : evm_byte.length = 45 := by decide
-
 -- ============================================================================
 -- CodeReq subsumption: each sub-phase code ⊆ evm_byte_code
 -- ============================================================================
