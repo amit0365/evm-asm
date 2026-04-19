@@ -70,7 +70,7 @@ theorem divK_div128_prodcheck1_merged_spec
   have ha_t : (base + 16) + signExtend13 (8 : BitVec 13) = base + 24 := by rw [se13_8]; bv_addr
   have ha_f : (base + 16 : Word) + 4 = base + 20 := by bv_addr
   rw [ha_t, ha_f] at hbltu_raw
-  have hbltu_framed := cpsBranch_frame_left _ _ _ _ _ _ _
+  have hbltu_framed := cpsBranch_frameR
     ((.x12 ↦ᵣ sp) ** (.x10 ↦ᵣ q1) ** (.x7 ↦ᵣ rhat) ** (.x11 ↦ᵣ un1) **
      (.x6 ↦ᵣ d_hi) ** (sp + signExtend12 3952 ↦ₘ dlo))
     (by pcFree) hbltu_raw

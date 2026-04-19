@@ -69,7 +69,7 @@ theorem divK_clz_stage_taken_spec (K M_s : BitVec 6) (M_a : BitVec 12) (val coun
   have ha_t : (base + 4) + signExtend13 (12 : BitVec 13) = base + 16 := by rw [se13_12]; bv_addr
   have ha_f : (base + 4 : Word) + 4 = base + 8 := by bv_addr
   rw [ha_t, ha_f] at hbne_raw
-  have hbne_framed := cpsBranch_frame_left _ _ _ _ _ _ _
+  have hbne_framed := cpsBranch_frameR
     ((.x5 ↦ᵣ val) ** (.x6 ↦ᵣ count))
     (by pcFree) hbne_raw
   have hbne_ext : cpsBranch (base + 4) cr
@@ -123,7 +123,7 @@ theorem divK_clz_stage_ntaken_spec (K M_s : BitVec 6) (M_a : BitVec 12) (val cou
   have ha_t : (base + 4) + signExtend13 (12 : BitVec 13) = base + 16 := by rw [se13_12]; bv_addr
   have ha_f : (base + 4 : Word) + 4 = base + 8 := by bv_addr
   rw [ha_t, ha_f] at hbne_raw
-  have hbne_framed := cpsBranch_frame_left _ _ _ _ _ _ _
+  have hbne_framed := cpsBranch_frameR
     ((.x5 ↦ᵣ val) ** (.x6 ↦ᵣ count))
     (by pcFree) hbne_raw
   have hbne_ext : cpsBranch (base + 4) cr
@@ -195,7 +195,7 @@ theorem divK_clz_last_taken_spec (val count v7 : Word) (base : Word)
   have ha_t : (base + 4) + signExtend13 (8 : BitVec 13) = base + 12 := by rw [hsig]; bv_addr
   have ha_f : (base + 4 : Word) + 4 = base + 8 := by bv_addr
   rw [ha_t, ha_f] at hbne_raw
-  have hbne_framed := cpsBranch_frame_left _ _ _ _ _ _ _
+  have hbne_framed := cpsBranch_frameR
     ((.x5 ↦ᵣ val) ** (.x6 ↦ᵣ count))
     (by pcFree) hbne_raw
   have hbne_ext : cpsBranch (base + 4) cr
@@ -250,7 +250,7 @@ theorem divK_clz_last_ntaken_spec (val count v7 : Word) (base : Word)
   have ha_t : (base + 4) + signExtend13 (8 : BitVec 13) = base + 12 := by rw [hsig]; bv_addr
   have ha_f : (base + 4 : Word) + 4 = base + 8 := by bv_addr
   rw [ha_t, ha_f] at hbne_raw
-  have hbne_framed := cpsBranch_frame_left _ _ _ _ _ _ _
+  have hbne_framed := cpsBranch_frameR
     ((.x5 ↦ᵣ val) ** (.x6 ↦ᵣ count))
     (by pcFree) hbne_raw
   have hbne_ext : cpsBranch (base + 4) cr

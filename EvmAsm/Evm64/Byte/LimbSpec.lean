@@ -311,7 +311,7 @@ theorem byte_phase_c_spec (v5 v10 : Word) (base : Word)
       (fun h hp => by xperm_hyp hp)
       (fun h hp => by xperm_hyp hp)
       (fun h hp => by xperm_hyp hp)
-      (cpsBranch_frame_left _ _ _ _ _ _ _ (.x10 ↦ᵣ v10) (by pcFree) beq0_cr)
+      (cpsBranch_frameR (.x10 ↦ᵣ v10) (by pcFree) beq0_cr)
   -- Step 1: ADDI x10 x0 1 at base+4 (extend to cr, frame with x5)
   have addi1_raw := addi_spec_gen .x10 .x0 v10 (0 : Word) 1 (base + 4) (by nofun)
   have addi1_cr := cpsTriple_extend_code (byte_pc_sub_1 base) addi1_raw
@@ -327,7 +327,7 @@ theorem byte_phase_c_spec (v5 v10 : Word) (base : Word)
   -- Normalize BEQ1 ntaken exit
   have hbeq1_nf : (base + 8 : Word) + 4 = base + 12 := by bv_omega
   rw [hbeq1_nf] at beq1_raw beq1_cr
-  have beq1f := cpsBranch_frame_left _ _ _ _ _ _ _ (.x0 ↦ᵣ (0 : Word)) (by pcFree) beq1_cr
+  have beq1f := cpsBranch_frameR (.x0 ↦ᵣ (0 : Word)) (by pcFree) beq1_cr
   -- Compose addi1 + beq1 (let Lean infer intermediate shapes)
   have cs1_composed := cpsTriple_seq_cpsBranch_with_perm_same_cr
     (base + 4) (base + 8) cr _ _ _ e1 _ (base + 12) _
@@ -343,7 +343,7 @@ theorem byte_phase_c_spec (v5 v10 : Word) (base : Word)
       (fun h hp => by xperm_hyp hp)
       cs1_composed
   -- Frame cs1 with ⌜v5 ≠ 0⌝, clean up postconditions
-  have cs1_framed := cpsBranch_frame_left _ _ _ _ _ _ _
+  have cs1_framed := cpsBranch_frameR
     (⌜v5 ≠ (0 : Word)⌝) (pcFree_pure _) cs1_clean
   have cs1_final : cpsBranch (base + 4) cr
       ((.x5 ↦ᵣ v5) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ v10) ** ⌜v5 ≠ (0 : Word)⌝)
@@ -376,7 +376,7 @@ theorem byte_phase_c_spec (v5 v10 : Word) (base : Word)
   -- Normalize BEQ2 ntaken exit
   have hbeq2_nf : (base + 16 : Word) + 4 = base + 20 := by bv_omega
   rw [hbeq2_nf] at beq2_raw beq2_cr
-  have beq2f := cpsBranch_frame_left _ _ _ _ _ _ _ (.x0 ↦ᵣ (0 : Word)) (by pcFree) beq2_cr
+  have beq2f := cpsBranch_frameR (.x0 ↦ᵣ (0 : Word)) (by pcFree) beq2_cr
   -- Compose addi2 + beq2 (let Lean infer intermediate shapes)
   have cs2_composed := cpsTriple_seq_cpsBranch_with_perm_same_cr
     (base + 12) (base + 16) cr _ _ _ e2 _ (base + 20) _
@@ -392,7 +392,7 @@ theorem byte_phase_c_spec (v5 v10 : Word) (base : Word)
       (fun h hp => by xperm_hyp hp)
       cs2_composed
   -- Frame cs2 with ⌜v5 ≠ 0 ∧ v5 ≠ 1⌝, clean up postconditions
-  have cs2_framed := cpsBranch_frame_left _ _ _ _ _ _ _
+  have cs2_framed := cpsBranch_frameR
     (⌜v5 ≠ 0 ∧ v5 ≠ (0 : Word) + signExtend12 1⌝) (pcFree_pure _) cs2_clean
   have cs2_final : cpsBranch (base + 12) cr
       ((.x5 ↦ᵣ v5) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ ((0 : Word) + signExtend12 1)) ** ⌜v5 ≠ 0 ∧ v5 ≠ (0 : Word) + signExtend12 1⌝)

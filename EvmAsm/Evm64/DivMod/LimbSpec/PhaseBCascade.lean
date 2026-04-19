@@ -72,7 +72,7 @@ theorem divK_phaseB_cascade_step_spec (n_val : BitVec 12) (rx : Reg) (check v5 :
         (fun h' hp' => ((sepConj_pure_right _ _ h').1 hp').1) h hp)
       hbne_raw
   -- 3. Frame BNE with x5
-  have hbne_framed := cpsBranch_frame_left _ _ _ _ _ _ _
+  have hbne_framed := cpsBranch_frameR
     (.x5 ↦ᵣ n)
     (by pcFree) hbne
   -- 4. Extend to full cr
