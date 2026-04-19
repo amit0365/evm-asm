@@ -173,6 +173,14 @@ theorem evmWordIs_congr (addr : Word) {v w : EvmWord} (hv : v = w) :
     evmWordIs addr v = evmWordIs addr w :=
   congrArg (evmWordIs addr) hv
 
+/-- Address-side congruence: if two addresses agree, `evmWordIs` at them
+    agrees too. Counterpart of `evmWordIs_congr` for the address argument.
+    Useful after `bv_addr` / `bv_omega` normalizes an address expression
+    but leaves the `evmWordIs` call site pinned to the un-normalized form. -/
+theorem evmWordIs_congr_addr {a b : Word} (v : EvmWord) (ha : a = b) :
+    evmWordIs a v = evmWordIs b v :=
+  congrArg (fun x => evmWordIs x v) ha
+
 -- ============================================================================
 -- evmWordIs unfold and limb-equality bridges
 -- ============================================================================
