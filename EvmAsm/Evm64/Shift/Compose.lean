@@ -66,13 +66,6 @@ abbrev shrCode (base : Word) : CodeReq :=
 -- Phase A union-chain ⊆ ofProg bridge (`shr_phase_a_code_sub_ofProg`) is shared
 -- and lives in `ComposeBase`.
 
-/-- Phase A code (union chain, 9 instrs at +0) is subsumed by shrCode (block 0). -/
-private theorem phase_a_sub_shrCode (base : Word) :
-    ∀ a i, shr_phase_a_code base a = some i → shrCode base a = some i := by
-  intro a i h
-  unfold shrCode; simp only [CodeReq.unionAll_cons]
-  exact CodeReq.union_mono_left _ _ a i (shr_phase_a_code_sub_ofProg base a i h)
-
 /-- Phase B code (ofProg, 7 instrs at +36) is subsumed by shrCode (block 1). -/
 private theorem phase_b_sub_shrCode (base : Word) :
     ∀ a i, shr_phase_b_code (base + 36) a = some i → shrCode base a = some i := by
