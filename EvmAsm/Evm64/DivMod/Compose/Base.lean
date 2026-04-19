@@ -438,6 +438,16 @@ theorem loopSetupPost_unfold (sp n_val shift a0 a1 a2 a3 b0 b1 b2 b3 : Word) :
     ((sp + signExtend12 3992) ↦ₘ shift) := by
   delta loopSetupPost; rfl
 
+/-- `loopSetupPost` is pc-free: all its atoms are `regIs` / `memIs`. -/
+theorem pcFree_loopSetupPost (sp n_val shift a0 a1 a2 a3 b0 b1 b2 b3 : Word) :
+    (loopSetupPost sp n_val shift a0 a1 a2 a3 b0 b1 b2 b3).pcFree := by
+  rw [loopSetupPost_unfold]; pcFree
+
+instance pcFreeInst_loopSetupPost
+    (sp n_val shift a0 a1 a2 a3 b0 b1 b2 b3 : Word) :
+    Assertion.PCFree (loopSetupPost sp n_val shift a0 a1 a2 a3 b0 b1 b2 b3) :=
+  ⟨pcFree_loopSetupPost sp n_val shift a0 a1 a2 a3 b0 b1 b2 b3⟩
+
 -- ============================================================================
 -- Postcondition bundles for denorm + epilogue paths
 -- ============================================================================

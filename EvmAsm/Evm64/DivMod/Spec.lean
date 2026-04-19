@@ -603,15 +603,6 @@ instance (sp : Word) (a b : EvmWord) :
 -- pcFree for DivMod post bundles
 -- ============================================================================
 
-/-- `loopSetupPost` is pc-free: all its atoms are `regIs` / `memIs`. -/
-theorem pcFree_loopSetupPost (sp n_val shift a0 a1 a2 a3 b0 b1 b2 b3 : Word) :
-    (loopSetupPost sp n_val shift a0 a1 a2 a3 b0 b1 b2 b3).pcFree := by
-  rw [loopSetupPost_unfold]; pcFree
-
-instance (sp n_val shift a0 a1 a2 a3 b0 b1 b2 b3 : Word) :
-    Assertion.PCFree (loopSetupPost sp n_val shift a0 a1 a2 a3 b0 b1 b2 b3) :=
-  ⟨pcFree_loopSetupPost sp n_val shift a0 a1 a2 a3 b0 b1 b2 b3⟩
-
 /-- `normBPost` is pc-free: all its atoms are `regIs` / `memIs`. -/
 theorem pcFree_normBPost (sp n_val shift b0 b1 b2 b3 : Word) :
     (normBPost sp n_val shift b0 b1 b2 b3).pcFree := by
