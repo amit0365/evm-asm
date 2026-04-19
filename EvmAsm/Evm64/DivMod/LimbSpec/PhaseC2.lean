@@ -88,7 +88,7 @@ theorem divK_phaseC2_spec (sp shift v2 shift_mem : Word)
       (fun h hp => sepConj_mono_right
         (fun h' hp' => ((sepConj_pure_right _ _ h').1 hp').1) h hp)
       hbeq_raw
-  have hbeq_framed := cpsBranch_frame_left _ _ _ _ _ _ _
+  have hbeq_framed := cpsBranch_frameR
     ((.x12 ↦ᵣ sp) ** (.x2 ↦ᵣ (signExtend12 (0 : BitVec 12) - shift)) **
      ((sp + signExtend12 3992) ↦ₘ shift))
     (by pcFree) hbeq

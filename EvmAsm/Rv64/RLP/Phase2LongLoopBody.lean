@@ -176,7 +176,7 @@ theorem rlp_phase2_long_loop_body_spec
       (fun h hp => by xperm_hyp hp)
       (fun h hp => by xperm_hyp hp)
       (fun h hp => by xperm_hyp hp)
-      (cpsBranch_frame_left _ _ _ _ _ _ _
+      (cpsBranch_frameR
         ((.x11 ↦ᵣ ((len <<< 8) + byte_zext)) **
          (.x13 ↦ᵣ (ptr + 1)) ** (.x12 ↦ᵣ byte_zext) **
          (dwordAddr ↦ₘ word_val)) (by pcFree) bne_raw)

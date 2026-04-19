@@ -238,7 +238,7 @@ theorem divK_loop_body_n1_max_skip_spec
   -- 5. Compose TF + MCS0
   seqFrame TFf MCS0
   -- 6. Frame store_loop with remaining atoms
-  have SLf := cpsBranch_frame_left _ _ _ _ _ _ _
+  have SLf := cpsBranch_frameR
     ((.x6 ↦ᵣ u_base) ** (.x10 ↦ᵣ c3) ** (.x2 ↦ᵣ un3) **
      (sp + signExtend12 3976 ↦ₘ j) **
      ((sp + signExtend12 32) ↦ₘ v0) ** ((u_base + signExtend12 0) ↦ₘ un0) **
@@ -334,7 +334,7 @@ theorem divK_loop_body_n1_max_addback_spec
   -- 5. Compose TF + MCA0
   seqFrame TFf MCA0
   -- 6. Frame store_loop
-  have SLf := cpsBranch_frame_left _ _ _ _ _ _ _
+  have SLf := cpsBranch_frameR
     ((.x6 ↦ᵣ u_base) ** (.x10 ↦ᵣ c3) ** (.x2 ↦ᵣ un3_out) **
      (sp + signExtend12 3976 ↦ₘ j) **
      ((sp + signExtend12 32) ↦ₘ v0) ** ((u_base + signExtend12 0) ↦ₘ un0_out) **
@@ -483,7 +483,7 @@ theorem divK_loop_body_n1_call_skip_spec
   -- 5. Compose TF + MCS0
   seqFrame TFf MCS0
   -- 6. Frame store_loop
-  have SLf := cpsBranch_frame_left _ _ _ _ _ _ _
+  have SLf := cpsBranch_frameR
     ((.x6 ↦ᵣ u_base) ** (.x10 ↦ᵣ c3) ** (.x2 ↦ᵣ un3) **
      (sp + signExtend12 3976 ↦ₘ j) **
      ((sp + signExtend12 32) ↦ₘ v0) ** ((u_base + signExtend12 0) ↦ₘ un0) **
@@ -626,7 +626,7 @@ theorem divK_loop_body_n1_call_addback_spec
   -- 5. Compose TF + MCA0
   seqFrame TFf MCA0
   -- 6. Frame store_loop
-  have SLf := cpsBranch_frame_left _ _ _ _ _ _ _
+  have SLf := cpsBranch_frameR
     ((.x6 ↦ᵣ u_base) ** (.x10 ↦ᵣ c3) ** (.x2 ↦ᵣ un3_out) **
      (sp + signExtend12 3976 ↦ₘ j) **
      ((sp + signExtend12 32) ↦ₘ v0) ** ((u_base + signExtend12 0) ↦ₘ un0_out) **

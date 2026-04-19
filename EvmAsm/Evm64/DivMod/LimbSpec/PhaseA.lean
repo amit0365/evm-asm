@@ -89,7 +89,7 @@ theorem divK_phaseA_spec (sp : Word) (base : Word)
       (fun h' hp' => ((sepConj_pure_right _ _ h').1 hp').1) h hp)
     hbeq_raw
   -- 3. Frame BEQ with remaining registers and memory
-  have hbeq_framed := cpsBranch_frame_left _ _ _ _ _ _ _
+  have hbeq_framed := cpsBranch_frameR
     ((.x12 ↦ᵣ sp) ** (.x10 ↦ᵣ b3) **
      ((sp + 32) ↦ₘ b0) ** ((sp + 40) ↦ₘ b1) **
      ((sp + 48) ↦ₘ b2) ** ((sp + 56) ↦ₘ b3))

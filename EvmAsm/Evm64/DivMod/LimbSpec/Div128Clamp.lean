@@ -57,7 +57,7 @@ theorem divK_div128_clamp_q1_merged_spec (q1 rhat d_hi v5_old : Word) (base : Wo
   have ha_t : (base + 4) + signExtend13 (12 : BitVec 13) = base + 16 := by rw [se13_12]; bv_addr
   have ha_f : (base + 4 : Word) + 4 = base + 8 := by bv_addr
   rw [ha_t, ha_f] at hbeq_raw
-  have hbeq_framed := cpsBranch_frame_left _ _ _ _ _ _ _
+  have hbeq_framed := cpsBranch_frameR
     ((.x10 ↦ᵣ q1) ** (.x7 ↦ᵣ rhat) ** (.x6 ↦ᵣ d_hi))
     (by pcFree) hbeq_raw
   have hbeq_ext : cpsBranch (base + 4) cr
@@ -142,7 +142,7 @@ theorem divK_div128_clamp_q0_merged_spec (q0 rhat2 d_hi v1_old : Word) (base : W
   have ha_t : (base + 4) + signExtend13 (12 : BitVec 13) = base + 16 := by rw [se13_12]; bv_addr
   have ha_f : (base + 4 : Word) + 4 = base + 8 := by bv_addr
   rw [ha_t, ha_f] at hbeq_raw
-  have hbeq_framed := cpsBranch_frame_left _ _ _ _ _ _ _
+  have hbeq_framed := cpsBranch_frameR
     ((.x5 ↦ᵣ q0) ** (.x11 ↦ᵣ rhat2) ** (.x6 ↦ᵣ d_hi))
     (by pcFree) hbeq_raw
   have hbeq_ext : cpsBranch (base + 4) cr

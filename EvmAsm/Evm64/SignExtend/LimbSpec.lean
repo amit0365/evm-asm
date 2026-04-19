@@ -286,7 +286,7 @@ theorem signext_cascade_step_spec (v5 v10 : Word)
       (fun h hp => by xperm_hyp hp)
       (fun h hp => by xperm_hyp hp)
       (fun h hp => by xperm_hyp hp)
-      (cpsBranch_frame_left _ _ _ _ _ _ _ (.x0 ↦ᵣ (0 : Word)) (by pcFree)
+      (cpsBranch_frameR (.x0 ↦ᵣ (0 : Word)) (by pcFree)
         (cpsBranch_consequence (base + 4) _ _ _
           target _ _ (base + 8) _ _
           (fun _ hp => hp)
@@ -743,7 +743,7 @@ theorem signext_cascade_step_spec_pure (v5 v10 : Word)
       (fun h hp => by xperm_hyp hp)
       (fun h hp => by xperm_hyp hp)
       (fun h hp => by xperm_hyp hp)
-      (cpsBranch_frame_left _ _ _ _ _ _ _ (.x0 ↦ᵣ (0 : Word)) (by pcFree) s2_raw)
+      (cpsBranch_frameR (.x0 ↦ᵣ (0 : Word)) (by pcFree) s2_raw)
   exact cpsTriple_seq_cpsBranch_with_perm _ _ _ _ hd _ _ _ target _ (base + 8) _
     (fun _ hp => hp) s1' s2'
 
@@ -800,11 +800,11 @@ theorem signext_phase_c_spec_pure (v5 v10 : Word) (base : Word)
       (fun h hp => by xperm_hyp hp)
       (fun h hp => by xperm_hyp hp)
       (fun h hp => by xperm_hyp hp)
-      (cpsBranch_frame_left _ _ _ _ _ _ _ (.x10 ↦ᵣ v10) (by pcFree) beq0_raw)
+      (cpsBranch_frameR (.x10 ↦ᵣ v10) (by pcFree) beq0_raw)
   -- Step 1: cascade step at base+4
   have cs1_raw := signext_cascade_step_spec_pure v5 v10 1 60 (base + 4) e1 hc1
   rw [show (base + 4 : Word) + 8 = base + 12 from by bv_addr] at cs1_raw
-  have cs1f := cpsBranch_frame_left _ _ _ _ _ _ _ (⌜v5 ≠ (0 : Word)⌝) (pcFree_pure _) cs1_raw
+  have cs1f := cpsBranch_frameR (⌜v5 ≠ (0 : Word)⌝) (pcFree_pure _) cs1_raw
   have cs1_clean : cpsBranch (base + 4) cr_cs1
       ((.x5 ↦ᵣ v5) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ v10) ** ⌜v5 ≠ (0 : Word)⌝)
       e1 ((.x5 ↦ᵣ v5) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ ((0 : Word) + signExtend12 1)) ** ⌜v5 = (0 : Word) + signExtend12 1⌝)
@@ -822,7 +822,7 @@ theorem signext_phase_c_spec_pure (v5 v10 : Word) (base : Word)
   -- Step 2: cascade step at base+12
   have cs2_raw := signext_cascade_step_spec_pure v5 ((0 : Word) + signExtend12 1) 2 24 (base + 12) e2 hc2
   rw [show (base + 12 : Word) + 8 = base + 20 from by bv_addr] at cs2_raw
-  have cs2f := cpsBranch_frame_left _ _ _ _ _ _ _
+  have cs2f := cpsBranch_frameR
     (⌜v5 ≠ 0 ∧ v5 ≠ (0 : Word) + signExtend12 1⌝) (pcFree_pure _) cs2_raw
   have cs2_clean : cpsBranch (base + 12) cr_cs2
       ((.x5 ↦ᵣ v5) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ ((0 : Word) + signExtend12 1)) ** ⌜v5 ≠ 0 ∧ v5 ≠ (0 : Word) + signExtend12 1⌝)
