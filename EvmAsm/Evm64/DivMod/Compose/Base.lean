@@ -477,6 +477,15 @@ theorem denormDivPost_unfold (sp shift u0 u1 u2 u3 q0 q1 q2 q3 : Word) :
     ((sp + 48) ↦ₘ q2) ** ((sp + 56) ↦ₘ q3) := by
   delta denormDivPost; rfl
 
+/-- `denormDivPost` is pc-free: all its atoms are `regIs` / `memIs`. -/
+theorem pcFree_denormDivPost (sp shift u0 u1 u2 u3 q0 q1 q2 q3 : Word) :
+    (denormDivPost sp shift u0 u1 u2 u3 q0 q1 q2 q3).pcFree := by
+  rw [denormDivPost_unfold]; pcFree
+
+instance pcFreeInst_denormDivPost (sp shift u0 u1 u2 u3 q0 q1 q2 q3 : Word) :
+    Assertion.PCFree (denormDivPost sp shift u0 u1 u2 u3 q0 q1 q2 q3) :=
+  ⟨pcFree_denormDivPost sp shift u0 u1 u2 u3 q0 q1 q2 q3⟩
+
 /-- Postcondition for MOD denorm + epilogue (shift ≠ 0).
     Encapsulates anti_shift and denormalized u'[0..3]. -/
 @[irreducible]
