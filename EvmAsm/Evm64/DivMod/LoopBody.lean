@@ -396,7 +396,7 @@ set_option maxRecDepth 4096 in
     53 instructions, loop body indices [17]-[69].
     Entry: base+516, Exit: base+728, CodeReq: sharedDivModCode base. -/
 theorem divK_mulsub_full_spec
-    (sp q_hat j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word)
+    (sp q_hat j v0 v1 v2 v3 u0 u1 u2 u3 uTop : Word)
     (v1_old v5_old v6_old v7_old v10_old v2_old : Word)
     (base : Word) :
     let u_base := sp + signExtend12 4056 - j <<< (3 : BitVec 6).toNat
@@ -434,8 +434,8 @@ theorem divK_mulsub_full_spec
     let un3 := u3 - fs3
     let c3 := pc3 + bs3
     -- Sub-carry intermediates
-    let borrow := if BitVec.ult u_top c3 then (1 : Word) else 0
-    let u4_new := u_top - c3
+    let borrow := if BitVec.ult uTop c3 then (1 : Word) else 0
+    let u4_new := uTop - c3
     cpsTriple (base + 516) (base + 728) (sharedDivModCode base)
       ((.x12 ↦ᵣ sp) ** (.x11 ↦ᵣ q_hat) **
        (.x1 ↦ᵣ v1_old) ** (.x5 ↦ᵣ v5_old) ** (.x6 ↦ᵣ v6_old) **
@@ -446,7 +446,7 @@ theorem divK_mulsub_full_spec
        ((sp + signExtend12 40) ↦ₘ v1) ** ((u_base + signExtend12 4088) ↦ₘ u1) **
        ((sp + signExtend12 48) ↦ₘ v2) ** ((u_base + signExtend12 4080) ↦ₘ u2) **
        ((sp + signExtend12 56) ↦ₘ v3) ** ((u_base + signExtend12 4072) ↦ₘ u3) **
-       ((u_base + signExtend12 4064) ↦ₘ u_top))
+       ((u_base + signExtend12 4064) ↦ₘ uTop))
       ((.x12 ↦ᵣ sp) ** (.x11 ↦ᵣ q_hat) **
        (.x1 ↦ᵣ j) ** (.x5 ↦ᵣ u4_new) ** (.x6 ↦ᵣ u_base) **
        (.x7 ↦ᵣ borrow) ** (.x10 ↦ᵣ c3) ** (.x2 ↦ᵣ un3) **
@@ -479,7 +479,7 @@ theorem divK_mulsub_full_spec
      ((sp + signExtend12 40) ↦ₘ v1) ** ((u_base + signExtend12 4088) ↦ₘ u1) **
      ((sp + signExtend12 48) ↦ₘ v2) ** ((u_base + signExtend12 4080) ↦ₘ u2) **
      ((sp + signExtend12 56) ↦ₘ v3) ** ((u_base + signExtend12 4072) ↦ₘ u3) **
-     ((u_base + signExtend12 4064) ↦ₘ u_top))
+     ((u_base + signExtend12 4064) ↦ₘ uTop))
     (by pcFree) Se
   -- 2. Mulsub 4 limbs: instrs [22]-[65] at base+536
   have M := divK_mulsub_4limbs_spec sp u_base q_hat v0 v1 v2 v3 u0 u1 u2 u3
@@ -488,7 +488,7 @@ theorem divK_mulsub_full_spec
   -- Compose setup + mulsub
   seqFrame Sf M
   -- 3. Sub-carry: instrs [66]-[69] at base+712
-  have SC := divK_sub_carry_spec u_base c3 bs3 fs3 u_top 4064 (base + 712)
+  have SC := divK_sub_carry_spec u_base c3 bs3 fs3 uTop 4064 (base + 712)
   rw [lb_sc] at SC
   have SCe := cpsTriple_extend_code (hmono := by
     exact CodeReq.union_sub (lb_sub base 66 _ _ (by decide) (by bv_addr) (by decide))
@@ -1311,7 +1311,7 @@ theorem divK_store_loop_jgt0_spec
     Takes borrow as explicit parameter to avoid let-binding expansion issues.
     Entry: base+516, Exit: base+880, CodeReq: sharedDivModCode base. -/
 theorem divK_mulsub_correction_skip_spec
-    (sp q_hat j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word)
+    (sp q_hat j v0 v1 v2 v3 u0 u1 u2 u3 uTop : Word)
     (v1_old v5_old v6_old v7_old v10_old v2_old : Word)
     (base : Word) :
     let u_base := sp + signExtend12 4056 - j <<< (3 : BitVec 6).toNat
@@ -1340,9 +1340,9 @@ theorem divK_mulsub_correction_skip_spec
     let pc3 := ba3 + p3_hi
     let bs3 := if BitVec.ult u3 fs3 then (1 : Word) else 0
     let un3 := u3 - fs3; let c3 := pc3 + bs3
-    let u4_new := u_top - c3
+    let u4_new := uTop - c3
     -- Hypothesis: mulsub borrow = 0
-    (if BitVec.ult u_top c3 then (1 : Word) else 0) = (0 : Word) →
+    (if BitVec.ult uTop c3 then (1 : Word) else 0) = (0 : Word) →
     cpsTriple (base + 516) (base + 884) (sharedDivModCode base)
       ((.x12 ↦ᵣ sp) ** (.x11 ↦ᵣ q_hat) **
        (.x1 ↦ᵣ v1_old) ** (.x5 ↦ᵣ v5_old) ** (.x6 ↦ᵣ v6_old) **
@@ -1353,7 +1353,7 @@ theorem divK_mulsub_correction_skip_spec
        ((sp + signExtend12 40) ↦ₘ v1) ** ((u_base + signExtend12 4088) ↦ₘ u1) **
        ((sp + signExtend12 48) ↦ₘ v2) ** ((u_base + signExtend12 4080) ↦ₘ u2) **
        ((sp + signExtend12 56) ↦ₘ v3) ** ((u_base + signExtend12 4072) ↦ₘ u3) **
-       ((u_base + signExtend12 4064) ↦ₘ u_top))
+       ((u_base + signExtend12 4064) ↦ₘ uTop))
       ((.x12 ↦ᵣ sp) ** (.x11 ↦ᵣ q_hat) **
        (.x1 ↦ᵣ j) ** (.x5 ↦ᵣ u4_new) ** (.x6 ↦ᵣ u_base) **
        (.x7 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ c3) ** (.x2 ↦ᵣ un3) **
@@ -1371,7 +1371,7 @@ theorem divK_mulsub_correction_skip_spec
         p3_lo p3_hi fs3 ba3 pc3 bs3 un3 c3 u4_new
         hborrow
   -- 1. Mulsub full (base+516 → base+728)
-  have MS := divK_mulsub_full_spec sp q_hat j v0 v1 v2 v3 u0 u1 u2 u3 u_top
+  have MS := divK_mulsub_full_spec sp q_hat j v0 v1 v2 v3 u0 u1 u2 u3 uTop
     v1_old v5_old v6_old v7_old v10_old v2_old base
 
   dsimp only [] at MS hborrow
@@ -1395,7 +1395,7 @@ theorem divK_mulsub_correction_skip_spec
     Entry: base+516, Exit: base+880 (before BEQ at [108]).
     CodeReq: sharedDivModCode base. -/
 theorem divK_mulsub_correction_addback_880_spec
-    (sp q_hat j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word)
+    (sp q_hat j v0 v1 v2 v3 u0 u1 u2 u3 uTop : Word)
     (v1_old v5_old v6_old v7_old v10_old v2_old : Word)
     (base : Word) :
     let u_base := sp + signExtend12 4056 - j <<< (3 : BitVec 6).toNat
@@ -1424,7 +1424,7 @@ theorem divK_mulsub_correction_addback_880_spec
     let pc3 := ba3 + p3_hi
     let bs3 := if BitVec.ult u3 fs3 then (1 : Word) else 0
     let un3 := u3 - fs3; let c3 := pc3 + bs3
-    let u4_new := u_top - c3
+    let u4_new := uTop - c3
     -- Addback intermediates
     let upc0 := un0 + (signExtend12 0 : Word)
     let ac1_0 := if BitVec.ult upc0 (signExtend12 0 : Word) then (1 : Word) else 0
@@ -1449,7 +1449,7 @@ theorem divK_mulsub_correction_addback_880_spec
     let aun4 := u4_new + aco3
     let q_hat' := q_hat + signExtend12 4095
     -- Hypothesis: borrow ≠ 0
-    (if BitVec.ult u_top c3 then (1 : Word) else 0) ≠ (0 : Word) →
+    (if BitVec.ult uTop c3 then (1 : Word) else 0) ≠ (0 : Word) →
     cpsTriple (base + 516) (base + 880) (sharedDivModCode base)
       ((.x12 ↦ᵣ sp) ** (.x11 ↦ᵣ q_hat) **
        (.x1 ↦ᵣ v1_old) ** (.x5 ↦ᵣ v5_old) ** (.x6 ↦ᵣ v6_old) **
@@ -1460,7 +1460,7 @@ theorem divK_mulsub_correction_addback_880_spec
        ((sp + signExtend12 40) ↦ₘ v1) ** ((u_base + signExtend12 4088) ↦ₘ u1) **
        ((sp + signExtend12 48) ↦ₘ v2) ** ((u_base + signExtend12 4080) ↦ₘ u2) **
        ((sp + signExtend12 56) ↦ₘ v3) ** ((u_base + signExtend12 4072) ↦ₘ u3) **
-       ((u_base + signExtend12 4064) ↦ₘ u_top))
+       ((u_base + signExtend12 4064) ↦ₘ uTop))
       ((.x12 ↦ᵣ sp) ** (.x11 ↦ᵣ q_hat') **
        (.x1 ↦ᵣ j) ** (.x5 ↦ᵣ aun4) ** (.x6 ↦ᵣ u_base) **
        (.x7 ↦ᵣ aco3) ** (.x10 ↦ᵣ c3) ** (.x2 ↦ᵣ aun3) **
@@ -1480,13 +1480,13 @@ theorem divK_mulsub_correction_addback_880_spec
         upc2 ac1_2 aun2 ac2_2 aco2 upc3 ac1_3 aun3 ac2_3 aco3 aun4 q_hat'
         hborrow
   -- 1. Mulsub full (base+516 → base+728)
-  have MS := divK_mulsub_full_spec sp q_hat j v0 v1 v2 v3 u0 u1 u2 u3 u_top
+  have MS := divK_mulsub_full_spec sp q_hat j v0 v1 v2 v3 u0 u1 u2 u3 uTop
     v1_old v5_old v6_old v7_old v10_old v2_old base
 
   dsimp only [] at MS hborrow
   -- 2. Correction addback (base+728 → base+880) with borrow ≠ 0
   have CA := divK_correction_addback_spec sp u_base
-    (if BitVec.ult u_top c3 then (1 : Word) else 0)
+    (if BitVec.ult uTop c3 then (1 : Word) else 0)
     q_hat v0 v1 v2 v3 un0 un1 un2 un3 u4_new
     u4_new un3 base hborrow
 
@@ -1501,16 +1501,16 @@ theorem divK_mulsub_correction_addback_880_spec
 /-- Mulsub + correction addback (→880), named postcondition variant.
     Uses addbackN4/addbackN4_carry in postcondition for rewritability. -/
 theorem divK_mulsub_correction_addback_named_880_spec
-    (sp q_hat j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word)
+    (sp q_hat j v0 v1 v2 v3 u0 u1 u2 u3 uTop : Word)
     (v1_old v5_old v6_old v7_old v10_old v2_old : Word)
     (base : Word) :
     let u_base := sp + signExtend12 4056 - j <<< (3 : BitVec 6).toNat
     let ms := mulsubN4 q_hat v0 v1 v2 v3 u0 u1 u2 u3
     let c3 := ms.2.2.2.2
-    let ab := addbackN4 ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 (u_top - c3) v0 v1 v2 v3
+    let ab := addbackN4 ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 (uTop - c3) v0 v1 v2 v3
     let q_hat' := q_hat + signExtend12 4095
     -- Hypothesis: borrow ≠ 0
-    (if BitVec.ult u_top c3 then (1 : Word) else 0) ≠ (0 : Word) →
+    (if BitVec.ult uTop c3 then (1 : Word) else 0) ≠ (0 : Word) →
     cpsTriple (base + 516) (base + 880) (sharedDivModCode base)
       ((.x12 ↦ᵣ sp) ** (.x11 ↦ᵣ q_hat) **
        (.x1 ↦ᵣ v1_old) ** (.x5 ↦ᵣ v5_old) ** (.x6 ↦ᵣ v6_old) **
@@ -1521,7 +1521,7 @@ theorem divK_mulsub_correction_addback_named_880_spec
        ((sp + signExtend12 40) ↦ₘ v1) ** ((u_base + signExtend12 4088) ↦ₘ u1) **
        ((sp + signExtend12 48) ↦ₘ v2) ** ((u_base + signExtend12 4080) ↦ₘ u2) **
        ((sp + signExtend12 56) ↦ₘ v3) ** ((u_base + signExtend12 4072) ↦ₘ u3) **
-       ((u_base + signExtend12 4064) ↦ₘ u_top))
+       ((u_base + signExtend12 4064) ↦ₘ uTop))
       ((.x12 ↦ᵣ sp) ** (.x11 ↦ᵣ q_hat') **
        (.x1 ↦ᵣ j) ** (.x5 ↦ᵣ ab.2.2.2.2) ** (.x6 ↦ᵣ u_base) **
        (.x7 ↦ᵣ addbackN4_carry ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 v0 v1 v2 v3) ** (.x10 ↦ᵣ c3) ** (.x2 ↦ᵣ ab.2.2.2.1) **
@@ -1533,7 +1533,7 @@ theorem divK_mulsub_correction_addback_named_880_spec
        ((sp + signExtend12 56) ↦ₘ v3) ** ((u_base + signExtend12 4072) ↦ₘ ab.2.2.2.1) **
        ((u_base + signExtend12 4064) ↦ₘ ab.2.2.2.2)) := by
   intro u_base ms c3 ab q_hat' hborrow
-  exact (divK_mulsub_correction_addback_880_spec sp q_hat j v0 v1 v2 v3 u0 u1 u2 u3 u_top
+  exact (divK_mulsub_correction_addback_880_spec sp q_hat j v0 v1 v2 v3 u0 u1 u2 u3 uTop
     v1_old v5_old v6_old v7_old v10_old v2_old base) hborrow
 
 set_option maxRecDepth 4096 in
@@ -1541,7 +1541,7 @@ set_option maxRecDepth 4096 in
     run addback, then BEQ falls through (carry ≠ 0).
     Entry: base+516, Exit: base+884, CodeReq: sharedDivModCode base. -/
 theorem divK_mulsub_correction_addback_spec
-    (sp q_hat j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word)
+    (sp q_hat j v0 v1 v2 v3 u0 u1 u2 u3 uTop : Word)
     (v1_old v5_old v6_old v7_old v10_old v2_old : Word)
     (base : Word) :
     let u_base := sp + signExtend12 4056 - j <<< (3 : BitVec 6).toNat
@@ -1570,7 +1570,7 @@ theorem divK_mulsub_correction_addback_spec
     let pc3 := ba3 + p3_hi
     let bs3 := if BitVec.ult u3 fs3 then (1 : Word) else 0
     let un3 := u3 - fs3; let c3 := pc3 + bs3
-    let u4_new := u_top - c3
+    let u4_new := uTop - c3
     -- Addback intermediates
     let upc0 := un0 + (signExtend12 0 : Word)
     let ac1_0 := if BitVec.ult upc0 (signExtend12 0 : Word) then (1 : Word) else 0
@@ -1595,7 +1595,7 @@ theorem divK_mulsub_correction_addback_spec
     let aun4 := u4_new + aco3
     let q_hat' := q_hat + signExtend12 4095
     -- Hypothesis: borrow ≠ 0
-    (if BitVec.ult u_top c3 then (1 : Word) else 0) ≠ (0 : Word) →
+    (if BitVec.ult uTop c3 then (1 : Word) else 0) ≠ (0 : Word) →
     -- Hypothesis: addback carry ≠ 0 (single addback sufficient)
     aco3 ≠ 0 →
     cpsTriple (base + 516) (base + 884) (sharedDivModCode base)
@@ -1608,7 +1608,7 @@ theorem divK_mulsub_correction_addback_spec
        ((sp + signExtend12 40) ↦ₘ v1) ** ((u_base + signExtend12 4088) ↦ₘ u1) **
        ((sp + signExtend12 48) ↦ₘ v2) ** ((u_base + signExtend12 4080) ↦ₘ u2) **
        ((sp + signExtend12 56) ↦ₘ v3) ** ((u_base + signExtend12 4072) ↦ₘ u3) **
-       ((u_base + signExtend12 4064) ↦ₘ u_top))
+       ((u_base + signExtend12 4064) ↦ₘ uTop))
       ((.x12 ↦ᵣ sp) ** (.x11 ↦ᵣ q_hat') **
        (.x1 ↦ᵣ j) ** (.x5 ↦ᵣ aun4) ** (.x6 ↦ᵣ u_base) **
        (.x7 ↦ᵣ aco3) ** (.x10 ↦ᵣ c3) ** (.x2 ↦ᵣ aun3) **
@@ -1628,13 +1628,13 @@ theorem divK_mulsub_correction_addback_spec
         upc2 ac1_2 aun2 ac2_2 aco2 upc3 ac1_3 aun3 ac2_3 aco3 aun4 q_hat'
         hborrow hcarry
   -- 1. Mulsub full (base+516 → base+728)
-  have MS := divK_mulsub_full_spec sp q_hat j v0 v1 v2 v3 u0 u1 u2 u3 u_top
+  have MS := divK_mulsub_full_spec sp q_hat j v0 v1 v2 v3 u0 u1 u2 u3 uTop
     v1_old v5_old v6_old v7_old v10_old v2_old base
 
   dsimp only [] at MS hborrow
   -- 2. Correction addback (base+728 → base+880) with borrow ≠ 0
   have CA := divK_correction_addback_spec sp u_base
-    (if BitVec.ult u_top c3 then (1 : Word) else 0)
+    (if BitVec.ult uTop c3 then (1 : Word) else 0)
     q_hat v0 v1 v2 v3 un0 un1 un2 un3 u4_new
     u4_new un3 base hborrow
 
@@ -1849,14 +1849,14 @@ theorem divK_trial_call_full_spec
     - carry = 0 (double addback): BEQ takes backward branch, second addback, then falls through
     Entry: base+516, Exit: base+884. -/
 theorem divK_mulsub_correction_addback_beq_spec
-    (sp q_hat j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word)
+    (sp q_hat j v0 v1 v2 v3 u0 u1 u2 u3 uTop : Word)
     (v1_old v5_old v6_old v7_old v10_old v2_old : Word)
     (base : Word) :
     let u_base := sp + signExtend12 4056 - j <<< (3 : BitVec 6).toNat
     let ms := mulsubN4 q_hat v0 v1 v2 v3 u0 u1 u2 u3
     let c3 := ms.2.2.2.2
     let carry := addbackN4_carry ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 v0 v1 v2 v3
-    let ab := addbackN4 ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 (u_top - c3) v0 v1 v2 v3
+    let ab := addbackN4 ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 (uTop - c3) v0 v1 v2 v3
     -- Double-addback results (only used when carry = 0)
     let ab' := addbackN4 ab.1 ab.2.1 ab.2.2.1 ab.2.2.2.1 ab.2.2.2.2 v0 v1 v2 v3
     -- Final values depend on carry
@@ -1873,7 +1873,7 @@ theorem divK_mulsub_correction_addback_beq_spec
     -- Hypothesis: second addback carry nonzero (only needed if first carry = 0)
     (carry = 0 → addbackN4_carry ab.1 ab.2.1 ab.2.2.1 ab.2.2.2.1 v0 v1 v2 v3 ≠ 0) →
     -- Hypothesis: borrow ≠ 0
-    (if BitVec.ult u_top c3 then (1 : Word) else 0) ≠ (0 : Word) →
+    (if BitVec.ult uTop c3 then (1 : Word) else 0) ≠ (0 : Word) →
     cpsTriple (base + 516) (base + 884) (sharedDivModCode base)
       ((.x12 ↦ᵣ sp) ** (.x11 ↦ᵣ q_hat) **
        (.x1 ↦ᵣ v1_old) ** (.x5 ↦ᵣ v5_old) ** (.x6 ↦ᵣ v6_old) **
@@ -1884,7 +1884,7 @@ theorem divK_mulsub_correction_addback_beq_spec
        ((sp + signExtend12 40) ↦ₘ v1) ** ((u_base + signExtend12 4088) ↦ₘ u1) **
        ((sp + signExtend12 48) ↦ₘ v2) ** ((u_base + signExtend12 4080) ↦ₘ u2) **
        ((sp + signExtend12 56) ↦ₘ v3) ** ((u_base + signExtend12 4072) ↦ₘ u3) **
-       ((u_base + signExtend12 4064) ↦ₘ u_top))
+       ((u_base + signExtend12 4064) ↦ₘ uTop))
       ((.x12 ↦ᵣ sp) ** (.x11 ↦ᵣ q_out) **
        (.x1 ↦ᵣ j) ** (.x5 ↦ᵣ u4_out) ** (.x6 ↦ᵣ u_base) **
        (.x7 ↦ᵣ carry_out) ** (.x10 ↦ᵣ c3) ** (.x2 ↦ᵣ un3_out) **
@@ -1898,7 +1898,7 @@ theorem divK_mulsub_correction_addback_beq_spec
   intro u_base ms c3 carry ab ab' q_out un0_out un1_out un2_out un3_out u4_out carry_out
         hcarry2_nz hborrow
   -- 1. Mulsub + first addback (base+516 → base+880)
-  have MCA := divK_mulsub_correction_addback_spec sp q_hat j v0 v1 v2 v3 u0 u1 u2 u3 u_top
+  have MCA := divK_mulsub_correction_addback_spec sp q_hat j v0 v1 v2 v3 u0 u1 u2 u3 uTop
     v1_old v5_old v6_old v7_old v10_old v2_old base
 
   intro_lets at MCA
@@ -1915,7 +1915,7 @@ theorem divK_mulsub_correction_addback_beq_spec
     have hc : carry_out = addbackN4_carry ab.1 ab.2.1 ab.2.2.1 ab.2.2.2.1 v0 v1 v2 v3 := if_pos hcarry
     rw [hq, h0, h1, h2, h3, h4, hc]
     -- Use named 880 spec (→880 with addbackN4_carry in postcondition)
-    have MCA_N := (divK_mulsub_correction_addback_named_880_spec sp q_hat j v0 v1 v2 v3 u0 u1 u2 u3 u_top
+    have MCA_N := (divK_mulsub_correction_addback_named_880_spec sp q_hat j v0 v1 v2 v3 u0 u1 u2 u3 uTop
       v1_old v5_old v6_old v7_old v10_old v2_old base) hborrow
     -- Rewrite carry to 0
     rw [show addbackN4_carry ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 v0 v1 v2 v3 = (0 : Word) from hcarry] at MCA_N
