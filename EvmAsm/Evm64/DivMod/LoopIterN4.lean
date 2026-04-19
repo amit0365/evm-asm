@@ -307,7 +307,7 @@ theorem divK_loop_body_n4_max_addback_j0_beq_spec
   let un2_out := if carry = 0 then ab'.2.2.1 else ab.2.2.1
   let un3_out := if carry = 0 then ab'.2.2.2.1 else ab.2.2.2.1
   let u4_out := if carry = 0 then ab'.2.2.2.2 else ab.2.2.2.2
-  let carry_out := if carry = 0 then
+  let carryOut := if carry = 0 then
       addbackN4_carry ab.1 ab.2.1 ab.2.2.1 ab.2.2.2.1 v0 v1 v2 v3
     else carry
   let vtop_base := sp + ((4 : Word) + signExtend12 4095) <<< (3 : BitVec 6).toNat
@@ -325,8 +325,8 @@ theorem divK_loop_body_n4_max_addback_j0_beq_spec
   intro_lets at MCA
   unfold isAddbackCarry2NzN4Max isAddbackCarry2Nz at hcarry2_nz
   have MCA0 := MCA hcarry2_nz hborrow
-  -- 3. Store loop (use q_out, u4_out, carry_out)
-  have SL := divK_store_loop_j0_spec sp q_out u4_out carry_out q_old base
+  -- 3. Store loop (use q_out, u4_out, carryOut)
+  have SL := divK_store_loop_j0_spec sp q_out u4_out carryOut q_old base
   intro_lets at SL
   -- 4. Frame TF with mulsub cells
   have TFf := cpsTriple_frameR
@@ -443,7 +443,7 @@ theorem divK_loop_body_n4_call_addback_j0_beq_spec
   let un2_out := if carry = 0 then ab'.2.2.1 else ab.2.2.1
   let un3_out := if carry = 0 then ab'.2.2.2.1 else ab.2.2.2.1
   let u4_out := if carry = 0 then ab'.2.2.2.2 else ab.2.2.2.2
-  let carry_out := if carry = 0 then
+  let carryOut := if carry = 0 then
       addbackN4_carry ab.1 ab.2.1 ab.2.2.1 ab.2.2.2.1 v0 v1 v2 v3
     else carry
   let vtop_base := sp + ((4 : Word) + signExtend12 4095) <<< (3 : BitVec 6).toNat
@@ -462,8 +462,8 @@ theorem divK_loop_body_n4_call_addback_j0_beq_spec
   intro_lets at MCA
   unfold isAddbackCarry2NzN4Call isAddbackCarry2Nz div128Quot at hcarry2_nz
   have MCA0 := MCA hcarry2_nz hborrow
-  -- 3. Store loop (use q_out, u4_out, carry_out)
-  have SL := divK_store_loop_j0_spec sp q_out u4_out carry_out q_old base
+  -- 3. Store loop (use q_out, u4_out, carryOut)
+  have SL := divK_store_loop_j0_spec sp q_out u4_out carryOut q_old base
   intro_lets at SL
   -- 4. Frame TF
   have TFf := cpsTriple_frameR

@@ -1867,7 +1867,7 @@ theorem divK_mulsub_correction_addback_beq_spec
     let un2_out := if carry = 0 then ab'.2.2.1 else ab.2.2.1
     let un3_out := if carry = 0 then ab'.2.2.2.1 else ab.2.2.2.1
     let u4_out := if carry = 0 then ab'.2.2.2.2 else ab.2.2.2.2
-    let carry_out := if carry = 0 then
+    let carryOut := if carry = 0 then
         addbackN4_carry ab.1 ab.2.1 ab.2.2.1 ab.2.2.2.1 v0 v1 v2 v3
       else carry
     -- Hypothesis: second addback carry nonzero (only needed if first carry = 0)
@@ -1887,7 +1887,7 @@ theorem divK_mulsub_correction_addback_beq_spec
        ((u_base + signExtend12 4064) ↦ₘ u_top))
       ((.x12 ↦ᵣ sp) ** (.x11 ↦ᵣ q_out) **
        (.x1 ↦ᵣ j) ** (.x5 ↦ᵣ u4_out) ** (.x6 ↦ᵣ u_base) **
-       (.x7 ↦ᵣ carry_out) ** (.x10 ↦ᵣ c3) ** (.x2 ↦ᵣ un3_out) **
+       (.x7 ↦ᵣ carryOut) ** (.x10 ↦ᵣ c3) ** (.x2 ↦ᵣ un3_out) **
        (.x0 ↦ᵣ 0) **
        (sp + signExtend12 3976 ↦ₘ j) **
        ((sp + signExtend12 32) ↦ₘ v0) ** ((u_base + signExtend12 0) ↦ₘ un0_out) **
@@ -1895,7 +1895,7 @@ theorem divK_mulsub_correction_addback_beq_spec
        ((sp + signExtend12 48) ↦ₘ v2) ** ((u_base + signExtend12 4080) ↦ₘ un2_out) **
        ((sp + signExtend12 56) ↦ₘ v3) ** ((u_base + signExtend12 4072) ↦ₘ un3_out) **
        ((u_base + signExtend12 4064) ↦ₘ u4_out)) := by
-  intro u_base ms c3 carry ab ab' q_out un0_out un1_out un2_out un3_out u4_out carry_out
+  intro u_base ms c3 carry ab ab' q_out un0_out un1_out un2_out un3_out u4_out carryOut
         hcarry2_nz hborrow
   -- 1. Mulsub + first addback (base+516 → base+880)
   have MCA := divK_mulsub_correction_addback_spec sp q_hat j v0 v1 v2 v3 u0 u1 u2 u3 u_top
@@ -1912,7 +1912,7 @@ theorem divK_mulsub_correction_addback_beq_spec
     have h2 : un2_out = ab'.2.2.1 := if_pos hcarry
     have h3 : un3_out = ab'.2.2.2.1 := if_pos hcarry
     have h4 : u4_out = ab'.2.2.2.2 := if_pos hcarry
-    have hc : carry_out = addbackN4_carry ab.1 ab.2.1 ab.2.2.1 ab.2.2.2.1 v0 v1 v2 v3 := if_pos hcarry
+    have hc : carryOut = addbackN4_carry ab.1 ab.2.1 ab.2.2.1 ab.2.2.2.1 v0 v1 v2 v3 := if_pos hcarry
     rw [hq, h0, h1, h2, h3, h4, hc]
     -- Use named 880 spec (→880 with addbackN4_carry in postcondition)
     have MCA_N := (divK_mulsub_correction_addback_named_880_spec sp q_hat j v0 v1 v2 v3 u0 u1 u2 u3 u_top
@@ -1945,7 +1945,7 @@ theorem divK_mulsub_correction_addback_beq_spec
     have h2 : un2_out = ab.2.2.1 := if_neg hcarry
     have h3 : un3_out = ab.2.2.2.1 := if_neg hcarry
     have h4 : u4_out = ab.2.2.2.2 := if_neg hcarry
-    have hc : carry_out = carry := if_neg hcarry
+    have hc : carryOut = carry := if_neg hcarry
     rw [hq, h0, h1, h2, h3, h4, hc]
     -- Use the existing MCA0 (which includes BEQ passthrough) with carry ≠ 0
     exact MCA0 hcarry
