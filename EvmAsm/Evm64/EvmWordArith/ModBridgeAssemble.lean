@@ -61,20 +61,20 @@ theorem val256_denorm_eq_val256_mod_max_skip
     let u1 := (a1 <<< s) ||| (a0 >>> (64 - s))
     let u2 := (a2 <<< s) ||| (a1 >>> (64 - s))
     let u3 := (a3 <<< s) ||| (a2 >>> (64 - s))
-    let ms_n := mulsubN4 (signExtend12 4095) b0' b1' b2' b3' u0 u1 u2 u3
-    val256 ((ms_n.1 >>> s) ||| (ms_n.2.1 <<< (64 - s)))
-           ((ms_n.2.1 >>> s) ||| (ms_n.2.2.1 <<< (64 - s)))
-           ((ms_n.2.2.1 >>> s) ||| (ms_n.2.2.2.1 <<< (64 - s)))
-           (ms_n.2.2.2.1 >>> s) =
+    let msN := mulsubN4 (signExtend12 4095) b0' b1' b2' b3' u0 u1 u2 u3
+    val256 ((msN.1 >>> s) ||| (msN.2.1 <<< (64 - s)))
+           ((msN.2.1 >>> s) ||| (msN.2.2.1 <<< (64 - s)))
+           ((msN.2.2.1 >>> s) ||| (msN.2.2.2.1 <<< (64 - s)))
+           (msN.2.2.2.1 >>> s) =
     val256 a0 a1 a2 a3 % val256 b0 b1 b2 b3 := by
-  intro b0' b1' b2' b3' u0 u1 u2 u3 ms_n
+  intro b0' b1' b2' b3' u0 u1 u2 u3 msN
   -- Step 1: Apply Lemma A (val256_denormalize).
-  have h_denorm := val256_denormalize hs0 hs ms_n.1 ms_n.2.1 ms_n.2.2.1 ms_n.2.2.2.1
-  -- h_denorm : val256(u') = val256(ms_n) / 2^s
-  -- Step 2: Use Lemma C (u_top = c3_n) to derive val256(ms_n) = val256(ms_un) * 2^s.
+  have h_denorm := val256_denormalize hs0 hs msN.1 msN.2.1 msN.2.2.1 msN.2.2.2.1
+  -- h_denorm : val256(u') = val256(msN) / 2^s
+  -- Step 2: Use Lemma C (u_top = c3_n) to derive val256(msN) = val256(ms_un) * 2^s.
   have h_utop_eq := u_top_eq_c3_n_max_skip a0 a1 a2 a3 b0 b1 b2 b3
     hbnz hb3nz s hs0 hs hb3_bound hc3_un_zero hc3_n_le_u_top
-  -- Step 3: Derive val256(ms_n) = val256(ms_un) * 2^s from Lemma C + Euclidean equations.
+  -- Step 3: Derive val256(msN) = val256(ms_un) * 2^s from Lemma C + Euclidean equations.
   -- Using mulsubN4_val256_eq (normalized) + val256_normalize_general + val256_normalize.
   have h_un_raw := mulsubN4_val256_eq (signExtend12 4095) b0 b1 b2 b3 a0 a1 a2 a3
   simp only [] at h_un_raw
@@ -89,11 +89,11 @@ theorem val256_denorm_eq_val256_mod_max_skip
   -- Now combine:
   --   h_un_raw : val256 a = val256 ms_un + q_hat * val256 b
   --   h_norm_u : val256 u + u_top * 2^256 = val256 a * 2^s
-  --   h_n_raw : val256 u + c3_n * 2^256 = val256 ms_n + q_hat * (val256 b * 2^s)
+  --   h_n_raw : val256 u + c3_n * 2^256 = val256 msN + q_hat * (val256 b * 2^s)
   --   h_utop_eq : u_top.toNat = c3_n.toNat
-  -- Derive: val256(ms_n) = val256(ms_un) * 2^s.
+  -- Derive: val256(msN) = val256(ms_un) * 2^s.
   have h_ms_n_scaled :
-      val256 ms_n.1 ms_n.2.1 ms_n.2.2.1 ms_n.2.2.2.1 =
+      val256 msN.1 msN.2.1 msN.2.2.1 msN.2.2.2.1 =
       val256 (mulsubN4 (signExtend12 4095) b0 b1 b2 b3 a0 a1 a2 a3).1
              (mulsubN4 (signExtend12 4095) b0 b1 b2 b3 a0 a1 a2 a3).2.1
              (mulsubN4 (signExtend12 4095) b0 b1 b2 b3 a0 a1 a2 a3).2.2.1
@@ -101,7 +101,7 @@ theorem val256_denorm_eq_val256_mod_max_skip
     -- Abbreviate all val256 terms to Nat variables so linarith can see through.
     set Vu : Nat := val256 (a0 <<< s) ((a1 <<< s) ||| (a0 >>> (64 - s)))
          ((a2 <<< s) ||| (a1 >>> (64 - s))) ((a3 <<< s) ||| (a2 >>> (64 - s)))
-    set Vms_n : Nat := val256 ms_n.1 ms_n.2.1 ms_n.2.2.1 ms_n.2.2.2.1
+    set Vms_n : Nat := val256 msN.1 msN.2.1 msN.2.2.1 msN.2.2.2.1
     set Vms_un : Nat := val256 (mulsubN4 (signExtend12 4095) b0 b1 b2 b3 a0 a1 a2 a3).1
          (mulsubN4 (signExtend12 4095) b0 b1 b2 b3 a0 a1 a2 a3).2.1
          (mulsubN4 (signExtend12 4095) b0 b1 b2 b3 a0 a1 a2 a3).2.2.1
@@ -129,7 +129,7 @@ theorem val256_denorm_eq_val256_mod_max_skip
   have h_ms_un_eq_mod :=
     val256_ms_un_eq_val256_mod_max_skip a0 a1 a2 a3 b0 b1 b2 b3 hbnz hb3nz hc3_un_zero
   simp only [] at h_ms_un_eq_mod
-  -- Chain: val256(u') = val256(ms_n)/2^s = val256(ms_un)*2^s/2^s = val256(ms_un) = val256(a)%val256(b).
+  -- Chain: val256(u') = val256(msN)/2^s = val256(ms_un)*2^s/2^s = val256(ms_un) = val256(a)%val256(b).
   rw [h_denorm, h_ms_n_scaled, Nat.mul_div_cancel _ (by positivity : 0 < 2^s)]
   exact h_ms_un_eq_mod
 
@@ -163,11 +163,11 @@ theorem denorm_limbs_eq_evmWord_mod_max_skip
     let u1 := (a1 <<< s) ||| (a0 >>> (64 - s))
     let u2 := (a2 <<< s) ||| (a1 >>> (64 - s))
     let u3 := (a3 <<< s) ||| (a2 >>> (64 - s))
-    let ms_n := mulsubN4 (signExtend12 4095) b0' b1' b2' b3' u0 u1 u2 u3
-    let u0' := (ms_n.1 >>> s) ||| (ms_n.2.1 <<< (64 - s))
-    let u1' := (ms_n.2.1 >>> s) ||| (ms_n.2.2.1 <<< (64 - s))
-    let u2' := (ms_n.2.2.1 >>> s) ||| (ms_n.2.2.2.1 <<< (64 - s))
-    let u3' := ms_n.2.2.2.1 >>> s
+    let msN := mulsubN4 (signExtend12 4095) b0' b1' b2' b3' u0 u1 u2 u3
+    let u0' := (msN.1 >>> s) ||| (msN.2.1 <<< (64 - s))
+    let u1' := (msN.2.1 >>> s) ||| (msN.2.2.1 <<< (64 - s))
+    let u2' := (msN.2.2.1 >>> s) ||| (msN.2.2.2.1 <<< (64 - s))
+    let u3' := msN.2.2.2.1 >>> s
     let a := fromLimbs fun i : Fin 4 =>
       match i with | 0 => a0 | 1 => a1 | 2 => a2 | 3 => a3
     let b := fromLimbs fun i : Fin 4 =>
@@ -208,16 +208,16 @@ theorem denorm_limbN_eq_mod_max_skip
     let u1 := (a1 <<< s) ||| (a0 >>> (64 - s))
     let u2 := (a2 <<< s) ||| (a1 >>> (64 - s))
     let u3 := (a3 <<< s) ||| (a2 >>> (64 - s))
-    let ms_n := mulsubN4 (signExtend12 4095) b0' b1' b2' b3' u0 u1 u2 u3
+    let msN := mulsubN4 (signExtend12 4095) b0' b1' b2' b3' u0 u1 u2 u3
     let a := fromLimbs fun i : Fin 4 =>
       match i with | 0 => a0 | 1 => a1 | 2 => a2 | 3 => a3
     let b := fromLimbs fun i : Fin 4 =>
       match i with | 0 => b0 | 1 => b1 | 2 => b2 | 3 => b3
-    (EvmWord.mod a b).getLimbN 0 = ((ms_n.1 >>> s) ||| (ms_n.2.1 <<< (64 - s))) ∧
-    (EvmWord.mod a b).getLimbN 1 = ((ms_n.2.1 >>> s) ||| (ms_n.2.2.1 <<< (64 - s))) ∧
-    (EvmWord.mod a b).getLimbN 2 = ((ms_n.2.2.1 >>> s) ||| (ms_n.2.2.2.1 <<< (64 - s))) ∧
-    (EvmWord.mod a b).getLimbN 3 = (ms_n.2.2.2.1 >>> s) := by
-  intro b0' b1' b2' b3' u0 u1 u2 u3 ms_n a b
+    (EvmWord.mod a b).getLimbN 0 = ((msN.1 >>> s) ||| (msN.2.1 <<< (64 - s))) ∧
+    (EvmWord.mod a b).getLimbN 1 = ((msN.2.1 >>> s) ||| (msN.2.2.1 <<< (64 - s))) ∧
+    (EvmWord.mod a b).getLimbN 2 = ((msN.2.2.1 >>> s) ||| (msN.2.2.2.1 <<< (64 - s))) ∧
+    (EvmWord.mod a b).getLimbN 3 = (msN.2.2.2.1 >>> s) := by
+  intro b0' b1' b2' b3' u0 u1 u2 u3 msN a b
   have hr := denorm_limbs_eq_evmWord_mod_max_skip a0 a1 a2 a3 b0 b1 b2 b3
     hbnz hb3nz s hs0 hs hb3_bound hc3_un_zero hc3_n_le_u_top
   simp only [] at hr
@@ -250,7 +250,7 @@ theorem denorm_limbN_eq_mod_max_skip_getLimbN (a b : EvmWord)
           ((a.getLimbN 2 <<< s) ||| (a.getLimbN 1 >>> (64 - s)))
           ((a.getLimbN 3 <<< s) ||| (a.getLimbN 2 >>> (64 - s)))).2.2.2.2.toNat ≤
         (a.getLimbN 3 >>> (64 - s)).toNat) :
-    let ms_n := mulsubN4 (signExtend12 4095)
+    let msN := mulsubN4 (signExtend12 4095)
         (b.getLimbN 0 <<< s)
         ((b.getLimbN 1 <<< s) ||| (b.getLimbN 0 >>> (64 - s)))
         ((b.getLimbN 2 <<< s) ||| (b.getLimbN 1 >>> (64 - s)))
@@ -259,11 +259,11 @@ theorem denorm_limbN_eq_mod_max_skip_getLimbN (a b : EvmWord)
         ((a.getLimbN 1 <<< s) ||| (a.getLimbN 0 >>> (64 - s)))
         ((a.getLimbN 2 <<< s) ||| (a.getLimbN 1 >>> (64 - s)))
         ((a.getLimbN 3 <<< s) ||| (a.getLimbN 2 >>> (64 - s)))
-    (EvmWord.mod a b).getLimbN 0 = (ms_n.1 >>> s) ||| (ms_n.2.1 <<< (64 - s)) ∧
-    (EvmWord.mod a b).getLimbN 1 = (ms_n.2.1 >>> s) ||| (ms_n.2.2.1 <<< (64 - s)) ∧
-    (EvmWord.mod a b).getLimbN 2 = (ms_n.2.2.1 >>> s) ||| (ms_n.2.2.2.1 <<< (64 - s)) ∧
-    (EvmWord.mod a b).getLimbN 3 = ms_n.2.2.2.1 >>> s := by
-  intro ms_n
+    (EvmWord.mod a b).getLimbN 0 = (msN.1 >>> s) ||| (msN.2.1 <<< (64 - s)) ∧
+    (EvmWord.mod a b).getLimbN 1 = (msN.2.1 >>> s) ||| (msN.2.2.1 <<< (64 - s)) ∧
+    (EvmWord.mod a b).getLimbN 2 = (msN.2.2.1 >>> s) ||| (msN.2.2.2.1 <<< (64 - s)) ∧
+    (EvmWord.mod a b).getLimbN 3 = msN.2.2.2.1 >>> s := by
+  intro msN
   have hbnz' : b.getLimbN 0 ||| b.getLimbN 1 ||| b.getLimbN 2 ||| b.getLimbN 3 ≠ 0 := by
     intro h; exact hb3nz (BitVec.or_eq_zero_iff.mp h).2
   have hraw := denorm_limbN_eq_mod_max_skip
@@ -305,7 +305,7 @@ theorem output_slot_to_evmWordIs_mod_n4_max_skip_denorm
           ((a.getLimbN 2 <<< s) ||| (a.getLimbN 1 >>> (64 - s)))
           ((a.getLimbN 3 <<< s) ||| (a.getLimbN 2 >>> (64 - s)))).2.2.2.2.toNat ≤
         (a.getLimbN 3 >>> (64 - s)).toNat) :
-    let ms_n := mulsubN4 (signExtend12 4095)
+    let msN := mulsubN4 (signExtend12 4095)
         (b.getLimbN 0 <<< s)
         ((b.getLimbN 1 <<< s) ||| (b.getLimbN 0 >>> (64 - s)))
         ((b.getLimbN 2 <<< s) ||| (b.getLimbN 1 >>> (64 - s)))
@@ -314,10 +314,10 @@ theorem output_slot_to_evmWordIs_mod_n4_max_skip_denorm
         ((a.getLimbN 1 <<< s) ||| (a.getLimbN 0 >>> (64 - s)))
         ((a.getLimbN 2 <<< s) ||| (a.getLimbN 1 >>> (64 - s)))
         ((a.getLimbN 3 <<< s) ||| (a.getLimbN 2 >>> (64 - s)))
-    (((sp + 32) ↦ₘ ((ms_n.1 >>> s) ||| (ms_n.2.1 <<< (64 - s)))) **
-     ((sp + 40) ↦ₘ ((ms_n.2.1 >>> s) ||| (ms_n.2.2.1 <<< (64 - s)))) **
-     ((sp + 48) ↦ₘ ((ms_n.2.2.1 >>> s) ||| (ms_n.2.2.2.1 <<< (64 - s)))) **
-     ((sp + 56) ↦ₘ (ms_n.2.2.2.1 >>> s))) =
+    (((sp + 32) ↦ₘ ((msN.1 >>> s) ||| (msN.2.1 <<< (64 - s)))) **
+     ((sp + 40) ↦ₘ ((msN.2.1 >>> s) ||| (msN.2.2.1 <<< (64 - s)))) **
+     ((sp + 48) ↦ₘ ((msN.2.2.1 >>> s) ||| (msN.2.2.2.1 <<< (64 - s)))) **
+     ((sp + 56) ↦ₘ (msN.2.2.2.1 >>> s))) =
     evmWordIs (sp + 32) (EvmWord.mod a b) := by
   obtain ⟨h0, h1, h2, h3⟩ :=
     denorm_limbN_eq_mod_max_skip_getLimbN a b hb3nz s hs0 hs hb3_bound
