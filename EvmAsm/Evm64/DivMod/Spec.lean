@@ -52,6 +52,7 @@ open EvmAsm.Rv64.Tactics
 namespace EvmAsm.Evm64
 
 open EvmAsm.Rv64
+open EvmAsm.Rv64.AddrNorm (word_add_zero)
 
 /-- `evmWordIs addr (EvmWord.div a 0) = evmWordIs addr 0`. Specialized
     rewrite for the zero-divisor path, bundling `evmWordIs_congr` +
@@ -708,7 +709,7 @@ theorem evm_div_n4_full_max_skip_stack_pre_spec (sp base : Word)
           evmWordIs_sp32_limbs_eq sp b _ _ _ _ rfl rfl rfl rfl,
           divScratchValues_unfold] at hp
       -- Normalize `sp + 0 ↦ₘ _` in the target side to `sp ↦ₘ _` so xperm finds it.
-      rw [show (sp + 0 : Word) = sp from by bv_omega]
+      rw [word_add_zero]
       xperm_hyp hp)
     (fun _ hq => hq)
     hraw
@@ -902,7 +903,7 @@ theorem evm_mod_n4_full_max_skip_stack_pre_spec (sp base : Word)
       rw [evmWordIs_sp_limbs_eq sp a _ _ _ _ rfl rfl rfl rfl,
           evmWordIs_sp32_limbs_eq sp b _ _ _ _ rfl rfl rfl rfl,
           divScratchValues_unfold] at hp
-      rw [show (sp + 0 : Word) = sp from by bv_omega]
+      rw [word_add_zero]
       xperm_hyp hp)
     (fun _ hq => hq)
     hraw
@@ -1031,7 +1032,7 @@ theorem evm_div_n4_max_skip_stack_spec (sp base : Word)
                   hdiv0 hdiv1 hdiv2 hdiv3]]
   rw [divScratchValues_unfold]
   -- Normalize `sp + 0` on the hypothesis side to match the goal's `sp`.
-  rw [show (sp + 0 : Word) = sp from by bv_omega] at hq
+  rw [word_add_zero] at hq
   xperm_hyp hq
 
 end EvmAsm.Evm64
