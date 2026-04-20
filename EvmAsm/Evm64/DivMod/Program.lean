@@ -282,8 +282,8 @@ def divK_loopBody (subr_off : BitVec 21) (loop_back_off : BitVec 13) : Program :
   single (.ADD .x10 .x10 .x5) ;;             -- [27] partial_carry = borrow + prod_hi
   LD .x2 .x6 0 ;;                             -- [28] u[j+0]
   single (.SLTU .x5 .x2 .x7) ;;              -- [29] borrow_sub
-  single (.SUB .x2 .x2 .x7) ;;               -- [30] u_new
-  single (.ADD .x10 .x10 .x5) ;;             -- [31] carry_out
+  single (.SUB .x2 .x2 .x7) ;;               -- [30] uNew
+  single (.ADD .x10 .x10 .x5) ;;             -- [31] carryOut
   SD .x6 .x2 0 ;;                             -- [32] store u[j+0]
 
   -- MUL-SUB LIMB 1: v[1] at sp+40, u[j+1] at u_base-8 (4088)
@@ -339,11 +339,11 @@ def divK_loopBody (subr_off : BitVec 21) (loop_back_off : BitVec 13) : Program :
   ADDI .x7 .x0 0 ;;                           -- [71] carry = 0
   -- Limb 0
   LD .x5 .x12 32 ;; LD .x2 .x6 0 ;;          -- [72,73]
-  single (.ADD .x2 .x2 .x7) ;;               -- [74] u += carry_in
+  single (.ADD .x2 .x2 .x7) ;;               -- [74] u += carryIn
   single (.SLTU .x7 .x2 .x7) ;;              -- [75] carry1
   single (.ADD .x2 .x2 .x5) ;;               -- [76] u += v[i]
   single (.SLTU .x5 .x2 .x5) ;;              -- [77] carry2
-  single (.OR .x7 .x7 .x5) ;;                -- [78] carry_out
+  single (.OR .x7 .x7 .x5) ;;                -- [78] carryOut
   SD .x6 .x2 0 ;;                             -- [79]
   -- Limb 1
   LD .x5 .x12 40 ;; LD .x2 .x6 4088 ;;       -- [80,81]

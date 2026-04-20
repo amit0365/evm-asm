@@ -306,7 +306,7 @@ theorem divK_loop_body_n1_max_addback_spec
   let un2_out := if carry = 0 then ab'.2.2.1 else ab.2.2.1
   let un3_out := if carry = 0 then ab'.2.2.2.1 else ab.2.2.2.1
   let u4_out := if carry = 0 then ab'.2.2.2.2 else ab.2.2.2.2
-  let carry_out := if carry = 0 then
+  let carryOut := if carry = 0 then
       addbackN4_carry ab.1 ab.2.1 ab.2.2.1 ab.2.2.2.1 v0 v1 v2 v3
     else carry
   let vtopBase := sp + ((1 : Word) + signExtend12 4095) <<< (3 : BitVec 6).toNat
@@ -321,7 +321,7 @@ theorem divK_loop_body_n1_max_addback_spec
   intro_lets at MCA
   have MCA0 := MCA hcarry2_nz hborrow
   -- 3. Store loop cpsBranch (base+884 → base+448/908)
-  have SL := divK_store_loop_spec sp j q_out u4_out carry_out q_old base
+  have SL := divK_store_loop_spec sp j q_out u4_out carryOut q_old base
   intro_lets at SL
   -- 4. Frame TF with non-overlapping cells
   have TFf := cpsTriple_frameR
@@ -598,7 +598,7 @@ theorem divK_loop_body_n1_call_addback_spec
   let un2_out := if carry = 0 then ab'.2.2.1 else ab.2.2.1
   let un3_out := if carry = 0 then ab'.2.2.2.1 else ab.2.2.2.1
   let u4_out := if carry = 0 then ab'.2.2.2.2 else ab.2.2.2.2
-  let carry_out := if carry = 0 then
+  let carryOut := if carry = 0 then
       addbackN4_carry ab.1 ab.2.1 ab.2.2.1 ab.2.2.2.1 v0 v1 v2 v3
     else carry
   let vtopBase := sp + ((1 : Word) + signExtend12 4095) <<< (3 : BitVec 6).toNat
@@ -614,7 +614,7 @@ theorem divK_loop_body_n1_call_addback_spec
   intro_lets at MCA
   have MCA0 := MCA hcarry2_nz hborrow
   -- 3. Store loop cpsBranch (base+884 → base+448/908)
-  have SL := divK_store_loop_spec sp j q_out u4_out carry_out q_old base
+  have SL := divK_store_loop_spec sp j q_out u4_out carryOut q_old base
   intro_lets at SL
   -- 4. Frame TF
   have TFf := cpsTriple_frameR

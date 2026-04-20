@@ -538,7 +538,7 @@ theorem divK_loop_body_n3_max_addback_beq_j0_spec
   let un2_out := if carry = 0 then ab'.2.2.1 else ab.2.2.1
   let un3_out := if carry = 0 then ab'.2.2.2.1 else ab.2.2.2.1
   let u4_out := if carry = 0 then ab'.2.2.2.2 else ab.2.2.2.2
-  let carry_out := if carry = 0 then
+  let carryOut := if carry = 0 then
       addbackN4_carry ab.1 ab.2.1 ab.2.2.1 ab.2.2.2.1 v0 v1 v2 v3
     else carry
   let vtopBase := sp + ((3 : Word) + signExtend12 4095) <<< (3 : BitVec 6).toNat
@@ -556,7 +556,7 @@ theorem divK_loop_body_n3_max_addback_beq_j0_spec
   intro_lets at MCA
   have MCA0 := MCA hcarry2_nz hborrow
   -- 3. Store + loop exit j=0 (cpsTriple base+884 → base+908)
-  have SL := divK_store_loop_j0_spec sp q_out u4_out carry_out q_old base
+  have SL := divK_store_loop_j0_spec sp q_out u4_out carryOut q_old base
   intro_lets at SL
   have TFf := cpsTriple_frameR
     ((.x2 ↦ᵣ v2_old) **
@@ -658,7 +658,7 @@ theorem divK_loop_body_n3_call_addback_beq_j0_spec
   let un2_out := if carry = 0 then ab'.2.2.1 else ab.2.2.1
   let un3_out := if carry = 0 then ab'.2.2.2.1 else ab.2.2.2.1
   let u4_out := if carry = 0 then ab'.2.2.2.2 else ab.2.2.2.2
-  let carry_out := if carry = 0 then
+  let carryOut := if carry = 0 then
       addbackN4_carry ab.1 ab.2.1 ab.2.2.1 ab.2.2.2.1 v0 v1 v2 v3
     else carry
   let vtopBase := sp + ((3 : Word) + signExtend12 4095) <<< (3 : BitVec 6).toNat
@@ -678,7 +678,7 @@ theorem divK_loop_body_n3_call_addback_beq_j0_spec
   unfold isAddbackCarry2NzN3Call isAddbackCarry2Nz div128Quot at hcarry2_nz
   have MCA0 := MCA hcarry2_nz hborrow
   -- 3. Store + loop exit j=0 (cpsTriple base+884 → base+908)
-  have SL := divK_store_loop_j0_spec sp q_out u4_out carry_out q_old base
+  have SL := divK_store_loop_j0_spec sp q_out u4_out carryOut q_old base
   intro_lets at SL
   -- 4. Frame TF
   have TFf := cpsTriple_frameR
@@ -760,7 +760,7 @@ theorem divK_loop_body_n3_max_addback_beq_j1_spec
   let un2_out := if carry = 0 then ab'.2.2.1 else ab.2.2.1
   let un3_out := if carry = 0 then ab'.2.2.2.1 else ab.2.2.2.1
   let u4_out := if carry = 0 then ab'.2.2.2.2 else ab.2.2.2.2
-  let carry_out := if carry = 0 then
+  let carryOut := if carry = 0 then
       addbackN4_carry ab.1 ab.2.1 ab.2.2.1 ab.2.2.2.1 v0 v1 v2 v3
     else carry
   let vtopBase := sp + ((3 : Word) + signExtend12 4095) <<< (3 : BitVec 6).toNat
@@ -779,7 +779,7 @@ theorem divK_loop_body_n3_max_addback_beq_j1_spec
   have MCA0 := MCA hcarry2_nz hborrow
   -- 3. Store + loop continue j=1 (cpsTriple base+884 → base+448)
   have hj_pos := slt_jpos_1
-  have SL := divK_store_loop_jgt0_spec sp (1 : Word) q_out u4_out carry_out q_old base hj_pos
+  have SL := divK_store_loop_jgt0_spec sp (1 : Word) q_out u4_out carryOut q_old base hj_pos
   intro_lets at SL
   have TFf := cpsTriple_frameR
     ((.x2 ↦ᵣ v2_old) **
@@ -881,7 +881,7 @@ theorem divK_loop_body_n3_call_addback_beq_j1_spec
   let un2_out := if carry = 0 then ab'.2.2.1 else ab.2.2.1
   let un3_out := if carry = 0 then ab'.2.2.2.1 else ab.2.2.2.1
   let u4_out := if carry = 0 then ab'.2.2.2.2 else ab.2.2.2.2
-  let carry_out := if carry = 0 then
+  let carryOut := if carry = 0 then
       addbackN4_carry ab.1 ab.2.1 ab.2.2.1 ab.2.2.2.1 v0 v1 v2 v3
     else carry
   let vtopBase := sp + ((3 : Word) + signExtend12 4095) <<< (3 : BitVec 6).toNat
@@ -902,7 +902,7 @@ theorem divK_loop_body_n3_call_addback_beq_j1_spec
   have MCA0 := MCA hcarry2_nz hborrow
   -- 3. Store + loop back j=1 (cpsTriple base+884 → base+448)
   have hj_pos := slt_jpos_1
-  have SL := divK_store_loop_jgt0_spec sp (1 : Word) q_out u4_out carry_out q_old base hj_pos
+  have SL := divK_store_loop_jgt0_spec sp (1 : Word) q_out u4_out carryOut q_old base hj_pos
   intro_lets at SL
   -- 4. Frame TF
   have TFf := cpsTriple_frameR
