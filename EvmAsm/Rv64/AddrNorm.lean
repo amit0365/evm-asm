@@ -184,6 +184,10 @@ theorem word_add_zero (x : Word) : x + (0 : Word) = x := BitVec.add_zero x
 
 @[rv64_addr, grind =] theorem bv64_toNat_63 : (63 : BitVec 64).toNat = 63 := by decide
 
+/-- `(0 : Word).toNat = 0` — used by several Nat-level algebraic rewrites
+    in the EvmWordArith mod-bridge proofs. -/
+@[rv64_addr, grind =] theorem word_toNat_0 : (0 : Word).toNat = 0 := by decide
+
 -- ============================================================================
 -- `BitVec.ofNat 64 (4 * N)` evaluations (RV64 instruction stride × index)
 --
