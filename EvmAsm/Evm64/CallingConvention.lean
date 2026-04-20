@@ -175,10 +175,7 @@ theorem callNear_function_spec
       ((.x1 ↦ᵣ (call_site + 4)) ** Q) := by
   have hcall := cpsTriple_frameR P hP (callNear_spec offset call_site old_ra)
   rw [hoff] at hcall
-  exact cpsTriple_seq call_site func_entry ((call_site + 4) &&& ~~~1)
-    (CodeReq.singleton call_site (.JAL .x1 offset)) cr_func hd
-    ((.x1 ↦ᵣ old_ra) ** P) ((.x1 ↦ᵣ (call_site + 4)) ** P) ((.x1 ↦ᵣ (call_site + 4)) ** Q)
-    hcall (hfunc (call_site + 4))
+  exact cpsTriple_seq hd hcall (hfunc (call_site + 4))
 
 -- ============================================================================
 -- Prologue-body-epilogue composition
@@ -213,10 +210,6 @@ theorem nonleaf_function_spec
       ((.x2 ↦ᵣ sp_val) ** (.x1 ↦ᵣ ra_val) ** ((sp_val - 8) ↦ₘ ra_val) ** Q) := by
   rw [← hprol_exit] at hbody
   rw [← hbody_exit] at hepi
-  exact cpsTriple_seq prol_base body_exit (ra_val &&& ~~~1)
-    (cr_prol.union cr_body) cr_epi hd2
-    _ _ _
-    (cpsTriple_seq prol_base (prol_base + 8) body_exit cr_prol cr_body hd1 _ _ _ hprol hbody)
-    hepi
+  exact cpsTriple_seq hd2 (cpsTriple_seq hd1 hprol hbody) hepi
 
 end EvmAsm.Evm64

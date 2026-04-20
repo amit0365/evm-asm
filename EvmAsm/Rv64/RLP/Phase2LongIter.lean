@@ -287,9 +287,9 @@ theorem rlp_phase2_long_iter_spec
         simp only [CodeReq.union, hcr])
       s5
   -- Chain bottom up.
-  have t45 := cpsTriple_seq _ _ _ _ _ hd4 _ _ _ s4 s5_ext
-  have t345 := cpsTriple_seq _ _ _ _ _ hd3 _ _ _ s3 t45
-  have t2345 := cpsTriple_seq _ _ _ _ _ hd2 _ _ _ s2 t345
-  exact cpsTriple_seq _ _ _ _ _ hd1 _ _ _ s1 t2345
+  have t45 := cpsTriple_seq hd4 s4 s5_ext
+  have t345 := cpsTriple_seq hd3 s3 t45
+  have t2345 := cpsTriple_seq hd2 s2 t345
+  exact cpsTriple_seq hd1 s1 t2345
 
 end EvmAsm.Rv64.RLP

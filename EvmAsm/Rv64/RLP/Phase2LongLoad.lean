@@ -134,6 +134,6 @@ theorem rlp_phase2_long_load_acc_spec (len ptr v12Old wordVal dwordAddr : Word)
       (fun h hp => by xperm_hyp hp)
       (cpsTriple_frameR
         ((.x13 ↦ᵣ ptr) ** (dwordAddr ↦ₘ wordVal)) (by pcFree) acc)
-  exact cpsTriple_seq _ _ _ _ _ hd _ _ _ lbu_framed acc_framed
+  exact cpsTriple_seq hd lbu_framed acc_framed
 
 end EvmAsm.Rv64.RLP

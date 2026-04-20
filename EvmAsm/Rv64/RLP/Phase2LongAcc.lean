@@ -106,7 +106,7 @@ theorem rlp_phase2_long_acc_spec (len byte : Word) (base : Word) :
   rw [show (base + 4 : Word) + 4 = base + 8 from by bv_omega] at s2
   -- Compose. `(8 : BitVec 6).toNat = 8` so the result matches.
   rw [bv6_toNat_8] at s1
-  exact cpsTriple_seq _ _ _ _ _ hd _ _ _ s1 s2
+  exact cpsTriple_seq hd s1 s2
 
 /-! ## Concrete sanity checks -/
 
