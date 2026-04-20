@@ -265,14 +265,14 @@ theorem evm_shr_zero_high_spec (sp base : Word)
      (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 24) ↦ₘ s3) **
      ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3))
     (by pcFree) h2
-  have h12 := cpsTriple_seq_perm_same_cr 
+  have h12 := cpsTriple_seq_perm_same_cr
     (fun h hp => by xperm_hyp hp) h1f h2f
   have h3f := cpsTriple_frameR
     ((.x0 ↦ᵣ (0 : Word)) **
      (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) **
      ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3))
     (by pcFree) h3
-  have h123 := cpsTriple_seq_perm_same_cr 
+  have h123 := cpsTriple_seq_perm_same_cr
     (fun h hp => by xperm_hyp hp) h12 h3f
   -- Step 4: BNE at base+20 → extend to shrCode, eliminate ntaken
   have hbne_raw := bne_spec_gen .x5 .x0 320 (s1 ||| s2 ||| s3) (0 : Word) (base + 20)
@@ -290,7 +290,7 @@ theorem evm_shr_zero_high_spec (sp base : Word)
      ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3))
     (by pcFree) hbne_taken
   -- Compose linear chain → BNE(taken)
-  have hAB := cpsTriple_seq_perm_same_cr 
+  have hAB := cpsTriple_seq_perm_same_cr
     (fun h hp => by xperm_hyp hp) h123 hbne_framed
   -- Step 5: Zero path (base+340 → base+360) → extend to shrCode
   have hzp := cpsTriple_extend_code (zero_path_sub_shrCode base)
@@ -309,7 +309,7 @@ theorem evm_shr_zero_high_spec (sp base : Word)
   have ha48' : (sp + 32 : Word) + 16 = sp + 48 := by bv_omega
   have ha56' : (sp + 32 : Word) + 24 = sp + 56 := by bv_omega
   -- Compose AB → ZP: normalize addresses in perm callback
-  have hABZ := cpsTriple_seq_perm_same_cr 
+  have hABZ := cpsTriple_seq_perm_same_cr
     (fun h hp => by
       simp only [ha40, ha48, ha56] at hp
       xperm_hyp hp) hAB hzp_framed
