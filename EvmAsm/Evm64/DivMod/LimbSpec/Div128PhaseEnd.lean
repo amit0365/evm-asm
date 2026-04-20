@@ -33,7 +33,7 @@ open EvmAsm.Rv64
     Input: x12=sp, x2=ret_addr, x10=d, x5=u_lo, x7=u_hi.
     Output: x6=dHi, x11=un1, x5=un0 (saved), x7=u_hi (unchanged). -/
 theorem divK_div128_phase1_spec
-    (sp ret_addr d u_lo u_hi v1_old v6_old v11_old
+    (sp ret_addr d u_lo u_hi v1Old v6Old v11Old
      ret_mem d_mem dlo_mem un0_mem : Word) (base : Word) :
     let dHi := d >>> (32 : BitVec 6).toNat
     let dLo := (d <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat
@@ -52,8 +52,8 @@ theorem divK_div128_phase1_spec
        (CodeReq.singleton (base + 36) (.SD .x12 .x5 3944))))))))))
     cpsTriple base (base + 40) cr
       ((.x12 ↦ᵣ sp) ** (.x2 ↦ᵣ ret_addr) ** (.x10 ↦ᵣ d) **
-       (.x6 ↦ᵣ v6_old) ** (.x1 ↦ᵣ v1_old) ** (.x5 ↦ᵣ u_lo) **
-       (.x11 ↦ᵣ v11_old) ** (.x7 ↦ᵣ u_hi) **
+       (.x6 ↦ᵣ v6Old) ** (.x1 ↦ᵣ v1Old) ** (.x5 ↦ᵣ u_lo) **
+       (.x11 ↦ᵣ v11Old) ** (.x7 ↦ᵣ u_hi) **
        (sp + signExtend12 3968 ↦ₘ ret_mem) **
        (sp + signExtend12 3960 ↦ₘ d_mem) **
        (sp + signExtend12 3952 ↦ₘ dlo_mem) **
@@ -68,11 +68,11 @@ theorem divK_div128_phase1_spec
   intro dHi dLo un1 un0 cr
   have I0 := sd_spec_gen .x12 .x2 sp ret_addr ret_mem 3968 base
   have I1 := sd_spec_gen .x12 .x10 sp d d_mem 3960 (base + 4)
-  have I2 := srli_spec_gen .x6 .x10 v6_old d 32 (base + 8) (by nofun)
-  have I3 := slli_spec_gen .x1 .x10 v1_old d 32 (base + 12) (by nofun)
+  have I2 := srli_spec_gen .x6 .x10 v6Old d 32 (base + 8) (by nofun)
+  have I3 := slli_spec_gen .x1 .x10 v1Old d 32 (base + 12) (by nofun)
   have I4 := srli_spec_gen_same .x1 (d <<< (32 : BitVec 6).toNat) 32 (base + 16) (by nofun)
   have I5 := sd_spec_gen .x12 .x1 sp dLo dlo_mem 3952 (base + 20)
-  have I6 := srli_spec_gen .x11 .x5 v11_old u_lo 32 (base + 24) (by nofun)
+  have I6 := srli_spec_gen .x11 .x5 v11Old u_lo 32 (base + 24) (by nofun)
   have I7 := slli_spec_gen_same .x5 u_lo 32 (base + 28) (by nofun)
   have I8 := srli_spec_gen_same .x5 (u_lo <<< (32 : BitVec 6).toNat) 32 (base + 32) (by nofun)
   have I9 := sd_spec_gen .x12 .x5 sp un0 un0_mem 3944 (base + 36)
@@ -81,7 +81,7 @@ theorem divK_div128_phase1_spec
 /-- div128 end phase: combine q1,q0 into q, restore return addr, return.
     Instrs [45]-[48]. Exit to ret_addr. -/
 theorem divK_div128_end_spec
-    (sp q1 q0 v2_old v11_old ret_addr : Word) (base : Word)
+    (sp q1 q0 v2Old v11Old ret_addr : Word) (base : Word)
     (halign : (ret_addr + signExtend12 0) &&& ~~~1 = ret_addr) :
     let q1_hi := q1 <<< (32 : BitVec 6).toNat
     let q := q1_hi ||| q0
@@ -91,14 +91,14 @@ theorem divK_div128_end_spec
       (CodeReq.union (CodeReq.singleton (base + 8) (.LD .x2 .x12 3968))
        (CodeReq.singleton (base + 12) (.JALR .x0 .x2 0))))
     cpsTriple base ret_addr cr
-      ((.x10 ↦ᵣ q1) ** (.x5 ↦ᵣ q0) ** (.x11 ↦ᵣ v11_old) **
-       (.x12 ↦ᵣ sp) ** (.x2 ↦ᵣ v2_old) ** (sp + signExtend12 3968 ↦ₘ ret_addr))
+      ((.x10 ↦ᵣ q1) ** (.x5 ↦ᵣ q0) ** (.x11 ↦ᵣ v11Old) **
+       (.x12 ↦ᵣ sp) ** (.x2 ↦ᵣ v2Old) ** (sp + signExtend12 3968 ↦ₘ ret_addr))
       ((.x10 ↦ᵣ q1) ** (.x5 ↦ᵣ q0) ** (.x11 ↦ᵣ q) **
        (.x12 ↦ᵣ sp) ** (.x2 ↦ᵣ ret_addr) ** (sp + signExtend12 3968 ↦ₘ ret_addr)) := by
   intro q1_hi q cr
-  have I0 := slli_spec_gen .x11 .x10 v11_old q1 32 base (by nofun)
+  have I0 := slli_spec_gen .x11 .x10 v11Old q1 32 base (by nofun)
   have I1 := or_spec_gen_rd_eq_rs1 .x11 .x5 q1_hi q0 (base + 4) (by nofun)
-  have I2 := ld_spec_gen .x2 .x12 sp v2_old ret_addr 3968 (base + 8) (by nofun)
+  have I2 := ld_spec_gen .x2 .x12 sp v2Old ret_addr 3968 (base + 8) (by nofun)
   have I3 := jalr_x0_spec_gen .x2 ret_addr 0 (base + 12)
   rw [halign] at I3
   runBlock I0 I1 I2 I3

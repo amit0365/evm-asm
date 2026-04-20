@@ -33,7 +33,7 @@ open EvmAsm.Rv64
 
 /-- div128 un21 = rhat*2^32 + un1 - q1*d_lo.
     Loads d_lo from scratch memory. -/
-theorem divK_div128_compute_un21_spec (sp q1 rhat un1 v1_old v5_old dlo_mem : Word) (base : Word) :
+theorem divK_div128_compute_un21_spec (sp q1 rhat un1 v1Old v5Old dlo_mem : Word) (base : Word) :
     let rhatHi := rhat <<< (32 : BitVec 6).toNat
     let rhatUn1 := rhatHi ||| un1
     let q1Dlo := q1 * dlo_mem
@@ -46,21 +46,21 @@ theorem divK_div128_compute_un21_spec (sp q1 rhat un1 v1_old v5_old dlo_mem : Wo
        (CodeReq.singleton (base + 16) (.SUB .x7 .x5 .x1)))))
     cpsTriple base (base + 20) cr
       ((.x12 ↦ᵣ sp) ** (.x10 ↦ᵣ q1) ** (.x7 ↦ᵣ rhat) **
-       (.x11 ↦ᵣ un1) ** (.x5 ↦ᵣ v5_old) ** (.x1 ↦ᵣ v1_old) **
+       (.x11 ↦ᵣ un1) ** (.x5 ↦ᵣ v5Old) ** (.x1 ↦ᵣ v1Old) **
        (sp + signExtend12 3952 ↦ₘ dlo_mem))
       ((.x12 ↦ᵣ sp) ** (.x10 ↦ᵣ q1) ** (.x7 ↦ᵣ un21) **
        (.x11 ↦ᵣ un1) ** (.x5 ↦ᵣ rhatUn1) ** (.x1 ↦ᵣ q1Dlo) **
        (sp + signExtend12 3952 ↦ₘ dlo_mem)) := by
   intro rhatHi rhatUn1 q1Dlo un21 cr
-  have I0 := ld_spec_gen .x1 .x12 sp v1_old dlo_mem 3952 base (by nofun)
-  have I1 := slli_spec_gen .x5 .x7 v5_old rhat 32 (base + 4) (by nofun)
+  have I0 := ld_spec_gen .x1 .x12 sp v1Old dlo_mem 3952 base (by nofun)
+  have I1 := slli_spec_gen .x5 .x7 v5Old rhat 32 (base + 4) (by nofun)
   have I2 := or_spec_gen_rd_eq_rs1 .x5 .x11 rhatHi un1 (base + 8) (by nofun)
   have I3 := mul_spec_gen_rd_eq_rs2 .x1 .x10 q1 dlo_mem (base + 12) (by nofun)
   have I4 := sub_spec_gen .x7 .x5 .x1 rhatUn1 q1Dlo rhat (base + 16) (by nofun)
   runBlock I0 I1 I2 I3 I4
 
 /-- div128 product check body: compute q*d_lo and rhat*2^32+un1 for comparison. -/
-theorem divK_div128_prodcheck_body_spec (sp q rhat un1 v1_old v5_old dlo : Word) (base : Word) :
+theorem divK_div128_prodcheck_body_spec (sp q rhat un1 v1Old v5Old dlo : Word) (base : Word) :
     let qDlo := q * dlo
     let rhatHi := rhat <<< (32 : BitVec 6).toNat
     let rhatUn1 := rhatHi ||| un1
@@ -71,12 +71,12 @@ theorem divK_div128_prodcheck_body_spec (sp q rhat un1 v1_old v5_old dlo : Word)
        (CodeReq.singleton (base + 12) (.OR .x1 .x1 .x11))))
     cpsTriple base (base + 16) cr
       ((.x12 ↦ᵣ sp) ** (.x10 ↦ᵣ q) ** (.x7 ↦ᵣ rhat) ** (.x11 ↦ᵣ un1) **
-       (.x5 ↦ᵣ v5_old) ** (.x1 ↦ᵣ v1_old) ** (sp + signExtend12 3952 ↦ₘ dlo))
+       (.x5 ↦ᵣ v5Old) ** (.x1 ↦ᵣ v1Old) ** (sp + signExtend12 3952 ↦ₘ dlo))
       ((.x12 ↦ᵣ sp) ** (.x10 ↦ᵣ q) ** (.x7 ↦ᵣ rhat) ** (.x11 ↦ᵣ un1) **
        (.x5 ↦ᵣ qDlo) ** (.x1 ↦ᵣ rhatUn1) ** (sp + signExtend12 3952 ↦ₘ dlo)) := by
   intro qDlo rhatHi rhatUn1 cr
-  have I0 := ld_spec_gen .x1 .x12 sp v1_old dlo 3952 base (by nofun)
-  have I1 := mul_spec_gen .x5 .x10 .x1 v5_old q dlo (base + 4) (by nofun)
+  have I0 := ld_spec_gen .x1 .x12 sp v1Old dlo 3952 base (by nofun)
+  have I1 := mul_spec_gen .x5 .x10 .x1 v5Old q dlo (base + 4) (by nofun)
   have I2 := slli_spec_gen .x1 .x7 dlo rhat 32 (base + 8) (by nofun)
   have I3 := or_spec_gen_rd_eq_rs1 .x1 .x11 (rhat <<< (32 : BitVec 6).toNat) un1 (base + 12) (by nofun)
   runBlock I0 I1 I2 I3
