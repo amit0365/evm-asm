@@ -96,6 +96,6 @@ theorem divK_loop_control_spec (j : Word) (loop_back_off : BitVec 13)
         simp only [CodeReq.union, CodeReq.singleton]
         have h0 : ¬(base + 4 = base) := by bv_omega
         simp only [beq_iff_eq, h0, ↓reduceIte]))) hPR hpc
-  exact cpsTriple_seq_cpsBranch_same_cr _ _ _ _ _ _ _ _ _ hbody hbge_ext
+  exact cpsTriple_seq_cpsBranch_same_cr hbody hbge_ext
 
 end EvmAsm.Evm64

@@ -353,9 +353,10 @@ theorem cpsBranch_extend_code {entry : Word} {cr cr' : CodeReq}
   exact h R hR s (CodeReq.SatisfiedBy_mono s hmono hcr') hPR hpc
 
 /-- Sequential composition: cpsTriple followed by cpsBranch, same CodeReq.
-    Unlike `cpsTriple_seq_cpsBranch`, does not require disjointness. -/
-theorem cpsTriple_seq_cpsBranch_same_cr (entry mid : Word) (cr : CodeReq)
-    (P Q : Assertion) (exit_t : Word) (Q_t : Assertion) (exit_f : Word) (Q_f : Assertion)
+    Unlike `cpsTriple_seq_cpsBranch`, does not require disjointness.
+    All position/code/assertion arguments are implicit — inferred from `h1`/`h2`. -/
+theorem cpsTriple_seq_cpsBranch_same_cr {entry mid : Word} {cr : CodeReq}
+    {P Q : Assertion} {exit_t : Word} {Q_t : Assertion} {exit_f : Word} {Q_f : Assertion}
     (h1 : cpsTriple entry mid cr P Q)
     (h2 : cpsBranch mid cr Q exit_t Q_t exit_f Q_f) :
     cpsBranch entry cr P exit_t Q_t exit_f Q_f := by
@@ -374,7 +375,7 @@ theorem cpsTriple_seq_cpsBranch_perm_same_cr {entry mid : Word} {cr : CodeReq}
     (h1 : cpsTriple entry mid cr P Q1)
     (h2 : cpsBranch mid cr Q2 exit_t Q_t exit_f Q_f) :
     cpsBranch entry cr P exit_t Q_t exit_f Q_f :=
-  cpsTriple_seq_cpsBranch_same_cr entry mid cr P Q2 exit_t Q_t exit_f Q_f
+  cpsTriple_seq_cpsBranch_same_cr
     (cpsTriple_weaken (fun _ hp => hp) hperm h1) h2
 
 -- ============================================================================
