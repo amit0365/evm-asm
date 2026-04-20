@@ -428,17 +428,19 @@ theorem cpsNBranch_refl (addr : Word)
 -- Equivalences with existing types
 -- ============================================================================
 
-/-- A single-exit cpsTriple can be viewed as a cpsNBranch with one exit. -/
-theorem cpsTriple_to_cpsNBranch (entry exit_ : Word) (cr : CodeReq)
-    (P Q : Assertion) (h : cpsTriple entry exit_ cr P Q) :
+/-- A single-exit cpsTriple can be viewed as a cpsNBranch with one exit.
+    All position/code/assertion arguments are implicit — inferred from `h`. -/
+theorem cpsTriple_to_cpsNBranch {entry exit_ : Word} {cr : CodeReq}
+    {P Q : Assertion} (h : cpsTriple entry exit_ cr P Q) :
     cpsNBranch entry cr P [(exit_, Q)] := by
   intro R hR s hcr hPR hpc
   obtain ⟨k, s', hstep, hpc', hQR⟩ := h R hR s hcr hPR hpc
   exact ⟨k, s', hstep, (exit_, Q), List.Mem.head _, hpc', hQR⟩
 
-/-- A singleton cpsNBranch gives back a cpsTriple. -/
-theorem cpsNBranch_to_cpsTriple (entry exit_ : Word) (cr : CodeReq)
-    (P Q : Assertion) (h : cpsNBranch entry cr P [(exit_, Q)]) :
+/-- A singleton cpsNBranch gives back a cpsTriple.
+    All position/code/assertion arguments are implicit — inferred from `h`. -/
+theorem cpsNBranch_to_cpsTriple {entry exit_ : Word} {cr : CodeReq}
+    {P Q : Assertion} (h : cpsNBranch entry cr P [(exit_, Q)]) :
     cpsTriple entry exit_ cr P Q := by
   intro R hR s hcr hPR hpc
   obtain ⟨k, s', hstep, ex, hmem, hpc', hQR⟩ := h R hR s hcr hPR hpc
@@ -459,11 +461,12 @@ theorem cpsBranch_to_cpsNBranch (entry : Word) (cr : CodeReq)
   · exact ⟨k, s', hstep, (exit_t, Q_t), List.Mem.head _, hpc_t, hQ_t⟩
   · exact ⟨k, s', hstep, (exit_f, Q_f), List.Mem.tail _ (List.Mem.head _), hpc_f, hQ_f⟩
 
-/-- A 2-element cpsNBranch gives back a cpsBranch. -/
-theorem cpsNBranch_to_cpsBranch (entry : Word) (cr : CodeReq)
-    (P : Assertion)
-    (exit_t : Word) (Q_t : Assertion)
-    (exit_f : Word) (Q_f : Assertion)
+/-- A 2-element cpsNBranch gives back a cpsBranch.
+    All position/code/assertion arguments are implicit — inferred from `h`. -/
+theorem cpsNBranch_to_cpsBranch {entry : Word} {cr : CodeReq}
+    {P : Assertion}
+    {exit_t : Word} {Q_t : Assertion}
+    {exit_f : Word} {Q_f : Assertion}
     (h : cpsNBranch entry cr P [(exit_t, Q_t), (exit_f, Q_f)]) :
     cpsBranch entry cr P exit_t Q_t exit_f Q_f := by
   intro R hR s hcr hPR hpc
@@ -507,10 +510,11 @@ theorem cpsNBranch_weaken_pre (entry : Word) (cr : CodeReq)
     exact ⟨hp, hcompat, sepConj_mono_left hpre hp hpq⟩
   exact h R hR s hcr hPR hpc
 
-/-- Monotonicity: expand the exit list (weaken the exit constraint). -/
-theorem cpsNBranch_weaken_exits (entry : Word) (cr : CodeReq)
-    (P : Assertion)
-    (exits exits' : List (Word × Assertion))
+/-- Monotonicity: expand the exit list (weaken the exit constraint).
+    All position/code/assertion arguments are implicit — inferred from `h`. -/
+theorem cpsNBranch_weaken_exits {entry : Word} {cr : CodeReq}
+    {P : Assertion}
+    {exits : List (Word × Assertion)} (exits' : List (Word × Assertion))
     (hsub : ∀ ex, ex ∈ exits → ex ∈ exits') (h : cpsNBranch entry cr P exits) :
     cpsNBranch entry cr P exits' := by
   intro R hR s hcr hPR hpc
@@ -546,10 +550,11 @@ theorem cpsNBranch_frameR {entry : Word} {cr : CodeReq}
   refine ⟨k, s', hstep, (ex.1, ex.2 ** F), ?_, hpc', holdsFor_sepConj_assoc.mpr hQFR⟩
   exact List.mem_map.mpr ⟨ex, hmem, rfl⟩
 
-/-- Extend the head exit by composing a cpsTriple after it. -/
-theorem cpsNBranch_extend_head (entry l l' : Word) (cr : CodeReq)
-    (P Q R : Assertion)
-    (others : List (Word × Assertion))
+/-- Extend the head exit by composing a cpsTriple after it.
+    All position/code/assertion arguments are implicit — inferred from `hbr`/`hseq`. -/
+theorem cpsNBranch_extend_head {entry l l' : Word} {cr : CodeReq}
+    {P Q R : Assertion}
+    {others : List (Word × Assertion)}
     (hbr : cpsNBranch entry cr P ((l, Q) :: others))
     (hseq : cpsTriple l l' cr Q R) :
     cpsNBranch entry cr P ((l', R) :: others) := by
