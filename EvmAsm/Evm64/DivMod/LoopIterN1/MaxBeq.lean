@@ -22,7 +22,7 @@ open EvmAsm.Evm64.DivMod.AddrNorm (slt_jpos_1 slt_jpos_2 slt_jpos_3)
 
 set_option maxRecDepth 4096 in
 theorem divK_loop_body_n1_max_addback_j0_beq_spec
-    (sp jOld v5_old v6_old v7_old v10_old v11_old v2_old
+    (sp jOld v5Old v6Old v7Old v10Old v11Old v2Old
      v0 v1 v2 v3 u0 u1 u2 u3 uTop qOld : Word)
     (base : Word)
     (hbltu : ¬BitVec.ult u1 v0)
@@ -33,9 +33,9 @@ theorem divK_loop_body_n1_max_addback_j0_beq_spec
     (if BitVec.ult uTop (mulsubN4_c3 qHat v0 v1 v2 v3 u0 u1 u2 u3) then (1 : Word) else 0) ≠ (0 : Word) →
     cpsTriple (base + loopBodyOff) (base + denormOff) (sharedDivModCode base)
       ((.x12 ↦ᵣ sp) ** (.x1 ↦ᵣ (0 : Word)) **
-       (.x5 ↦ᵣ v5_old) ** (.x6 ↦ᵣ v6_old) **
-       (.x7 ↦ᵣ v7_old) ** (.x10 ↦ᵣ v10_old) ** (.x11 ↦ᵣ v11_old) **
-       (.x2 ↦ᵣ v2_old) ** (.x0 ↦ᵣ (0 : Word)) **
+       (.x5 ↦ᵣ v5Old) ** (.x6 ↦ᵣ v6Old) **
+       (.x7 ↦ᵣ v7Old) ** (.x10 ↦ᵣ v10Old) ** (.x11 ↦ᵣ v11Old) **
+       (.x2 ↦ᵣ v2Old) ** (.x0 ↦ᵣ (0 : Word)) **
        (sp + signExtend12 3976 ↦ₘ jOld) ** (sp + signExtend12 3984 ↦ₘ (1 : Word)) **
        ((sp + signExtend12 32) ↦ₘ v0) ** ((uBase + signExtend12 0) ↦ₘ u0) **
        ((sp + signExtend12 40) ↦ₘ v1) ** ((uBase + signExtend12 4088) ↦ₘ u1) **
@@ -61,14 +61,14 @@ theorem divK_loop_body_n1_max_addback_j0_beq_spec
       addbackN4_carry ab.1 ab.2.1 ab.2.2.1 ab.2.2.2.1 v0 v1 v2 v3
     else carry
   let vtopBase := sp + ((1 : Word) + signExtend12 4095) <<< (3 : BitVec 6).toNat
-  have TF := divK_trial_max_full_spec sp (0 : Word) (1 : Word) jOld v5_old v6_old v7_old v10_old v11_old
+  have TF := divK_trial_max_full_spec sp (0 : Word) (1 : Word) jOld v5Old v6Old v7Old v10Old v11Old
     u1 u0 v0 base hbltu
   dsimp only [] at TF
   rw [u_addr_eq_n1 sp (0 : Word)] at TF
   rw [u_addr8_eq_n1 sp (0 : Word)] at TF
   rw [vtop_eq_v0_n1 sp] at TF
   have MCA := divK_mulsub_correction_addback_beq_spec sp qHat (0 : Word) v0 v1 v2 v3 u0 u1 u2 u3 uTop
-    (0 : Word) u0 vtopBase u1 v0 v2_old base
+    (0 : Word) u0 vtopBase u1 v0 v2Old base
 
   intro_lets at MCA
   unfold isAddbackCarry2NzN1Max isAddbackCarry2Nz at hcarry2_nz
@@ -76,7 +76,7 @@ theorem divK_loop_body_n1_max_addback_j0_beq_spec
   have SL := divK_store_loop_j0_spec sp q_out u4_out carryOut qOld base
   intro_lets at SL
   have TFf := cpsTriple_frameR
-    ((.x2 ↦ᵣ v2_old) **
+    ((.x2 ↦ᵣ v2Old) **
      ((sp + signExtend12 40) ↦ₘ v1) ** ((uBase + signExtend12 4080) ↦ₘ u2) **
      ((sp + signExtend12 48) ↦ₘ v2) ** ((uBase + signExtend12 4072) ↦ₘ u3) **
      ((sp + signExtend12 56) ↦ₘ v3) ** ((uBase + signExtend12 4064) ↦ₘ uTop) **
@@ -104,7 +104,7 @@ theorem divK_loop_body_n1_max_addback_j0_beq_spec
 
 set_option maxRecDepth 4096 in
 theorem divK_loop_body_n1_max_addback_j3_beq_spec
-    (sp jOld v5_old v6_old v7_old v10_old v11_old v2_old
+    (sp jOld v5Old v6Old v7Old v10Old v11Old v2Old
      v0 v1 v2 v3 u0 u1 u2 u3 uTop qOld : Word)
     (base : Word)
     (hbltu : ¬BitVec.ult u1 v0)
@@ -115,9 +115,9 @@ theorem divK_loop_body_n1_max_addback_j3_beq_spec
     (if BitVec.ult uTop (mulsubN4_c3 qHat v0 v1 v2 v3 u0 u1 u2 u3) then (1 : Word) else 0) ≠ (0 : Word) →
     cpsTriple (base + loopBodyOff) (base + loopBodyOff) (sharedDivModCode base)
       ((.x12 ↦ᵣ sp) ** (.x1 ↦ᵣ (3 : Word)) **
-       (.x5 ↦ᵣ v5_old) ** (.x6 ↦ᵣ v6_old) **
-       (.x7 ↦ᵣ v7_old) ** (.x10 ↦ᵣ v10_old) ** (.x11 ↦ᵣ v11_old) **
-       (.x2 ↦ᵣ v2_old) ** (.x0 ↦ᵣ (0 : Word)) **
+       (.x5 ↦ᵣ v5Old) ** (.x6 ↦ᵣ v6Old) **
+       (.x7 ↦ᵣ v7Old) ** (.x10 ↦ᵣ v10Old) ** (.x11 ↦ᵣ v11Old) **
+       (.x2 ↦ᵣ v2Old) ** (.x0 ↦ᵣ (0 : Word)) **
        (sp + signExtend12 3976 ↦ₘ jOld) ** (sp + signExtend12 3984 ↦ₘ (1 : Word)) **
        ((sp + signExtend12 32) ↦ₘ v0) ** ((uBase + signExtend12 0) ↦ₘ u0) **
        ((sp + signExtend12 40) ↦ₘ v1) ** ((uBase + signExtend12 4088) ↦ₘ u1) **
@@ -143,14 +143,14 @@ theorem divK_loop_body_n1_max_addback_j3_beq_spec
       addbackN4_carry ab.1 ab.2.1 ab.2.2.1 ab.2.2.2.1 v0 v1 v2 v3
     else carry
   let vtopBase := sp + ((1 : Word) + signExtend12 4095) <<< (3 : BitVec 6).toNat
-  have TF := divK_trial_max_full_spec sp (3 : Word) (1 : Word) jOld v5_old v6_old v7_old v10_old v11_old
+  have TF := divK_trial_max_full_spec sp (3 : Word) (1 : Word) jOld v5Old v6Old v7Old v10Old v11Old
     u1 u0 v0 base hbltu
   dsimp only [] at TF
   rw [u_addr_eq_n1 sp (3 : Word)] at TF
   rw [u_addr8_eq_n1 sp (3 : Word)] at TF
   rw [vtop_eq_v0_n1 sp] at TF
   have MCA := divK_mulsub_correction_addback_beq_spec sp qHat (3 : Word) v0 v1 v2 v3 u0 u1 u2 u3 uTop
-    (3 : Word) u0 vtopBase u1 v0 v2_old base
+    (3 : Word) u0 vtopBase u1 v0 v2Old base
 
   intro_lets at MCA
   unfold isAddbackCarry2NzN1Max isAddbackCarry2Nz at hcarry2_nz
@@ -159,7 +159,7 @@ theorem divK_loop_body_n1_max_addback_j3_beq_spec
   have SL := divK_store_loop_jgt0_spec sp (3 : Word) q_out u4_out carryOut qOld base hj_pos
   intro_lets at SL
   have TFf := cpsTriple_frameR
-    ((.x2 ↦ᵣ v2_old) **
+    ((.x2 ↦ᵣ v2Old) **
      ((sp + signExtend12 40) ↦ₘ v1) ** ((uBase + signExtend12 4080) ↦ₘ u2) **
      ((sp + signExtend12 48) ↦ₘ v2) ** ((uBase + signExtend12 4072) ↦ₘ u3) **
      ((sp + signExtend12 56) ↦ₘ v3) ** ((uBase + signExtend12 4064) ↦ₘ uTop) **
@@ -187,7 +187,7 @@ theorem divK_loop_body_n1_max_addback_j3_beq_spec
 
 set_option maxRecDepth 4096 in
 theorem divK_loop_body_n1_max_addback_j1_beq_spec
-    (sp jOld v5_old v6_old v7_old v10_old v11_old v2_old
+    (sp jOld v5Old v6Old v7Old v10Old v11Old v2Old
      v0 v1 v2 v3 u0 u1 u2 u3 uTop qOld : Word)
     (base : Word)
     (hbltu : ¬BitVec.ult u1 v0)
@@ -198,9 +198,9 @@ theorem divK_loop_body_n1_max_addback_j1_beq_spec
     (if BitVec.ult uTop (mulsubN4_c3 qHat v0 v1 v2 v3 u0 u1 u2 u3) then (1 : Word) else 0) ≠ (0 : Word) →
     cpsTriple (base + loopBodyOff) (base + loopBodyOff) (sharedDivModCode base)
       ((.x12 ↦ᵣ sp) ** (.x1 ↦ᵣ (1 : Word)) **
-       (.x5 ↦ᵣ v5_old) ** (.x6 ↦ᵣ v6_old) **
-       (.x7 ↦ᵣ v7_old) ** (.x10 ↦ᵣ v10_old) ** (.x11 ↦ᵣ v11_old) **
-       (.x2 ↦ᵣ v2_old) ** (.x0 ↦ᵣ (0 : Word)) **
+       (.x5 ↦ᵣ v5Old) ** (.x6 ↦ᵣ v6Old) **
+       (.x7 ↦ᵣ v7Old) ** (.x10 ↦ᵣ v10Old) ** (.x11 ↦ᵣ v11Old) **
+       (.x2 ↦ᵣ v2Old) ** (.x0 ↦ᵣ (0 : Word)) **
        (sp + signExtend12 3976 ↦ₘ jOld) ** (sp + signExtend12 3984 ↦ₘ (1 : Word)) **
        ((sp + signExtend12 32) ↦ₘ v0) ** ((uBase + signExtend12 0) ↦ₘ u0) **
        ((sp + signExtend12 40) ↦ₘ v1) ** ((uBase + signExtend12 4088) ↦ₘ u1) **
@@ -226,14 +226,14 @@ theorem divK_loop_body_n1_max_addback_j1_beq_spec
       addbackN4_carry ab.1 ab.2.1 ab.2.2.1 ab.2.2.2.1 v0 v1 v2 v3
     else carry
   let vtopBase := sp + ((1 : Word) + signExtend12 4095) <<< (3 : BitVec 6).toNat
-  have TF := divK_trial_max_full_spec sp (1 : Word) (1 : Word) jOld v5_old v6_old v7_old v10_old v11_old
+  have TF := divK_trial_max_full_spec sp (1 : Word) (1 : Word) jOld v5Old v6Old v7Old v10Old v11Old
     u1 u0 v0 base hbltu
   dsimp only [] at TF
   rw [u_addr_eq_n1 sp (1 : Word)] at TF
   rw [u_addr8_eq_n1 sp (1 : Word)] at TF
   rw [vtop_eq_v0_n1 sp] at TF
   have MCA := divK_mulsub_correction_addback_beq_spec sp qHat (1 : Word) v0 v1 v2 v3 u0 u1 u2 u3 uTop
-    (1 : Word) u0 vtopBase u1 v0 v2_old base
+    (1 : Word) u0 vtopBase u1 v0 v2Old base
 
   intro_lets at MCA
   unfold isAddbackCarry2NzN1Max isAddbackCarry2Nz at hcarry2_nz
@@ -242,7 +242,7 @@ theorem divK_loop_body_n1_max_addback_j1_beq_spec
   have SL := divK_store_loop_jgt0_spec sp (1 : Word) q_out u4_out carryOut qOld base hj_pos
   intro_lets at SL
   have TFf := cpsTriple_frameR
-    ((.x2 ↦ᵣ v2_old) **
+    ((.x2 ↦ᵣ v2Old) **
      ((sp + signExtend12 40) ↦ₘ v1) ** ((uBase + signExtend12 4080) ↦ₘ u2) **
      ((sp + signExtend12 48) ↦ₘ v2) ** ((uBase + signExtend12 4072) ↦ₘ u3) **
      ((sp + signExtend12 56) ↦ₘ v3) ** ((uBase + signExtend12 4064) ↦ₘ uTop) **
@@ -270,7 +270,7 @@ theorem divK_loop_body_n1_max_addback_j1_beq_spec
 
 set_option maxRecDepth 4096 in
 theorem divK_loop_body_n1_max_addback_j2_beq_spec
-    (sp jOld v5_old v6_old v7_old v10_old v11_old v2_old
+    (sp jOld v5Old v6Old v7Old v10Old v11Old v2Old
      v0 v1 v2 v3 u0 u1 u2 u3 uTop qOld : Word)
     (base : Word)
     (hbltu : ¬BitVec.ult u1 v0)
@@ -281,9 +281,9 @@ theorem divK_loop_body_n1_max_addback_j2_beq_spec
     (if BitVec.ult uTop (mulsubN4_c3 qHat v0 v1 v2 v3 u0 u1 u2 u3) then (1 : Word) else 0) ≠ (0 : Word) →
     cpsTriple (base + loopBodyOff) (base + loopBodyOff) (sharedDivModCode base)
       ((.x12 ↦ᵣ sp) ** (.x1 ↦ᵣ (2 : Word)) **
-       (.x5 ↦ᵣ v5_old) ** (.x6 ↦ᵣ v6_old) **
-       (.x7 ↦ᵣ v7_old) ** (.x10 ↦ᵣ v10_old) ** (.x11 ↦ᵣ v11_old) **
-       (.x2 ↦ᵣ v2_old) ** (.x0 ↦ᵣ (0 : Word)) **
+       (.x5 ↦ᵣ v5Old) ** (.x6 ↦ᵣ v6Old) **
+       (.x7 ↦ᵣ v7Old) ** (.x10 ↦ᵣ v10Old) ** (.x11 ↦ᵣ v11Old) **
+       (.x2 ↦ᵣ v2Old) ** (.x0 ↦ᵣ (0 : Word)) **
        (sp + signExtend12 3976 ↦ₘ jOld) ** (sp + signExtend12 3984 ↦ₘ (1 : Word)) **
        ((sp + signExtend12 32) ↦ₘ v0) ** ((uBase + signExtend12 0) ↦ₘ u0) **
        ((sp + signExtend12 40) ↦ₘ v1) ** ((uBase + signExtend12 4088) ↦ₘ u1) **
@@ -309,14 +309,14 @@ theorem divK_loop_body_n1_max_addback_j2_beq_spec
       addbackN4_carry ab.1 ab.2.1 ab.2.2.1 ab.2.2.2.1 v0 v1 v2 v3
     else carry
   let vtopBase := sp + ((1 : Word) + signExtend12 4095) <<< (3 : BitVec 6).toNat
-  have TF := divK_trial_max_full_spec sp (2 : Word) (1 : Word) jOld v5_old v6_old v7_old v10_old v11_old
+  have TF := divK_trial_max_full_spec sp (2 : Word) (1 : Word) jOld v5Old v6Old v7Old v10Old v11Old
     u1 u0 v0 base hbltu
   dsimp only [] at TF
   rw [u_addr_eq_n1 sp (2 : Word)] at TF
   rw [u_addr8_eq_n1 sp (2 : Word)] at TF
   rw [vtop_eq_v0_n1 sp] at TF
   have MCA := divK_mulsub_correction_addback_beq_spec sp qHat (2 : Word) v0 v1 v2 v3 u0 u1 u2 u3 uTop
-    (2 : Word) u0 vtopBase u1 v0 v2_old base
+    (2 : Word) u0 vtopBase u1 v0 v2Old base
 
   intro_lets at MCA
   unfold isAddbackCarry2NzN1Max isAddbackCarry2Nz at hcarry2_nz
@@ -325,7 +325,7 @@ theorem divK_loop_body_n1_max_addback_j2_beq_spec
   have SL := divK_store_loop_jgt0_spec sp (2 : Word) q_out u4_out carryOut qOld base hj_pos
   intro_lets at SL
   have TFf := cpsTriple_frameR
-    ((.x2 ↦ᵣ v2_old) **
+    ((.x2 ↦ᵣ v2Old) **
      ((sp + signExtend12 40) ↦ₘ v1) ** ((uBase + signExtend12 4080) ↦ₘ u2) **
      ((sp + signExtend12 48) ↦ₘ v2) ** ((uBase + signExtend12 4072) ↦ₘ u3) **
      ((sp + signExtend12 56) ↦ₘ v3) ** ((uBase + signExtend12 4064) ↦ₘ uTop) **
