@@ -135,6 +135,7 @@ abbrev loopBodyN4AddbackBeqPost := loopBodyAddbackBeqPost (4 : Word)
 /-- Unified loop body postcondition parameterized on borrow condition.
     `borrow_zero = true` selects the skip path;
     `borrow_zero = false` selects the addback+BEQ (double-addback) path. -/
+@[irreducible]
 def loopBodyUnifiedPost (borrow_zero : Bool) (n : Word)
     (sp j q_hat v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : Assertion :=
   if borrow_zero then loopBodySkipPost n sp j q_hat v0 v1 v2 v3 u0 u1 u2 u3 u_top

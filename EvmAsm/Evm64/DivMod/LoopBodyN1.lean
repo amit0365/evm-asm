@@ -677,11 +677,13 @@ theorem divK_loop_body_n1_max_unified_spec
   cases borrow_zero
   · -- false (addback+BEQ path)
     rw [if_neg (by decide)] at hborrow
+    simp only [loopBodyUnifiedPostN1, loopBodyUnifiedPost_false]
     exact divK_loop_body_n1_max_addback_spec
       sp j j_old v5_old v6_old v7_old v10_old v11_old v2_old
       v0 v1 v2 v3 u0 u1 u2 u3 u_top q_old base hbltu (hcarry (by decide)) hborrow
   · -- true (skip path)
     rw [if_pos rfl] at hborrow
+    simp only [loopBodyUnifiedPostN1, loopBodyUnifiedPost_true]
     exact divK_loop_body_n1_max_skip_spec
       sp j j_old v5_old v6_old v7_old v10_old v11_old v2_old
       v0 v1 v2 v3 u0 u1 u2 u3 u_top q_old base hbltu hborrow
@@ -726,43 +728,20 @@ theorem divK_loop_body_n1_call_unified_spec
   cases borrow_zero
   · -- false (addback+BEQ path)
     rw [if_neg (by decide)] at hborrow
+    simp only [loopBodyUnifiedPostN1, loopBodyUnifiedPost_false]
     have base_spec := divK_loop_body_n1_call_addback_spec
       sp j j_old v5_old v6_old v7_old v10_old v11_old v2_old
       v0 v1 v2 v3 u0 u1 u2 u3 u_top q_old ret_mem d_mem dlo_mem scratch_un0
       base halign hbltu (hcarry (by decide)) hborrow
-    -- base_spec has post loopBodyN1CallAddbackBeqPostJ; unfold it to match unified form
-    show cpsBranch _ _ _ _
-      (loopBodyN1AddbackBeqPost sp j (div128Quot u1 u0 v0) v0 v1 v2 v3 u0 u1 u2 u3 u_top **
-       (sp + signExtend12 3968 ↦ₘ (base + 516)) **
-       (sp + signExtend12 3960 ↦ₘ v0) **
-       (sp + signExtend12 3952 ↦ₘ div128DLo v0) **
-       (sp + signExtend12 3944 ↦ₘ div128Un0 u0))
-      _
-      (loopBodyN1AddbackBeqPost sp j (div128Quot u1 u0 v0) v0 v1 v2 v3 u0 u1 u2 u3 u_top **
-       (sp + signExtend12 3968 ↦ₘ (base + 516)) **
-       (sp + signExtend12 3960 ↦ₘ v0) **
-       (sp + signExtend12 3952 ↦ₘ div128DLo v0) **
-       (sp + signExtend12 3944 ↦ₘ div128Un0 u0))
     simp only [loopBodyN1CallAddbackBeqPostJ] at base_spec
     exact base_spec
   · -- true (skip path)
     rw [if_pos rfl] at hborrow
+    simp only [loopBodyUnifiedPostN1, loopBodyUnifiedPost_true]
     have base_spec := divK_loop_body_n1_call_skip_spec
       sp j j_old v5_old v6_old v7_old v10_old v11_old v2_old
       v0 v1 v2 v3 u0 u1 u2 u3 u_top q_old ret_mem d_mem dlo_mem scratch_un0
       base halign hbltu hborrow
-    show cpsBranch _ _ _ _
-      (loopBodyN1SkipPost sp j (div128Quot u1 u0 v0) v0 v1 v2 v3 u0 u1 u2 u3 u_top **
-       (sp + signExtend12 3968 ↦ₘ (base + 516)) **
-       (sp + signExtend12 3960 ↦ₘ v0) **
-       (sp + signExtend12 3952 ↦ₘ div128DLo v0) **
-       (sp + signExtend12 3944 ↦ₘ div128Un0 u0))
-      _
-      (loopBodyN1SkipPost sp j (div128Quot u1 u0 v0) v0 v1 v2 v3 u0 u1 u2 u3 u_top **
-       (sp + signExtend12 3968 ↦ₘ (base + 516)) **
-       (sp + signExtend12 3960 ↦ₘ v0) **
-       (sp + signExtend12 3952 ↦ₘ div128DLo v0) **
-       (sp + signExtend12 3944 ↦ₘ div128Un0 u0))
     simp only [loopBodyN1CallSkipPostJ] at base_spec
     exact base_spec
 

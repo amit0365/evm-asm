@@ -627,6 +627,7 @@ theorem divK_loop_body_n3_max_unified_spec
   cases borrow_zero
   · -- false (addback+BEQ path)
     rw [if_neg (by decide)] at hborrow
+    simp only [loopBodyUnifiedPostN3, loopBodyUnifiedPost_false]
     have base_spec := divK_loop_body_n3_max_addback_spec
       sp j j_old v5_old v6_old v7_old v10_old v11_old v2_old
       v0 v1 v2 v3 u0 u1 u2 u3 u_top q_old base hbltu (hcarry (by decide)) hborrow
@@ -637,6 +638,7 @@ theorem divK_loop_body_n3_max_unified_spec
       base_spec
   · -- true (skip path)
     rw [if_pos rfl] at hborrow
+    simp only [loopBodyUnifiedPostN3, loopBodyUnifiedPost_true]
     have base_spec := divK_loop_body_n3_max_skip_spec
       sp j j_old v5_old v6_old v7_old v10_old v11_old v2_old
       v0 v1 v2 v3 u0 u1 u2 u3 u_top q_old base hbltu hborrow
@@ -686,6 +688,7 @@ theorem divK_loop_body_n3_call_unified_spec
   cases borrow_zero
   · -- false (addback+BEQ path)
     rw [if_neg (by decide)] at hborrow
+    simp only [loopBodyUnifiedPostN3, loopBodyUnifiedPost_false]
     have base_spec := divK_loop_body_n3_call_addback_spec
       sp j j_old v5_old v6_old v7_old v10_old v11_old v2_old
       v0 v1 v2 v3 u0 u1 u2 u3 u_top q_old ret_mem d_mem dlo_mem scratch_un0
@@ -697,6 +700,7 @@ theorem divK_loop_body_n3_call_unified_spec
       base_spec
   · -- true (skip path)
     rw [if_pos rfl] at hborrow
+    simp only [loopBodyUnifiedPostN3, loopBodyUnifiedPost_true]
     have base_spec := divK_loop_body_n3_call_skip_spec
       sp j j_old v5_old v6_old v7_old v10_old v11_old v2_old
       v0 v1 v2 v3 u0 u1 u2 u3 u_top q_old ret_mem d_mem dlo_mem scratch_un0
