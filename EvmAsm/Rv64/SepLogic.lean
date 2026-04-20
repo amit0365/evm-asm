@@ -1042,10 +1042,6 @@ private theorem singletonReg_disjoint_singletonPublicValues (r : Reg) (v : Word)
     (PartialState.singletonReg r v).Disjoint (PartialState.singletonPublicValues vals) := by
   exact ⟨fun _ => Or.inr rfl, fun _ => Or.inl rfl, fun _ => Or.inl rfl, Or.inl rfl, Or.inl rfl, Or.inl rfl⟩
 
-private theorem singletonMem_disjoint_singletonPublicValues (a : Word) (v : Word) (vals : List (BitVec 8)) :
-    (PartialState.singletonMem a v).Disjoint (PartialState.singletonPublicValues vals) := by
-  exact ⟨fun _ => Or.inl rfl, fun _ => Or.inr rfl, fun _ => Or.inl rfl, Or.inl rfl, Or.inl rfl, Or.inl rfl⟩
-
 -- ============================================================================
 -- holdsFor_sepConj convenience lemmas for publicValuesIs
 -- ============================================================================
@@ -1124,14 +1120,6 @@ instance (vals : List (BitVec 8)) : Assertion.PCFree (privateInputIs vals) :=
 private theorem singletonReg_disjoint_singletonPrivateInput (r : Reg) (v : Word) (vals : List (BitVec 8)) :
     (PartialState.singletonReg r v).Disjoint (PartialState.singletonPrivateInput vals) := by
   exact ⟨fun _ => Or.inr rfl, fun _ => Or.inl rfl, fun _ => Or.inl rfl, Or.inl rfl, Or.inl rfl, Or.inl rfl⟩
-
-private theorem singletonMem_disjoint_singletonPrivateInput (a : Word) (v : Word) (vals : List (BitVec 8)) :
-    (PartialState.singletonMem a v).Disjoint (PartialState.singletonPrivateInput vals) := by
-  exact ⟨fun _ => Or.inl rfl, fun _ => Or.inr rfl, fun _ => Or.inl rfl, Or.inl rfl, Or.inl rfl, Or.inl rfl⟩
-
-private theorem singletonPublicValues_disjoint_singletonPrivateInput (pv : List (BitVec 8)) (pi : List (BitVec 8)) :
-    (PartialState.singletonPublicValues pv).Disjoint (PartialState.singletonPrivateInput pi) := by
-  exact ⟨fun _ => Or.inl rfl, fun _ => Or.inl rfl, fun _ => Or.inl rfl, Or.inl rfl, Or.inr rfl, Or.inl rfl⟩
 
 -- ============================================================================
 -- holdsFor_sepConj convenience lemmas for privateInputIs
@@ -1983,45 +1971,6 @@ theorem holdsFor_instrAt (a : Word) (i : Instr) (s : MachineState) :
     exact ⟨_, (PartialState.CompatibleWith_singletonCode a i s).mpr heq, rfl⟩
 
 -- ============================================================================
--- Disjointness lemmas for singletonCode
--- ============================================================================
-
-private theorem singletonCode_disjoint_singletonCode (a1 a2 : Word) (i1 i2 : Instr)
-    (hne : a1 ≠ a2) :
-    (PartialState.singletonCode a1 i1).Disjoint (PartialState.singletonCode a2 i2) := by
-  refine ⟨fun r => Or.inl rfl, fun _ => Or.inl rfl, fun a => ?_, Or.inl rfl, Or.inl rfl, Or.inl rfl⟩
-  simp only [PartialState.singletonCode]
-  by_cases h1 : a == a1
-  · simp [h1]
-    by_cases h2 : a == a2
-    · exfalso
-      have := beq_iff_eq.mp h1
-      have := beq_iff_eq.mp h2
-      exact hne (by rw [← ‹a = a1›, ← ‹a = a2›])
-    · exact fun hi2 => h2 (beq_iff_eq.mpr hi2)
-  · simp [h1]
-
-private theorem singletonReg_disjoint_singletonCode (r : Reg) (v : Word) (a : Word) (i : Instr) :
-    (PartialState.singletonReg r v).Disjoint (PartialState.singletonCode a i) := by
-  exact ⟨fun _ => Or.inr rfl, fun _ => Or.inl rfl, fun _ => Or.inl rfl, Or.inl rfl, Or.inl rfl, Or.inl rfl⟩
-
-private theorem singletonMem_disjoint_singletonCode (a : Word) (v : Word) (a' : Word) (i : Instr) :
-    (PartialState.singletonMem a v).Disjoint (PartialState.singletonCode a' i) := by
-  exact ⟨fun _ => Or.inl rfl, fun _ => Or.inr rfl, fun _ => Or.inl rfl, Or.inl rfl, Or.inl rfl, Or.inl rfl⟩
-
-private theorem singletonPC_disjoint_singletonCode (v : Word) (a : Word) (i : Instr) :
-    (PartialState.singletonPC v).Disjoint (PartialState.singletonCode a i) := by
-  exact ⟨fun _ => Or.inl rfl, fun _ => Or.inl rfl, fun _ => Or.inl rfl, Or.inr rfl, Or.inl rfl, Or.inl rfl⟩
-
-private theorem singletonPublicValues_disjoint_singletonCode (vals : List (BitVec 8)) (a : Word) (i : Instr) :
-    (PartialState.singletonPublicValues vals).Disjoint (PartialState.singletonCode a i) := by
-  exact ⟨fun _ => Or.inl rfl, fun _ => Or.inl rfl, fun _ => Or.inl rfl, Or.inl rfl, Or.inr rfl, Or.inl rfl⟩
-
-private theorem singletonPrivateInput_disjoint_singletonCode (vals : List (BitVec 8)) (a : Word) (i : Instr) :
-    (PartialState.singletonPrivateInput vals).Disjoint (PartialState.singletonCode a i) := by
-  exact ⟨fun _ => Or.inl rfl, fun _ => Or.inl rfl, fun _ => Or.inl rfl, Or.inl rfl, Or.inl rfl, Or.inr rfl⟩
-
--- ============================================================================
 -- pcFree for code assertions
 -- ============================================================================
 
@@ -2530,16 +2479,16 @@ theorem CodeReq.ofProg_mono_subrange (base : Word) (pre mid suf : List Instr)
     (by rwa [← List.append_assoc]) a i
     (CodeReq.ofProg_mono_append_left _ mid suf a i h)
 
-/-- Sub-range monotonicity with explicit offset: `ofProg sub_base sub ⊆ ofProg base full`
+/-- Sub-range monotonicity with explicit offset: `ofProg subBase sub ⊆ ofProg base full`
     when `sub` is a contiguous slice of `full` starting at instruction index `idx`
-    (byte offset `sub_base = base + 4*idx`). -/
-theorem CodeReq.ofProg_mono_sub (base sub_base : Word) (full sub : List Instr)
+    (byte offset `subBase = base + 4*idx`). -/
+theorem CodeReq.ofProg_mono_sub (base subBase : Word) (full sub : List Instr)
     (idx : Nat)
-    (h_addr : sub_base = base + BitVec.ofNat 64 (4 * idx))
+    (h_addr : subBase = base + BitVec.ofNat 64 (4 * idx))
     (h_slice : (full.drop idx).take sub.length = sub)
     (h_range : idx + sub.length ≤ full.length)
     (hbound : 4 * full.length < 2^64) :
-    ∀ a i, (CodeReq.ofProg sub_base sub) a = some i →
+    ∀ a i, (CodeReq.ofProg subBase sub) a = some i →
            (CodeReq.ofProg base full) a = some i := by
   intro a i h; rw [h_addr] at h
   -- Decompose: full.drop idx = sub ++ full.drop (idx + sub.length)

@@ -81,7 +81,7 @@ theorem divK_phaseA_spec (sp : Word) (base : Word)
   have hbeq_raw := beq_spec_gen .x5 .x0 1020 bor (0 : Word) (base + 28)
   have ha1 : (base + 28 : Word) + 4 = base + 32 := by bv_addr
   rw [ha1] at hbeq_raw
-  have hbeq := cpsBranch_consequence _ _ _ _ _ _ _ _ _ _
+  have hbeq := cpsBranch_weaken
     (fun _ hp => hp)
     (fun h hp => sepConj_mono_right
       (fun h' hp' => ((sepConj_pure_right _ _ h').1 hp').1) h hp)
@@ -89,7 +89,7 @@ theorem divK_phaseA_spec (sp : Word) (base : Word)
       (fun h' hp' => ((sepConj_pure_right _ _ h').1 hp').1) h hp)
     hbeq_raw
   -- 3. Frame BEQ with remaining registers and memory
-  have hbeq_framed := cpsBranch_frame_left _ _ _ _ _ _ _
+  have hbeq_framed := cpsBranch_frameR
     ((.x12 ↦ᵣ sp) ** (.x10 ↦ᵣ b3) **
      ((sp + 32) ↦ₘ b0) ** ((sp + 40) ↦ₘ b1) **
      ((sp + 48) ↦ₘ b2) ** ((sp + 56) ↦ₘ b3))
@@ -105,11 +105,10 @@ theorem divK_phaseA_spec (sp : Word) (base : Word)
       (by decide) (by decide)
     ) hbeq_framed
   -- 5. Compose body → BEQ with permutation (same CR)
-  have composed := cpsTriple_seq_cpsBranch_with_perm_same_cr _ _ _ _ _ _ _ _ _ _
+  have composed := cpsTriple_seq_cpsBranch_perm_same_cr
     (fun h hp => by xperm_hyp hp) hbody hbeq_ext
   -- 6. Final permutation of postconditions
-  exact cpsBranch_consequence _ _
-    _ _ _ _ _ _ _ _
+  exact cpsBranch_weaken
     (fun h hp => by xperm_hyp hp)
     (fun h hp => by xperm_hyp hp)
     (fun h hp => by xperm_hyp hp)

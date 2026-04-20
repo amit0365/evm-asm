@@ -43,10 +43,10 @@ theorem evm_push0_stack_spec (nsp base : Word)
        (nsp ↦ₘ d0) ** ((nsp + 8) ↦ₘ d1) ** ((nsp + 16) ↦ₘ d2) ** ((nsp + 24) ↦ₘ d3) **
        evmStackIs (nsp + 32) rest)
       ((.x12 ↦ᵣ nsp) ** evmWordIs nsp 0 ** evmStackIs (nsp + 32) rest) :=
-  cpsTriple_consequence _ _ _ _ _ _ _
+  cpsTriple_weaken
     (fun h hp => by xperm_hyp hp)
     (fun h hq => by simp only [evmWordIs, EvmWord.getLimbN_zero]; xperm_hyp hq)
-    (cpsTriple_frame_left _ _ _ _ _
+    (cpsTriple_frameR
       (evmStackIs (nsp + 32) rest)
       (by exact pcFree_evmStackIs (nsp + 32) rest)
       (evm_push0_spec nsp base d0 d1 d2 d3))

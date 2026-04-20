@@ -22,12 +22,12 @@ open EvmAsm.Rv64
 /-- Two-instruction spec for DUP: LD x7 from source, SD x7 to destination.
     Copies src_val from src address to dst address. -/
 theorem dup_pair_spec (sp : Word)
-    (off_src off_dst : BitVec 12) (src_val dst_old v7 : Word) (base : Word) :
+    (off_src off_dst : BitVec 12) (src_val dstOld v7 : Word) (base : Word) :
     cpsTriple base (base + 8)
       (CodeReq.singleton base (.LD .x7 .x12 off_src) |>.union
         (CodeReq.singleton (base + 4) (.SD .x12 .x7 off_dst)))
       ((.x12 ↦ᵣ sp) ** (.x7 ↦ᵣ v7) **
-       ((sp + signExtend12 off_src) ↦ₘ src_val) ** ((sp + signExtend12 off_dst) ↦ₘ dst_old))
+       ((sp + signExtend12 off_src) ↦ₘ src_val) ** ((sp + signExtend12 off_dst) ↦ₘ dstOld))
       ((.x12 ↦ᵣ sp) ** (.x7 ↦ᵣ src_val) **
        ((sp + signExtend12 off_src) ↦ₘ src_val) ** ((sp + signExtend12 off_dst) ↦ₘ src_val)) := by
   runBlock
@@ -119,7 +119,7 @@ theorem evm_dup_evmword_spec (nsp base : Word)
     (src.getLimbN 0) (src.getLimbN 1) (src.getLimbN 2) (src.getLimbN 3)
     (dst.getLimbN 0) (dst.getLimbN 1) (dst.getLimbN 2) (dst.getLimbN 3)
     v7
-  exact cpsTriple_consequence _ _ _ _ _ _ _
+  exact cpsTriple_weaken
     (fun _ hp => by
       simp only [evmWordIs, haddr8, haddr16, haddr24] at hp
       xperm_hyp hp)
@@ -159,12 +159,12 @@ theorem evm_dup_stack_spec (nsp base : Word)
     apply BitVec.eq_of_toNat_eq; simp [BitVec.toNat_add, BitVec.toNat_ofNat]; omega
   rw [haddr_src, haddr_rest, show n - 1 + 1 = n from by omega] at hsplit
   -- Frame the evm_dup_evmword_spec with the stack prefix and suffix
-  have h_main := cpsTriple_frame_left _ _ _ _ _
+  have h_main := cpsTriple_frameR
     (evmStackIs (nsp + 32) (stack.take (n - 1)) **
      evmStackIs (nsp + BitVec.ofNat 64 (n * 32 + 32)) (stack.drop n))
     (by pcFree)
     (evm_dup_evmword_spec nsp base n hn1 hn16 vn d v7)
-  exact cpsTriple_consequence _ _ _ _ _ _ _
+  exact cpsTriple_weaken
     (fun _ hp => by rw [hsplit] at hp; xperm_hyp hp)
     (fun _ hq => by rw [hsplit]; xperm_hyp hq)
     h_main

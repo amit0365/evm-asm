@@ -14,7 +14,7 @@
 
   1. The goal should be `cpsTriple entry exit goalPre goalPost`
   2. `h_main` should be `cpsTriple entry exit mainPre mainPost`
-  3. Applies `cpsTriple_consequence` with `h_main`
+  3. Applies `cpsTriple_weaken` with `h_main`
   4. In the pre/post lambdas: unfolds `evmWordIs`/`evmStackIs`, normalizes
      addresses via `BitVec.add_assoc`, then permutes via `xperm_hyp`
 -/
@@ -44,7 +44,7 @@ syntax "liftSpec" ident ("post_simp" "[" Lean.Parser.Tactic.simpLemma,* "]")? : 
 macro_rules
   | `(tactic| liftSpec $h) =>
     `(tactic|
-      exact cpsTriple_consequence _ _ _ _ _ _ _
+      exact cpsTriple_weaken
         (fun _h _hp => by
           simp only [evmWordIs, evmStackIs, evmStackIs_cons, evmStackIs_nil] at _hp
           norm_addr at _hp
@@ -56,7 +56,7 @@ macro_rules
         $h)
   | `(tactic| liftSpec $h post_simp [$lemmas,*]) =>
     `(tactic|
-      exact cpsTriple_consequence _ _ _ _ _ _ _
+      exact cpsTriple_weaken
         (fun _h _hp => by
           simp only [evmWordIs, evmStackIs, evmStackIs_cons, evmStackIs_nil] at _hp
           norm_addr at _hp

@@ -22,16 +22,16 @@ open EvmAsm.Rv64
 /-- Four-instruction spec for SWAP per-limb: LD x7 from A, LD x6 from B,
     SD x6 to A, SD x7 to B. Swaps values at offsets off_a and off_b. -/
 theorem swap_limb_spec (sp : Word)
-    (off_a off_b : BitVec 12) (a_val b_val v7 v6 : Word) (base : Word) :
+    (off_a off_b : BitVec 12) (aVal bVal v7 v6 : Word) (base : Word) :
     cpsTriple base (base + 16)
       (CodeReq.singleton base (.LD .x7 .x12 off_a) |>.union
         (CodeReq.singleton (base + 4) (.LD .x6 .x12 off_b) |>.union
         (CodeReq.singleton (base + 8) (.SD .x12 .x6 off_a) |>.union
          (CodeReq.singleton (base + 12) (.SD .x12 .x7 off_b)))))
       ((.x12 ↦ᵣ sp) ** (.x7 ↦ᵣ v7) ** (.x6 ↦ᵣ v6) **
-       ((sp + signExtend12 off_a) ↦ₘ a_val) ** ((sp + signExtend12 off_b) ↦ₘ b_val))
-      ((.x12 ↦ᵣ sp) ** (.x7 ↦ᵣ a_val) ** (.x6 ↦ᵣ b_val) **
-       ((sp + signExtend12 off_a) ↦ₘ b_val) ** ((sp + signExtend12 off_b) ↦ₘ a_val)) := by
+       ((sp + signExtend12 off_a) ↦ₘ aVal) ** ((sp + signExtend12 off_b) ↦ₘ bVal))
+      ((.x12 ↦ᵣ sp) ** (.x7 ↦ᵣ aVal) ** (.x6 ↦ᵣ bVal) **
+       ((sp + signExtend12 off_a) ↦ₘ bVal) ** ((sp + signExtend12 off_b) ↦ₘ aVal)) := by
   runBlock
 
 -- ============================================================================
@@ -121,7 +121,7 @@ theorem evm_swap_evmword_spec (sp base : Word)
     apply BitVec.eq_of_toNat_eq; simp [BitVec.toNat_add, BitVec.toNat_ofNat]; omega
   have ha24 : (sp + BitVec.ofNat 64 (n * 32) : Word) + 24 = sp + BitVec.ofNat 64 (n*32+24) := by
     apply BitVec.eq_of_toNat_eq; simp [BitVec.toNat_add, BitVec.toNat_ofNat]; omega
-  exact cpsTriple_consequence _ _ _ _ _ _ _
+  exact cpsTriple_weaken
     (fun h hp => by
       simp only [evmWordIs, ha8, ha16, ha24] at hp
       xperm_hyp hp)
@@ -171,13 +171,13 @@ theorem evm_swap_stack_spec (sp base : Word)
     simp; congr 1; omega
   rw [haddr_src, haddr_rest, show (n - 1) + 1 = n from by omega, helem] at hsplit1
   -- Frame the swap spec with middle and rest stacks
-  have h_main := cpsTriple_frame_left _ _ _ _ _
+  have h_main := cpsTriple_frameR
     (evmStackIs (sp + 32) ((stack.drop 1).take (n - 1)) **
      evmStackIs (sp + BitVec.ofNat 64 ((n + 1) * 32)) ((stack.drop 1).drop n))
     (by pcFree)
     (evm_swap_evmword_spec sp base n hn1 hn16 top nth v7 v6)
   have haddr32 : (sp + BitVec.ofNat 64 (1 * 32) : Word) = sp + 32 := by bv_omega
-  exact cpsTriple_consequence _ _ _ _ _ _ _
+  exact cpsTriple_weaken
     (fun h hp => by
       rw [hsplit0] at hp
       simp only [Nat.zero_mul, List.take_zero, evmStackIs_nil, sepConj_emp_left',

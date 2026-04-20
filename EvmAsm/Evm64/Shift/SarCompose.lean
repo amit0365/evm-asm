@@ -20,7 +20,7 @@ namespace EvmAsm.Evm64
 
 open EvmAsm.Rv64
 open EvmAsm.Rv64.AddrNorm (se13_36 se13_100 se13_188 se13_320 se13_332 se21_32 se21_132 se21_212 se21_268
-  zero_add_se12_1_toNat zero_add_se12_2_toNat)
+  zero_add_se12_1_toNat zero_add_se12_2_toNat bv6_toNat_6 word_add_zero)
 
 -- ============================================================================
 -- Section 1: sarCode definition and helpers
@@ -266,9 +266,6 @@ private theorem sar_body1_exit (base : Word) : ((base + 172 : Word) + 76) + sign
 private theorem sar_body0_exit (base : Word) : ((base + 252 : Word) + 96) + signExtend21 32 = base + 380 := by
   rw [se21_32]; bv_omega
 
-private theorem sar_off_sp32 (sp : Word) : sp + signExtend12 (32 : BitVec 12) = sp + 32 := by
-  simp only [signExtend12_32]
-
 -- ============================================================================
 -- Section 4: Sign-fill path composition
 -- ============================================================================
@@ -303,12 +300,12 @@ theorem evm_sar_sign_fill_high_spec (sp base : Word)
   simp only [signExtend12_24] at h3
   rw [sar_off_12] at h3
   -- Frame and compose LD → LD/OR → LD/OR
-  have h1f := cpsTriple_frame_left base (base + 4) _ _ _
+  have h1f := cpsTriple_frameR
     ((.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ r10) **
      (sp ↦ₘ s0) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
      ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3))
     (by pcFree) h1
-  have h2f := cpsTriple_frame_left (base + 4) (base + 12) _ _ _
+  have h2f := cpsTriple_frameR
     ((.x0 ↦ᵣ (0 : Word)) **
      (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 24) ↦ₘ s3) **
      ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3))
@@ -316,7 +313,7 @@ theorem evm_sar_sign_fill_high_spec (sp base : Word)
   have h12 := cpsTriple_seq_with_perm_same_cr base (base + 4) (base + 12) _
     _ _ _ _
     (fun h hp => by xperm_hyp hp) h1f h2f
-  have h3f := cpsTriple_frame_left (base + 12) (base + 20) _ _ _
+  have h3f := cpsTriple_frameR
     ((.x0 ↦ᵣ (0 : Word)) **
      (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) **
      ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3))
@@ -329,12 +326,12 @@ theorem evm_sar_sign_fill_high_spec (sp base : Word)
   rw [sar_bne_target, sar_off_20] at hbne_raw
   have hbne := cpsBranch_extend_code (bne_sub_sarCode base) hbne_raw
   -- Eliminate ntaken path (s1|||s2|||s3 = 0 contradicts hhigh)
-  have hbne_taken := cpsBranch_elim_taken_strip_pure2 _ _ _ _ _ _ _ _ _ hbne
+  have hbne_taken := cpsBranch_takenStripPure2 hbne
     (fun hp hQf => by
       obtain ⟨_, _, _, _, _, h_rest⟩ := hQf
       exact absurd ((sepConj_pure_right _ _ _).mp h_rest).2 hhigh)
   -- Frame BNE with remaining state
-  have hbne_framed := cpsTriple_frame_left (base + 20) (base + 352) _ _ _
+  have hbne_framed := cpsTriple_frameR
     ((.x12 ↦ᵣ sp) ** (.x10 ↦ᵣ s3) **
      (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
      ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3))
@@ -348,7 +345,7 @@ theorem evm_sar_sign_fill_high_spec (sp base : Word)
     (sar_sign_fill_path_spec sp (s1 ||| s2 ||| s3) s3 v0 v1 v2 v3 (base + 352))
   rw [sar_off_352_28] at hsfp
   -- Frame sign-fill path with remaining state
-  have hsfp_framed := cpsTriple_frame_left (base + 352) (base + 380) _ _ _
+  have hsfp_framed := cpsTriple_frameR
     ((.x0 ↦ᵣ (0 : Word)) **
      (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3))
     (by pcFree) hsfp
@@ -357,7 +354,7 @@ theorem evm_sar_sign_fill_high_spec (sp base : Word)
     _ _ _ _
     (fun h hp => by xperm_hyp hp) hAB hsfp_framed
   -- Final: weaken regs to regOwn
-  exact cpsTriple_consequence _ _ _ _ _ _ _
+  exact cpsTriple_weaken
     (fun h hp => by xperm_hyp hp)
     (fun h hq => by
       have w0 := sepConj_mono_left (regIs_to_regOwn .x5 _) h
@@ -401,19 +398,19 @@ theorem evm_sar_sign_fill_large_spec (sp base : Word)
     (shr_ld_or_acc_spec sp (s1 ||| s2) s2 s3 24 (base + 12))
   simp only [signExtend12_24] at h3; rw [sar_off_12] at h3
   -- Frame + compose linear chain
-  have h1f := cpsTriple_frame_left base (base + 4) _ _ _
+  have h1f := cpsTriple_frameR
     ((.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ r10) **
      (sp ↦ₘ s0) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
      ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3))
     (by pcFree) h1
-  have h2f := cpsTriple_frame_left (base + 4) (base + 12) _ _ _
+  have h2f := cpsTriple_frameR
     ((.x0 ↦ᵣ (0 : Word)) **
      (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 24) ↦ₘ s3) **
      ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3))
     (by pcFree) h2
   have h12 := cpsTriple_seq_with_perm_same_cr base (base + 4) (base + 12) _ _ _ _ _
     (fun h hp => by xperm_hyp hp) h1f h2f
-  have h3f := cpsTriple_frame_left (base + 12) (base + 20) _ _ _
+  have h3f := cpsTriple_frameR
     ((.x0 ↦ᵣ (0 : Word)) **
      (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) **
      ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3))
@@ -424,12 +421,12 @@ theorem evm_sar_sign_fill_large_spec (sp base : Word)
   have hbne_raw := bne_spec_gen .x5 .x0 332 (s1 ||| s2 ||| s3) (0 : Word) (base + 20)
   rw [sar_bne_target, sar_off_20] at hbne_raw
   have hbne := cpsBranch_extend_code (bne_sub_sarCode base) hbne_raw
-  have hbne_ntaken := cpsBranch_elim_ntaken_strip_pure2 _ _ _ _ _ _ _ _ _ hbne
+  have hbne_ntaken := cpsBranch_ntakenStripPure2 hbne
     (fun hp hQt => by
       obtain ⟨_, _, _, _, _, h_rest⟩ := hQt
       exact ((sepConj_pure_right _ _ _).mp h_rest).2 hlow)
   -- Frame BNE(ntaken) with remaining state
-  have hbne_framed := cpsTriple_frame_left (base + 20) (base + 24) _ _ _
+  have hbne_framed := cpsTriple_frameR
     ((.x12 ↦ᵣ sp) ** (.x10 ↦ᵣ s3) **
      (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
      ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3))
@@ -440,19 +437,19 @@ theorem evm_sar_sign_fill_large_spec (sp base : Word)
   -- Step 5: LD x5 x12 0 at base+24 → extend to sarCode
   have hld_raw := ld_spec_gen .x5 .x12 sp (s1 ||| s2 ||| s3) s0 0 (base + 24) (by nofun)
   simp only [signExtend12_0] at hld_raw
-  rw [show sp + (0 : Word) = sp from by bv_omega, sar_off_24] at hld_raw
+  rw [word_add_zero, sar_off_24] at hld_raw
   have hld := cpsTriple_extend_code (ld_s0_sub_sarCode base) hld_raw
   -- Step 6: SLTIU at base+28 → extend to sarCode
   have hsltiu_raw := sltiu_spec_gen .x10 .x5 s3 s0 256 (base + 28) (by nofun)
   rw [sar_off_28] at hsltiu_raw
   have hsltiu := cpsTriple_extend_code (sltiu_sub_sarCode base) hsltiu_raw
   -- Frame + compose LD → SLTIU
-  have hld_f := cpsTriple_frame_left (base + 24) (base + 28) _ _ _
+  have hld_f := cpsTriple_frameR
     ((.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ s3) **
      ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
      ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3))
     (by pcFree) hld
-  have hsltiu_f := cpsTriple_frame_left (base + 28) (base + 32) _ _ _
+  have hsltiu_f := cpsTriple_frameR
     ((.x12 ↦ᵣ sp) ** (.x0 ↦ᵣ (0 : Word)) **
      (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
      ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3))
@@ -462,21 +459,21 @@ theorem evm_sar_sign_fill_large_spec (sp base : Word)
   -- Compose h1234 → h56
   have h123456 := cpsTriple_seq_with_perm_same_cr base (base + 24) (base + 32) _ _ _ _ _
     (fun h hp => by xperm_hyp hp) h1234 h56
-  -- Step 7: BEQ at base+32 offset 320 → eliminate ntaken (sltiu_val = 0 since s0 ≥ 256)
-  let sltiu_val := (if BitVec.ult s0 (signExtend12 (256 : BitVec 12)) then (1 : Word) else (0 : Word))
-  have hbeq_raw := beq_spec_gen .x10 .x0 320 sltiu_val (0 : Word) (base + 32)
+  -- Step 7: BEQ at base+32 offset 320 → eliminate ntaken (sltiuVal = 0 since s0 ≥ 256)
+  let sltiuVal := (if BitVec.ult s0 (signExtend12 (256 : BitVec 12)) then (1 : Word) else (0 : Word))
+  have hbeq_raw := beq_spec_gen .x10 .x0 320 sltiuVal (0 : Word) (base + 32)
   rw [sar_beq_target, sar_off_32] at hbeq_raw
   have hbeq := cpsBranch_extend_code (beq_sub_sarCode base) hbeq_raw
-  -- sltiu_val = 0 (since s0 ≥ 256 → ult is false)
-  have hsltiu_eq : sltiu_val = (0 : Word) := by
-    simp only [sltiu_val, hlarge]; decide
-  -- Eliminate ntaken: ntaken postcondition has ⌜sltiu_val ≠ 0⌝, but sltiu_val = 0
-  have hbeq_taken := cpsBranch_elim_taken_strip_pure2 _ _ _ _ _ _ _ _ _ hbeq
+  -- sltiuVal = 0 (since s0 ≥ 256 → ult is false)
+  have hsltiu_eq : sltiuVal = (0 : Word) := by
+    simp only [sltiuVal, hlarge]; decide
+  -- Eliminate ntaken: ntaken postcondition has ⌜sltiuVal ≠ 0⌝, but sltiuVal = 0
+  have hbeq_taken := cpsBranch_takenStripPure2 hbeq
     (fun hp hQf => by
       obtain ⟨_, _, _, _, _, h_rest⟩ := hQf
       exact ((sepConj_pure_right _ _ _).mp h_rest).2 hsltiu_eq)
   -- Frame BEQ(taken) with remaining state
-  have hbeq_framed := cpsTriple_frame_left (base + 32) (base + 352) _ _ _
+  have hbeq_framed := cpsTriple_frameR
     ((.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ s0) **
      (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
      ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3))
@@ -486,9 +483,9 @@ theorem evm_sar_sign_fill_large_spec (sp base : Word)
     (fun h hp => by xperm_hyp hp) h123456 hbeq_framed
   -- Step 8: Sign-fill path (base+352 → base+380)
   have hsfp := cpsTriple_extend_code (sign_fill_sub_sarCode base)
-    (sar_sign_fill_path_spec sp s0 sltiu_val v0 v1 v2 v3 (base + 352))
+    (sar_sign_fill_path_spec sp s0 sltiuVal v0 v1 v2 v3 (base + 352))
   rw [sar_off_352_28] at hsfp
-  have hsfp_framed := cpsTriple_frame_left (base + 352) (base + 380) _ _ _
+  have hsfp_framed := cpsTriple_frameR
     ((.x0 ↦ᵣ (0 : Word)) **
      (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3))
     (by pcFree) hsfp
@@ -496,12 +493,12 @@ theorem evm_sar_sign_fill_large_spec (sp base : Word)
   have hfull := cpsTriple_seq_with_perm_same_cr base (base + 352) (base + 380) _ _ _ _ _
     (fun h hp => by xperm_hyp hp) h1234567 hsfp_framed
   -- Final: weaken regs to regOwn
-  exact cpsTriple_consequence _ _ _ _ _ _ _
+  exact cpsTriple_weaken
     (fun h hp => by xperm_hyp hp)
     (fun h hq => by
       have w0 := sepConj_mono_left (regIs_to_regOwn .x5 _) h
         ((congrFun (show _ =
-          ((.x5 ↦ᵣ (BitVec.sshiftRight v3 63)) ** (.x10 ↦ᵣ sltiu_val) **
+          ((.x5 ↦ᵣ (BitVec.sshiftRight v3 63)) ** (.x10 ↦ᵣ sltiuVal) **
            (.x12 ↦ᵣ (sp + 32)) ** (.x0 ↦ᵣ (0 : Word)) **
            (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
            ((sp + 32) ↦ₘ (BitVec.sshiftRight v3 63)) ** ((sp + 40) ↦ₘ (BitVec.sshiftRight v3 63)) **
@@ -565,20 +562,20 @@ theorem sar_phase_c_spec_pure (v5 v10 : Word) (base : Word)
       ((.x5 ↦ᵣ v5) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ v10))
       e0 ((.x5 ↦ᵣ v5) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ v10) ** ⌜v5 = 0⌝)
       (base + 4) ((.x5 ↦ᵣ v5) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ v10) ** ⌜v5 ≠ 0⌝) :=
-    cpsBranch_consequence _ _ _ _ e0 _ _ (base + 4) _ _
+    cpsBranch_weaken
       (fun h hp => by xperm_hyp hp)
       (fun h hp => by xperm_hyp hp)
       (fun h hp => by xperm_hyp hp)
-      (cpsBranch_frame_left _ _ _ _ _ _ _ (.x10 ↦ᵣ v10) (by pcFree) beq0_raw)
+      (cpsBranch_frameR (.x10 ↦ᵣ v10) (by pcFree) beq0_raw)
   -- Step 1: cascade step at base+4
   have cs1_raw := shr_cascade_step_spec_pure v5 v10 1 100 (base + 4) e1 hc1
   rw [show (base + 4 : Word) + 8 = base + 12 from by bv_addr] at cs1_raw
-  have cs1f := cpsBranch_frame_left _ _ _ _ _ _ _ (⌜v5 ≠ (0 : Word)⌝) (pcFree_pure _) cs1_raw
+  have cs1f := cpsBranch_frameR (⌜v5 ≠ (0 : Word)⌝) (pcFree_pure _) cs1_raw
   have cs1_clean : cpsBranch (base + 4) cr_cs1
       ((.x5 ↦ᵣ v5) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ v10) ** ⌜v5 ≠ (0 : Word)⌝)
       e1 ((.x5 ↦ᵣ v5) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ ((0 : Word) + signExtend12 1)) ** ⌜v5 = (0 : Word) + signExtend12 1⌝)
       (base + 12) ((.x5 ↦ᵣ v5) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ ((0 : Word) + signExtend12 1)) ** ⌜v5 ≠ 0 ∧ v5 ≠ (0 : Word) + signExtend12 1⌝) :=
-    cpsBranch_consequence _ _ _ _ e1 _ _ (base + 12) _ _
+    cpsBranch_weaken
       (fun h hp => (congrFun (show _ = _ from by xperm) h).mp hp)
       (fun h hp => (sepConj_pure_right _ _ h).1 hp |>.1)
       (fun h hp => by
@@ -591,13 +588,13 @@ theorem sar_phase_c_spec_pure (v5 v10 : Word) (base : Word)
   -- Step 2: cascade step at base+12
   have cs2_raw := shr_cascade_step_spec_pure v5 ((0 : Word) + signExtend12 1) 2 36 (base + 12) e2 hc2
   rw [show (base + 12 : Word) + 8 = base + 20 from by bv_addr] at cs2_raw
-  have cs2f := cpsBranch_frame_left _ _ _ _ _ _ _
+  have cs2f := cpsBranch_frameR
     (⌜v5 ≠ 0 ∧ v5 ≠ (0 : Word) + signExtend12 1⌝) (pcFree_pure _) cs2_raw
   have cs2_clean : cpsBranch (base + 12) cr_cs2
       ((.x5 ↦ᵣ v5) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ ((0 : Word) + signExtend12 1)) ** ⌜v5 ≠ 0 ∧ v5 ≠ (0 : Word) + signExtend12 1⌝)
       e2 ((.x5 ↦ᵣ v5) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ ((0 : Word) + signExtend12 2)) ** ⌜v5 = (0 : Word) + signExtend12 2⌝)
       (base + 20) ((.x5 ↦ᵣ v5) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ ((0 : Word) + signExtend12 2)) ** ⌜v5 ≠ 0 ∧ v5 ≠ (0 : Word) + signExtend12 1 ∧ v5 ≠ (0 : Word) + signExtend12 2⌝) :=
-    cpsBranch_consequence _ _ _ _ e2 _ _ (base + 20) _ _
+    cpsBranch_weaken
       (fun h hp => (congrFun (show _ = _ from by xperm) h).mp hp)
       (fun h hp => (sepConj_pure_right _ _ h).1 hp |>.1)
       (fun h hp => by
@@ -652,9 +649,6 @@ theorem sar_phase_c_spec_pure (v5 v10 : Word) (base : Word)
 -- `cpsNBranch_extend_code` and `cpsNBranch_frame_left` live in
 -- `Rv64/CPSSpec.lean` (shared).
 
--- Address normalization for body path
-private theorem sar_off_64_20 (base : Word) : (base + 64 : Word) + 20 = base + 84 := by bv_omega
-
 -- `cpsTriple_strip_pure_and_convert` lives in `Rv64/CPSSpec.lean` (shared).
 
 -- ============================================================================
@@ -681,7 +675,7 @@ private theorem sar_bridge_merge (value : EvmWord) (s0 : Word)
     exact Nat.and_two_pow_sub_one_eq_mod s0.toNat 6
   have hbs_lt : bs.toNat < 64 := by omega
   have hL_div : s0.toNat / 64 = L := by
-    have h6 : (6 : BitVec 6).toNat = 6 := by decide
+    have h6 := bv6_toNat_6
     rw [← hL, h6]; simp [BitVec.toNat_ushiftRight]; omega
   -- sshiftRight agrees with ushiftRight for merge limbs
   rw [getLimb_sshiftRight_eq_ushiftRight value s0.toNat i (by omega)]
@@ -718,7 +712,7 @@ private theorem sar_bridge_last (value : EvmWord) (s0 : Word)
     rw [BitVec.toNat_and, show (63 : BitVec 64).toNat = 63 from by decide]
     exact Nat.and_two_pow_sub_one_eq_mod s0.toNat 6
   have hL_div : s0.toNat / 64 = L := by
-    have h6 : (6 : BitVec 6).toNat = 6 := by decide
+    have h6 := bv6_toNat_6
     rw [← hL, h6]; simp [BitVec.toNat_ushiftRight]; omega
   rw [getLimb_sshiftRight_last value s0.toNat i (by omega)]
   congr 1; omega
@@ -735,7 +729,7 @@ private theorem sar_bridge_sign (value : EvmWord) (s0 : Word)
     getLimb result i := by
   rw [hresult]
   have hL_div : s0.toNat / 64 = L := by
-    have h6 : (6 : BitVec 6).toNat = 6 := by decide
+    have h6 := bv6_toNat_6
     rw [← hL, h6]; simp [BitVec.toNat_ushiftRight]; omega
   -- getLimb (sshiftRight value n) i = sshiftRight (getLimb value 3) 63 for sign limbs
   rw [getLimb_sshiftRight_sign' value s0.toNat i (by omega)]
@@ -805,7 +799,7 @@ theorem evm_sar_body_evmWord_spec (sp base : Word)
        (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
        ((sp + 32) ↦ₘ getLimb result 0) ** ((sp + 40) ↦ₘ getLimb result 1) **
        ((sp + 48) ↦ₘ getLimb result 2) ** ((sp + 56) ↦ₘ getLimb result 3)) by
-    exact cpsTriple_consequence _ _ _ _ _ _ _
+    exact cpsTriple_weaken
       (fun h hp => by
         unfold evmWordIs at hp
         simp only [← EvmWord.getLimb_as_getLimbN_0, ← EvmWord.getLimb_as_getLimbN_1,
@@ -834,19 +828,19 @@ theorem evm_sar_body_evmWord_spec (sp base : Word)
   have h3 := cpsTriple_extend_code (ld_or_24_sub_sarCode base)
     (shr_ld_or_acc_spec sp (s1 ||| s2) s2 s3 24 (base + 12))
   simp only [signExtend12_24] at h3; rw [sar_off_12] at h3
-  have h1f := cpsTriple_frame_left base (base + 4) _ _ _
+  have h1f := cpsTriple_frameR
     ((.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ r10) ** (.x6 ↦ᵣ r6) ** (.x7 ↦ᵣ r7) ** (.x11 ↦ᵣ r11) **
      (sp ↦ₘ s0) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
      ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3))
     (by pcFree) h1
-  have h2f := cpsTriple_frame_left (base + 4) (base + 12) _ _ _
+  have h2f := cpsTriple_frameR
     ((.x0 ↦ᵣ (0 : Word)) ** (.x6 ↦ᵣ r6) ** (.x7 ↦ᵣ r7) ** (.x11 ↦ᵣ r11) **
      (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 24) ↦ₘ s3) **
      ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3))
     (by pcFree) h2
   have h12 := cpsTriple_seq_with_perm_same_cr base (base + 4) (base + 12) _ _ _ _ _
     (fun h hp => by xperm_hyp hp) h1f h2f
-  have h3f := cpsTriple_frame_left (base + 12) (base + 20) _ _ _
+  have h3f := cpsTriple_frameR
     ((.x0 ↦ᵣ (0 : Word)) ** (.x6 ↦ᵣ r6) ** (.x7 ↦ᵣ r7) ** (.x11 ↦ᵣ r11) **
      (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) **
      ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3))
@@ -857,11 +851,11 @@ theorem evm_sar_body_evmWord_spec (sp base : Word)
   have hbne_raw := bne_spec_gen .x5 .x0 332 (s1 ||| s2 ||| s3) (0 : Word) (base + 20)
   rw [sar_bne_target, sar_off_20] at hbne_raw
   have hbne := cpsBranch_extend_code (bne_sub_sarCode base) hbne_raw
-  have hbne_ntaken := cpsBranch_elim_ntaken_strip_pure2 _ _ _ _ _ _ _ _ _ hbne
+  have hbne_ntaken := cpsBranch_ntakenStripPure2 hbne
     (fun hp hQt => by
       obtain ⟨_, _, _, _, _, h_rest⟩ := hQt
       exact ((sepConj_pure_right _ _ _).mp h_rest).2 hhigh_zero)
-  have hbne_framed := cpsTriple_frame_left (base + 20) (base + 24) _ _ _
+  have hbne_framed := cpsTriple_frameR
     ((.x12 ↦ᵣ sp) ** (.x10 ↦ᵣ s3) ** (.x6 ↦ᵣ r6) ** (.x7 ↦ᵣ r7) ** (.x11 ↦ᵣ r11) **
      (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
      ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3))
@@ -871,18 +865,18 @@ theorem evm_sar_body_evmWord_spec (sp base : Word)
   -- LD x5 x12 0 at base+24
   have hld_raw := ld_spec_gen .x5 .x12 sp (s1 ||| s2 ||| s3) s0 0 (base + 24) (by nofun)
   simp only [signExtend12_0] at hld_raw
-  rw [show sp + (0 : Word) = sp from by bv_omega, sar_off_24] at hld_raw
+  rw [word_add_zero, sar_off_24] at hld_raw
   have hld := cpsTriple_extend_code (ld_s0_sub_sarCode base) hld_raw
   -- SLTIU at base+28
   have hsltiu_raw := sltiu_spec_gen .x10 .x5 s3 s0 256 (base + 28) (by nofun)
   rw [sar_off_28] at hsltiu_raw
   have hsltiu := cpsTriple_extend_code (sltiu_sub_sarCode base) hsltiu_raw
-  have hld_f := cpsTriple_frame_left (base + 24) (base + 28) _ _ _
+  have hld_f := cpsTriple_frameR
     ((.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ s3) ** (.x6 ↦ᵣ r6) ** (.x7 ↦ᵣ r7) ** (.x11 ↦ᵣ r11) **
      ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
      ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3))
     (by pcFree) hld
-  have hsltiu_f := cpsTriple_frame_left (base + 28) (base + 32) _ _ _
+  have hsltiu_f := cpsTriple_frameR
     ((.x12 ↦ᵣ sp) ** (.x0 ↦ᵣ (0 : Word)) ** (.x6 ↦ᵣ r6) ** (.x7 ↦ᵣ r7) ** (.x11 ↦ᵣ r11) **
      (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
      ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3))
@@ -891,18 +885,18 @@ theorem evm_sar_body_evmWord_spec (sp base : Word)
     (fun h hp => by xperm_hyp hp) hld_f hsltiu_f
   have h123456 := cpsTriple_seq_with_perm_same_cr base (base + 24) (base + 32) _ _ _ _ _
     (fun h hp => by xperm_hyp hp) h1234 h56
-  -- BEQ at base+32: eliminate TAKEN (sltiu_val=1 since s0<256, so 1=0 is absurd)
-  let sltiu_val := (if BitVec.ult s0 (signExtend12 (256 : BitVec 12)) then (1 : Word) else (0 : Word))
-  have hsltiu_eq : sltiu_val = (1 : Word) := by simp only [sltiu_val, hlt_s0]; decide
-  have hbeq_raw := beq_spec_gen .x10 .x0 320 sltiu_val (0 : Word) (base + 32)
+  -- BEQ at base+32: eliminate TAKEN (sltiuVal=1 since s0<256, so 1=0 is absurd)
+  let sltiuVal := (if BitVec.ult s0 (signExtend12 (256 : BitVec 12)) then (1 : Word) else (0 : Word))
+  have hsltiu_eq : sltiuVal = (1 : Word) := by simp only [sltiuVal, hlt_s0]; decide
+  have hbeq_raw := beq_spec_gen .x10 .x0 320 sltiuVal (0 : Word) (base + 32)
   rw [sar_beq_target, sar_off_32] at hbeq_raw
   have hbeq := cpsBranch_extend_code (beq_sub_sarCode base) hbeq_raw
-  have hbeq_ntaken := cpsBranch_elim_ntaken_strip_pure2 _ _ _ _ _ _ _ _ _ hbeq
+  have hbeq_ntaken := cpsBranch_ntakenStripPure2 hbeq
     (fun hp hQt => by
       obtain ⟨_, _, _, _, _, h_rest⟩ := hQt
       have heq := ((sepConj_pure_right _ _ _).mp h_rest).2
       simp [hsltiu_eq] at heq)
-  have hbeq_framed := cpsTriple_frame_left (base + 32) (base + 36) _ _ _
+  have hbeq_framed := cpsTriple_frameR
     ((.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ s0) ** (.x6 ↦ᵣ r6) ** (.x7 ↦ᵣ r7) ** (.x11 ↦ᵣ r11) **
      (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
      ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3))
@@ -910,51 +904,51 @@ theorem evm_sar_body_evmWord_spec (sp base : Word)
   have hphaseA := cpsTriple_seq_with_perm_same_cr base (base + 32) (base + 36) _ _ _ _ _
     (fun h hp => by xperm_hyp hp) h123456 hbeq_framed
   -- Phase B: base+36 -> base+64
-  let bit_shift := s0 &&& signExtend12 63
-  let limb_shift := s0 >>> (6 : BitVec 6).toNat
-  let cond := if BitVec.ult (0 : Word) bit_shift then (1 : Word) else 0
+  let bitShift := s0 &&& signExtend12 63
+  let limbShift := s0 >>> (6 : BitVec 6).toNat
+  let cond := if BitVec.ult (0 : Word) bitShift then (1 : Word) else 0
   let mask := (0 : Word) - cond
-  let anti_shift := (64 : Word) - bit_shift
+  let antiShift := (64 : Word) - bitShift
   have hphaseB_raw := shr_phase_b_spec s0 sp r6 r7 r11 (base + 36)
   have hphaseB := cpsTriple_extend_code (phase_b_sub_sarCode base) hphaseB_raw
   rw [sar_off_36_28] at hphaseB
-  rw [sar_off_sp32] at hphaseB
-  have hphaseB_f := cpsTriple_frame_left (base + 36) (base + 64) _ _ _
-    ((.x10 ↦ᵣ sltiu_val) **
+  simp only [signExtend12_32] at hphaseB
+  have hphaseB_f := cpsTriple_frameR
+    ((.x10 ↦ᵣ sltiuVal) **
      (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
      ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3))
     (by pcFree) hphaseB
   have hphaseAB := cpsTriple_seq_with_perm_same_cr base (base + 36) (base + 64) _ _ _ _ _
     (fun h hp => by xperm_hyp hp) hphaseA hphaseB_f
   -- Phase C: cascade dispatch at base+64 (with pure dispatch facts)
-  have hphaseC_raw := sar_phase_c_spec_pure limb_shift sltiu_val (base + 64)
+  have hphaseC_raw := sar_phase_c_spec_pure limbShift sltiuVal (base + 64)
     (base + 252) (base + 172) (base + 116) (base + 84)
     (sar_c_e0 base) (sar_c_e1 base) (sar_c_e2 base) (sar_c_e3 base)
   have hphaseC := cpsNBranch_extend_code (sar_phase_c_sub_sarCode base) hphaseC_raw
   -- Body specs extended to sarCode
   have hbody3 := cpsTriple_extend_code (sar_body_3_sub_sarCode base)
-    (sar_body_3_spec (sp + 32) limb_shift ((0 : Word) + signExtend12 2) bit_shift anti_shift mask
+    (sar_body_3_spec (sp + 32) limbShift ((0 : Word) + signExtend12 2) bitShift antiShift mask
       v0 v1 v2 v3 (base + 84) (base + 380) 268 (sar_body3_exit base))
   have hbody2 := cpsTriple_extend_code (sar_body_2_sub_sarCode base)
-    (sar_body_2_spec (sp + 32) limb_shift ((0 : Word) + signExtend12 2) bit_shift anti_shift mask
+    (sar_body_2_spec (sp + 32) limbShift ((0 : Word) + signExtend12 2) bitShift antiShift mask
       v0 v1 v2 v3 (base + 116) (base + 380) 212 (sar_body2_exit base))
   have hbody1 := cpsTriple_extend_code (sar_body_1_sub_sarCode base)
-    (sar_body_1_spec (sp + 32) limb_shift ((0 : Word) + signExtend12 1) bit_shift anti_shift mask
+    (sar_body_1_spec (sp + 32) limbShift ((0 : Word) + signExtend12 1) bitShift antiShift mask
       v0 v1 v2 v3 (base + 172) (base + 380) 132 (sar_body1_exit base))
   have hbody0 := cpsTriple_extend_code (sar_body_0_sub_sarCode base)
-    (sar_body_0_spec (sp + 32) limb_shift sltiu_val bit_shift anti_shift mask
+    (sar_body_0_spec (sp + 32) limbShift sltiuVal bitShift antiShift mask
       v0 v1 v2 v3 (base + 252) (base + 380) 32 (sar_body0_exit base))
-  -- Frame each body with (x0=0 ** shift_mem)
-  have hbody3_f := cpsTriple_frame_left (base + 84) (base + 380) _ _ _
+  -- Frame each body with (x0=0 ** shiftMem)
+  have hbody3_f := cpsTriple_frameR
     ((.x0 ↦ᵣ (0 : Word)) ** (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3))
     (by pcFree) hbody3
-  have hbody2_f := cpsTriple_frame_left (base + 116) (base + 380) _ _ _
+  have hbody2_f := cpsTriple_frameR
     ((.x0 ↦ᵣ (0 : Word)) ** (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3))
     (by pcFree) hbody2
-  have hbody1_f := cpsTriple_frame_left (base + 172) (base + 380) _ _ _
+  have hbody1_f := cpsTriple_frameR
     ((.x0 ↦ᵣ (0 : Word)) ** (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3))
     (by pcFree) hbody1
-  have hbody0_f := cpsTriple_frame_left (base + 252) (base + 380) _ _ _
+  have hbody0_f := cpsTriple_frameR
     ((.x0 ↦ᵣ (0 : Word)) ** (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3))
     (by pcFree) hbody0
   have ha40' : (sp + 32 : Word) + 8 = sp + 40 := by bv_omega
@@ -979,13 +973,13 @@ theorem evm_sar_body_evmWord_spec (sp base : Word)
     have w5 := sepConj_mono_right (sepConj_mono_right (sepConj_mono_right (sepConj_mono_right (sepConj_mono_right (sepConj_mono_left (regIs_to_regOwn .x11 _)))))) h w4
     exact (congrFun (show _ = _ from by xperm) h).mp w5
   -- Apply weakening to each body (keep concrete mem values)
-  have hbody0_w := cpsTriple_consequence _ _ _ _ _ _ _
+  have hbody0_w := cpsTriple_weaken
     (fun h hp => hp) (fun h hq => body_post_weaken _ _ _ _ _ _ _ _ _ h (by xperm_hyp hq)) hbody0_f
-  have hbody1_w := cpsTriple_consequence _ _ _ _ _ _ _
+  have hbody1_w := cpsTriple_weaken
     (fun h hp => hp) (fun h hq => body_post_weaken _ _ _ _ _ _ _ _ _ h (by xperm_hyp hq)) hbody1_f
-  have hbody2_w := cpsTriple_consequence _ _ _ _ _ _ _
+  have hbody2_w := cpsTriple_weaken
     (fun h hp => hp) (fun h hq => body_post_weaken _ _ _ _ _ _ _ _ _ h (by xperm_hyp hq)) hbody2_f
-  have hbody3_w := cpsTriple_consequence _ _ _ _ _ _ _
+  have hbody3_w := cpsTriple_weaken
     (fun h hp => hp) (fun h hq => body_post_weaken _ _ _ _ _ _ _ _ _ h (by xperm_hyp hq)) hbody3_f
   -- Bitvector bridge: common facts
   have hshift_toNat : shift.toNat = s0.toNat :=
@@ -999,7 +993,7 @@ theorem evm_sar_body_evmWord_spec (sp base : Word)
      ((sp + 48) ↦ₘ getLimb result 2) ** ((sp + 56) ↦ₘ getLimb result 3)
   -- Body 0 (L=0): merge(0,1,2) + last(3)
   have hbody0_ev := @cpsTriple_strip_pure_and_convert _ _ _ _ _ resultPost _
-    hbody0_w (fun (hls : limb_shift = 0) h hq => by
+    hbody0_w (fun (hls : limbShift = 0) h hq => by
       have hresult : result = BitVec.sshiftRight value s0.toNat := by
         show BitVec.sshiftRight value shift.toNat = BitVec.sshiftRight value s0.toNat; congr 1
       have hL : (s0 >>> (6 : BitVec 6).toNat).toNat = 0 := congrArg BitVec.toNat hls
@@ -1015,7 +1009,7 @@ theorem evm_sar_body_evmWord_spec (sp base : Word)
       rw [← eq0, ← eq1, ← eq2, ← eq3]; exact hq)
   -- Body 1 (L=1): merge(0,1) + last(2) + sign(3)
   have hbody1_ev := @cpsTriple_strip_pure_and_convert _ _ _ _ _ resultPost _
-    hbody1_w (fun (hls : limb_shift = (0 : Word) + signExtend12 1) h hq => by
+    hbody1_w (fun (hls : limbShift = (0 : Word) + signExtend12 1) h hq => by
       have hresult : result = BitVec.sshiftRight value s0.toNat := by
         show BitVec.sshiftRight value shift.toNat = BitVec.sshiftRight value s0.toNat; congr 1
       have hL : (s0 >>> (6 : BitVec 6).toNat).toNat = 1 := by
@@ -1025,7 +1019,7 @@ theorem evm_sar_body_evmWord_spec (sp base : Word)
       have eq0 := sar_bridge_merge value s0 result hresult 1 0 hL (by omega) (by omega)
       have eq1 := sar_bridge_merge value s0 result hresult 1 1 hL (by omega) (by omega)
       have eq2 := sar_bridge_last value s0 result hresult 1 2 hL (by omega)
-      have eq3 := sar_bridge_sign value s0 result hresult 1 3 hL (by omega) bit_shift rfl
+      have eq3 := sar_bridge_sign value s0 result hresult 1 3 hL (by omega) bitShift rfl
       show ((.x12 ↦ᵣ (sp + 32)) ** (regOwn .x5) ** (.x0 ↦ᵣ (0 : Word)) ** (regOwn .x10) **
            (regOwn .x6) ** (regOwn .x7) ** (regOwn .x11) **
            (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
@@ -1034,7 +1028,7 @@ theorem evm_sar_body_evmWord_spec (sp base : Word)
       rw [← eq0, ← eq1, ← eq2, ← eq3]; exact hq)
   -- Body 2 (L=2): merge(0) + last(1) + sign(2,3)
   have hbody2_ev := @cpsTriple_strip_pure_and_convert _ _ _ _ _ resultPost _
-    hbody2_w (fun (hls : limb_shift = (0 : Word) + signExtend12 2) h hq => by
+    hbody2_w (fun (hls : limbShift = (0 : Word) + signExtend12 2) h hq => by
       have hresult : result = BitVec.sshiftRight value s0.toNat := by
         show BitVec.sshiftRight value shift.toNat = BitVec.sshiftRight value s0.toNat; congr 1
       have hL : (s0 >>> (6 : BitVec 6).toNat).toNat = 2 := by
@@ -1043,8 +1037,8 @@ theorem evm_sar_body_evmWord_spec (sp base : Word)
         exact this
       have eq0 := sar_bridge_merge value s0 result hresult 2 0 hL (by omega) (by omega)
       have eq1 := sar_bridge_last value s0 result hresult 2 1 hL (by omega)
-      have eq2 := sar_bridge_sign value s0 result hresult 2 2 hL (by omega) bit_shift rfl
-      have eq3 := sar_bridge_sign value s0 result hresult 2 3 hL (by omega) bit_shift rfl
+      have eq2 := sar_bridge_sign value s0 result hresult 2 2 hL (by omega) bitShift rfl
+      have eq3 := sar_bridge_sign value s0 result hresult 2 3 hL (by omega) bitShift rfl
       show ((.x12 ↦ᵣ (sp + 32)) ** (regOwn .x5) ** (.x0 ↦ᵣ (0 : Word)) ** (regOwn .x10) **
            (regOwn .x6) ** (regOwn .x7) ** (regOwn .x11) **
            (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
@@ -1053,33 +1047,33 @@ theorem evm_sar_body_evmWord_spec (sp base : Word)
       rw [← eq0, ← eq1, ← eq2, ← eq3]; exact hq)
   -- Body 3 (L=3): last(0) + sign(1,2,3)
   have hbody3_ev := @cpsTriple_strip_pure_and_convert _ _ _ _ _ resultPost _
-    hbody3_w (fun (hls : limb_shift ≠ 0 ∧ limb_shift ≠ (0 : Word) + signExtend12 1 ∧
-                limb_shift ≠ (0 : Word) + signExtend12 2) h hq => by
+    hbody3_w (fun (hls : limbShift ≠ 0 ∧ limbShift ≠ (0 : Word) + signExtend12 1 ∧
+                limbShift ≠ (0 : Word) + signExtend12 2) h hq => by
       have hresult : result = BitVec.sshiftRight value s0.toNat := by
         show BitVec.sshiftRight value shift.toNat = BitVec.sshiftRight value s0.toNat; congr 1
       have hL : (s0 >>> (6 : BitVec 6).toNat).toNat = 3 := by
         obtain ⟨h0, h1, h2⟩ := hls
-        have h6 : (6 : BitVec 6).toNat = 6 := by decide
-        have hlt4 : limb_shift.toNat < 4 := by
+        have h6 := bv6_toNat_6
+        have hlt4 : limbShift.toNat < 4 := by
           show (s0 >>> (6 : BitVec 6).toNat).toNat < 4
           rw [h6]; simp [BitVec.toNat_ushiftRight]; omega
-        have hn0 : limb_shift.toNat ≠ 0 :=
+        have hn0 : limbShift.toNat ≠ 0 :=
           fun hc => h0 (BitVec.eq_of_toNat_eq (by simpa using hc))
-        have hn1 : limb_shift.toNat ≠ 1 :=
+        have hn1 : limbShift.toNat ≠ 1 :=
           fun hc => h1 (BitVec.eq_of_toNat_eq (by
-            show limb_shift.toNat = ((0 : Word) + signExtend12 1).toNat
+            show limbShift.toNat = ((0 : Word) + signExtend12 1).toNat
             simp only [zero_add_se12_1_toNat]
             exact hc))
-        have hn2 : limb_shift.toNat ≠ 2 :=
+        have hn2 : limbShift.toNat ≠ 2 :=
           fun hc => h2 (BitVec.eq_of_toNat_eq (by
-            show limb_shift.toNat = ((0 : Word) + signExtend12 2).toNat
+            show limbShift.toNat = ((0 : Word) + signExtend12 2).toNat
             simp only [zero_add_se12_2_toNat]
             exact hc))
-        show limb_shift.toNat = 3; omega
+        show limbShift.toNat = 3; omega
       have eq0 := sar_bridge_last value s0 result hresult 3 0 hL (by omega)
-      have eq1 := sar_bridge_sign value s0 result hresult 3 1 hL (by omega) bit_shift rfl
-      have eq2 := sar_bridge_sign value s0 result hresult 3 2 hL (by omega) bit_shift rfl
-      have eq3 := sar_bridge_sign value s0 result hresult 3 3 hL (by omega) bit_shift rfl
+      have eq1 := sar_bridge_sign value s0 result hresult 3 1 hL (by omega) bitShift rfl
+      have eq2 := sar_bridge_sign value s0 result hresult 3 2 hL (by omega) bitShift rfl
+      have eq3 := sar_bridge_sign value s0 result hresult 3 3 hL (by omega) bitShift rfl
       show ((.x12 ↦ᵣ (sp + 32)) ** (regOwn .x5) ** (.x0 ↦ᵣ (0 : Word)) ** (regOwn .x10) **
            (regOwn .x6) ** (regOwn .x7) ** (regOwn .x11) **
            (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
@@ -1088,7 +1082,7 @@ theorem evm_sar_body_evmWord_spec (sp base : Word)
       rw [← eq0, ← eq1, ← eq2, ← eq3]; exact hq)
   -- Frame Phase C and merge with body specs
   have hphaseC_framed := cpsNBranch_frame_left
-    (F := (.x6 ↦ᵣ bit_shift) ** (.x7 ↦ᵣ anti_shift) ** (.x11 ↦ᵣ mask) ** (.x12 ↦ᵣ (sp + 32)) **
+    (F := (.x6 ↦ᵣ bitShift) ** (.x7 ↦ᵣ antiShift) ** (.x11 ↦ᵣ mask) ** (.x12 ↦ᵣ (sp + 32)) **
           (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
           ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3))
     (by pcFree) hphaseC
@@ -1098,13 +1092,13 @@ theorem evm_sar_body_evmWord_spec (sp base : Word)
     (fun exit hmem => by
       simp only [List.mem_cons, List.mem_nil_iff, or_false] at hmem
       rcases hmem with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
-      · exact cpsTriple_consequence _ _ _ _ _ _ _
+      · exact cpsTriple_weaken
           (fun h hp => by xperm_hyp hp) (fun _ hq => hq) hbody0_ev
-      · exact cpsTriple_consequence _ _ _ _ _ _ _
+      · exact cpsTriple_weaken
           (fun h hp => by xperm_hyp hp) (fun _ hq => hq) hbody1_ev
-      · exact cpsTriple_consequence _ _ _ _ _ _ _
+      · exact cpsTriple_weaken
           (fun h hp => by xperm_hyp hp) (fun _ hq => hq) hbody2_ev
-      · exact cpsTriple_consequence _ _ _ _ _ _ _
+      · exact cpsTriple_weaken
           (fun h hp => by xperm_hyp hp) (fun _ hq => hq) hbody3_ev)
   -- Flatten hphaseAB postcondition for composition
   have hphaseAB' : cpsTriple base (base + 64) (sarCode base)
@@ -1112,12 +1106,12 @@ theorem evm_sar_body_evmWord_spec (sp base : Word)
        (.x6 ↦ᵣ r6) ** (.x7 ↦ᵣ r7) ** (.x11 ↦ᵣ r11) **
        (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
        ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3))
-      ((.x5 ↦ᵣ limb_shift) ** (.x6 ↦ᵣ bit_shift) ** (.x0 ↦ᵣ (0 : Word)) **
-       (.x11 ↦ᵣ mask) ** (.x7 ↦ᵣ anti_shift) ** (.x12 ↦ᵣ (sp + 32)) **
-       (.x10 ↦ᵣ sltiu_val) **
+      ((.x5 ↦ᵣ limbShift) ** (.x6 ↦ᵣ bitShift) ** (.x0 ↦ᵣ (0 : Word)) **
+       (.x11 ↦ᵣ mask) ** (.x7 ↦ᵣ antiShift) ** (.x12 ↦ᵣ (sp + 32)) **
+       (.x10 ↦ᵣ sltiuVal) **
        (sp ↦ₘ s0) ** ((sp + 8) ↦ₘ s1) ** ((sp + 16) ↦ₘ s2) ** ((sp + 24) ↦ₘ s3) **
        ((sp + 32) ↦ₘ v0) ** ((sp + 40) ↦ₘ v1) ** ((sp + 48) ↦ₘ v2) ** ((sp + 56) ↦ₘ v3)) :=
-    cpsTriple_consequence _ _ _ _ _ _ _
+    cpsTriple_weaken
       (fun h hp => by xperm_hyp hp)
       (fun h hq => by xperm_hyp hq)
       hphaseAB

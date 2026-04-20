@@ -25,8 +25,8 @@ abbrev evm_iszero_code (base : Word) : CodeReq :=
 theorem evm_iszero_spec (sp : Word) (base : Word)
     (a0 a1 a2 a3 : Word)
     (v7 v6 : Word) :
-    let or_all := a0 ||| a1 ||| a2 ||| a3
-    let result := if BitVec.ult or_all (1 : Word) then (1 : Word) else 0
+    let orAll := a0 ||| a1 ||| a2 ||| a3
+    let result := if BitVec.ult orAll (1 : Word) then (1 : Word) else 0
     let code := evm_iszero_code base
     cpsTriple base (base + 48) code
       (-- Registers + memory
@@ -35,7 +35,7 @@ theorem evm_iszero_spec (sp : Word) (base : Word)
       (-- Registers + memory (updated)
        (.x12 ↦ᵣ sp) ** (.x7 ↦ᵣ result) ** (.x6 ↦ᵣ a3) **
        (sp ↦ₘ result) ** ((sp + 8) ↦ₘ 0) ** ((sp + 16) ↦ₘ 0) ** ((sp + 24) ↦ₘ 0)) := by
-  intro or_all result
+  intro orAll result
   -- LD x7 x12 0 (load limb 0 into x7)
   have L0 := ld_spec_gen .x7 .x12 sp v7 a0 0 base (by nofun)
   -- OR limbs 1-3
@@ -61,8 +61,8 @@ theorem evm_iszero_spec (sp : Word) (base : Word)
 /-- Stack-level 256-bit EVM ISZERO: operates on an EvmWord via evmWordIs. -/
 theorem evm_iszero_stack_spec (sp base : Word)
     (a : EvmWord) (v7 v6 : Word) :
-    let or_all := a.getLimbN 0 ||| a.getLimbN 1 ||| a.getLimbN 2 ||| a.getLimbN 3
-    let result := if BitVec.ult or_all 1 then (1 : Word) else 0
+    let orAll := a.getLimbN 0 ||| a.getLimbN 1 ||| a.getLimbN 2 ||| a.getLimbN 3
+    let result := if BitVec.ult orAll 1 then (1 : Word) else 0
     let code := evm_iszero_code base
     cpsTriple base (base + 48) code
       (-- Registers + memory
@@ -71,11 +71,11 @@ theorem evm_iszero_stack_spec (sp base : Word)
       (-- Registers + memory (updated)
        (.x12 ↦ᵣ sp) ** (.x7 ↦ᵣ result) ** (.x6 ↦ᵣ a.getLimbN 3) **
        evmWordIs sp (if a = 0 then 1 else 0)) := by
-  intro or_all result
+  intro orAll result
   have h_main := evm_iszero_spec sp base
     (a.getLimbN 0) (a.getLimbN 1) (a.getLimbN 2) (a.getLimbN 3)
     v7 v6
-  exact cpsTriple_consequence _ _ _ _ _ _ _
+  exact cpsTriple_weaken
     (fun h hp => by
       simp only [evmWordIs] at hp
       xperm_hyp hp)
@@ -84,7 +84,7 @@ theorem evm_iszero_stack_spec (sp base : Word)
       simp only [EvmWord.getLimbN_ite, EvmWord.getLimbN_zero,
                  EvmWord.getLimbN_one_zero, EvmWord.getLimbN_one_one,
                  EvmWord.getLimbN_one_two, EvmWord.getLimbN_one_three,
-                 ite_true, ite_false, ite_self,
+                 ite_self,
                  ← EvmWord.iszero_or_reduce_correct]
       simp only [EvmWord.getLimb_as_getLimbN_0, EvmWord.getLimb_as_getLimbN_1,
                  EvmWord.getLimb_as_getLimbN_2, EvmWord.getLimb_as_getLimbN_3]

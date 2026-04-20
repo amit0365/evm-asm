@@ -60,45 +60,29 @@ theorem n3_qa1 (sp : Word) :
 theorem n3_qa0 (sp : Word) :
     sp + signExtend12 4088 - (0 : Word) <<< (3 : BitVec 6).toNat = sp + signExtend12 4088 := by
   divmod_addr
-theorem n3_uhi_1_addr (sp : Word) :
-    sp + signExtend12 4056 - (1 + (3 : Word)) <<< (3 : BitVec 6).toNat = sp + signExtend12 4024 := by
-  divmod_addr
-theorem n3_ulo_1_addr (sp : Word) :
-    (sp + signExtend12 4056 - (1 + (3 : Word)) <<< (3 : BitVec 6).toNat) + 8 = sp + signExtend12 4032 := by
-  divmod_addr
-theorem n3_vtop_addr (sp : Word) :
-    sp + ((3 : Word) + signExtend12 4095) <<< (3 : BitVec 6).toNat + signExtend12 32 = sp + 48 := by
-  divmod_addr
-theorem n3_uhi_0_addr (sp : Word) :
-    sp + signExtend12 4056 - (0 + (3 : Word)) <<< (3 : BitVec 6).toNat = sp + signExtend12 4032 := by
-  divmod_addr
-theorem n3_ulo_0_addr (sp : Word) :
-    (sp + signExtend12 4056 - (0 + (3 : Word)) <<< (3 : BitVec 6).toNat) + 8 = sp + signExtend12 4040 := by
-  divmod_addr
-
 -- ============================================================================
 -- Lift unified n=3  loop from sharedDivModCode to divCode
 -- ============================================================================
 
 /-- Lift the unified n=3 2-iteration  loop spec from sharedDivModCode to divCode. -/
 theorem divK_loop_n3_unified_divCode (bltu_1 bltu_0 : Bool)
-    (sp j_old v5_old v6_old v7_old v10_old v11_old v2_old
-     v0 v1 v2 v3 u0 u1 u2 u3 u_top u0_orig q1_old q0_old : Word)
-    (ret_mem d_mem dlo_mem scratch_un0 : Word)
+    (sp jOld v5Old v6Old v7Old v10Old v11Old v2Old
+     v0 v1 v2 v3 u0 u1 u2 u3 uTop u0Orig q1Old q0Old : Word)
+    (retMem dMem dloMem scratch_un0 : Word)
     (base : Word)
     (halign : ((base + 516) + signExtend12 (0 : BitVec 12)) &&& ~~~(1 : Word) = base + 516)
     (hbltu_1 : bltu_1 = BitVec.ult u3 v2)
-    (hbltu_0 : bltu_0 = BitVec.ult (iterN3 bltu_1 v0 v1 v2 v3 u0 u1 u2 u3 u_top).2.2.2.1 v2)
+    (hbltu_0 : bltu_0 = BitVec.ult (iterN3 bltu_1 v0 v1 v2 v3 u0 u1 u2 u3 uTop).2.2.2.1 v2)
     (hcarry2 : Carry2NzAll v0 v1 v2 v3) :
     cpsTriple (base + loopBodyOff) (base + denormOff) (divCode base)
-      (loopN3PreWithScratch sp j_old v5_old v6_old v7_old v10_old v11_old v2_old
-        v0 v1 v2 v3 u0 u1 u2 u3 u_top u0_orig q1_old q0_old
-        ret_mem d_mem dlo_mem scratch_un0)
-      (loopN3UnifiedPost bltu_1 bltu_0 sp base v0 v1 v2 v3 u0 u1 u2 u3 u_top u0_orig
-        ret_mem d_mem dlo_mem scratch_un0) :=
+      (loopN3PreWithScratch sp jOld v5Old v6Old v7Old v10Old v11Old v2Old
+        v0 v1 v2 v3 u0 u1 u2 u3 uTop u0Orig q1Old q0Old
+        retMem dMem dloMem scratch_un0)
+      (loopN3UnifiedPost bltu_1 bltu_0 sp base v0 v1 v2 v3 u0 u1 u2 u3 uTop u0Orig
+        retMem dMem dloMem scratch_un0) :=
   cpsTriple_extend_code (hmono := sharedDivModCode_sub_divCode base)
     (divK_loop_n3_unified_spec bltu_1 bltu_0
-      sp j_old v5_old v6_old v7_old v10_old v11_old v2_old
-      v0 v1 v2 v3 u0 u1 u2 u3 u_top u0_orig q1_old q0_old
-      ret_mem d_mem dlo_mem scratch_un0 base halign
+      sp jOld v5Old v6Old v7Old v10Old v11Old v2Old
+      v0 v1 v2 v3 u0 u1 u2 u3 uTop u0Orig q1Old q0Old
+      retMem dMem dloMem scratch_un0 base halign
       hbltu_1 hbltu_0 hcarry2)

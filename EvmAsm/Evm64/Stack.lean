@@ -61,6 +61,14 @@ theorem evmStackIs_cons_right (sp : Word) (v : EvmWord) (vs : List EvmWord)
 theorem evmStackIs_nil (sp : Word) :
     evmStackIs sp [] = empAssertion := rfl
 
+/-- Mid-tree variant of `evmStackIs_nil`: threads a remainder `Q` so
+    `rw ←` can fold a stray `empAssertion` back into `evmStackIs sp []`
+    even when it sits in the middle of a longer sepConj chain. Useful
+    when a stack spec's post has a dangling empty-stack residual that
+    the stack-level consumer wants expressed as `evmStackIs sp []`. -/
+theorem evmStackIs_nil_right (sp : Word) (Q : Assertion) :
+    (empAssertion ** Q) = (evmStackIs sp [] ** Q) := rfl
+
 /-- Two-element stack: `evmStackIs sp [a, b]` unfolds to
     `evmWordIs sp a ** evmWordIs (sp + 32) b ** empAssertion`. The
     trailing `** empAssertion` comes from the single-element recursion
@@ -157,6 +165,46 @@ theorem evmStackIs_triple_flat_right (sp : Word) (a b c : EvmWord)
     (evmStackIs sp [a, b, c] ** Q) := by
   rw [evmStackIs_triple_flat]
 
+/-- Congruence: if the stored values agree, `evmWordIs` at the same
+    address agrees. Trivial `congrArg` application, but named for use
+    with `rw [evmWordIs_congr hv]` style rewriting where `hv : v = w`
+    is a hypothesis produced by an upstream bridge lemma. -/
+theorem evmWordIs_congr (addr : Word) {v w : EvmWord} (hv : v = w) :
+    evmWordIs addr v = evmWordIs addr w :=
+  congrArg (evmWordIs addr) hv
+
+/-- Address-side congruence: if two addresses agree, `evmWordIs` at them
+    agrees too. Counterpart of `evmWordIs_congr` for the address argument.
+    Useful after `bv_addr` / `bv_omega` normalizes an address expression
+    but leaves the `evmWordIs` call site pinned to the un-normalized form. -/
+theorem evmWordIs_congr_addr {a b : Word} (v : EvmWord) (ha : a = b) :
+    evmWordIs a v = evmWordIs b v :=
+  congrArg (fun x => evmWordIs x v) ha
+
+/-- List-side congruence for `evmStackIs`: if two stack-value lists agree,
+    `evmStackIs` at the same sp agrees. Useful when `List.map` / spec-side
+    computation produces a list that matches another up to propositional
+    equality but not definitionally. -/
+theorem evmStackIs_congr (sp : Word) {xs ys : List EvmWord} (hxy : xs = ys) :
+    evmStackIs sp xs = evmStackIs sp ys :=
+  congrArg (evmStackIs sp) hxy
+
+/-- sp-side congruence for `evmStackIs`. Counterpart of `evmStackIs_congr`
+    for the base-address argument. -/
+theorem evmStackIs_congr_sp {sp sp' : Word} (xs : List EvmWord)
+    (hsp : sp = sp') :
+    evmStackIs sp xs = evmStackIs sp' xs :=
+  congrArg (fun s => evmStackIs s xs) hsp
+
+/-- Joint congruence for `evmWordIs`: rewrite both the address and the
+    stored value at once. Useful when both sides change together (e.g.
+    moving to a normalized address *and* collapsing a `div a 0` to `0`
+    in a single rewrite). -/
+theorem evmWordIs_congr_both {a b : Word} {v w : EvmWord}
+    (ha : a = b) (hv : v = w) :
+    evmWordIs a v = evmWordIs b w := by
+  rw [ha, hv]
+
 -- ============================================================================
 -- evmWordIs unfold and limb-equality bridges
 -- ============================================================================
@@ -169,6 +217,20 @@ theorem evmWordIs_sp_unfold (sp : Word) (v : EvmWord) :
     ((sp ↦ₘ v.getLimbN 0) ** ((sp + 8) ↦ₘ v.getLimbN 1) **
      ((sp + 16) ↦ₘ v.getLimbN 2) ** ((sp + 24) ↦ₘ v.getLimbN 3)) := rfl
 
+/-- Fold four limb atoms at `sp + 0, sp + 8, sp + 16, sp + 24` into
+    `evmWordIs sp v`, normalizing the `sp + 0` offset to `sp` on the way.
+
+    This is the `← evmWordIs_sp_unfold` direction with the `sp + 0 = sp`
+    rewrite baked in, for use on post-conditions produced by the limb-level
+    DIV/MOD specs (which naturally produce `sp + 0 ↦ₘ …` atoms). Sublemma
+    "S3" from `project_div_n4_reshape_plan.md`. -/
+theorem evmWordIs_sp_fold (sp : Word) (v : EvmWord) :
+    (((sp + 0) ↦ₘ v.getLimbN 0) ** ((sp + 8) ↦ₘ v.getLimbN 1) **
+     ((sp + 16) ↦ₘ v.getLimbN 2) ** ((sp + 24) ↦ₘ v.getLimbN 3)) =
+    evmWordIs sp v := by
+  rw [show (sp + 0 : Word) = sp from by bv_omega]
+  exact (evmWordIs_sp_unfold sp v).symm
+
 /-- Unfold `evmWordIs (sp+32) v` into four limb-level memory atoms at the
     absolute stack addresses `sp+32, sp+40, sp+48, sp+56`. Bridges the
     separation-logic `evmWordIs` predicate and the raw limb atoms that the
@@ -180,6 +242,15 @@ theorem evmWordIs_sp32_unfold (sp : Word) (v : EvmWord) :
   unfold evmWordIs
   rw [spAddr32_8, spAddr32_16, spAddr32_24]
 
+/-- Companion of `evmWordIs_sp_fold` for the `b`-operand slot at `sp + 32`.
+    Folds four limb atoms at `sp + 32, +40, +48, +56` into
+    `evmWordIs (sp + 32) v`. -/
+theorem evmWordIs_sp32_fold (sp : Word) (v : EvmWord) :
+    (((sp + 32) ↦ₘ v.getLimbN 0) ** ((sp + 40) ↦ₘ v.getLimbN 1) **
+     ((sp + 48) ↦ₘ v.getLimbN 2) ** ((sp + 56) ↦ₘ v.getLimbN 3)) =
+    evmWordIs (sp + 32) v :=
+  (evmWordIs_sp32_unfold sp v).symm
+
 /-- Unfold `evmWordIs (sp+64) v` into four limb-level memory atoms at the
     absolute stack addresses `sp+64, sp+72, sp+80, sp+88`. Third-slot
     counterpart to `evmWordIs_sp32_unfold` — useful for ternary-op stack
@@ -190,6 +261,41 @@ theorem evmWordIs_sp64_unfold (sp : Word) (v : EvmWord) :
      ((sp + 80) ↦ₘ v.getLimbN 2) ** ((sp + 88) ↦ₘ v.getLimbN 3)) := by
   unfold evmWordIs
   rw [spAddr64_8, spAddr64_16, spAddr64_24]
+
+/-- Third-slot companion (ternary ops / ADDMOD / MULMOD). -/
+theorem evmWordIs_sp64_fold (sp : Word) (v : EvmWord) :
+    (((sp + 64) ↦ₘ v.getLimbN 0) ** ((sp + 72) ↦ₘ v.getLimbN 1) **
+     ((sp + 80) ↦ₘ v.getLimbN 2) ** ((sp + 88) ↦ₘ v.getLimbN 3)) =
+    evmWordIs (sp + 64) v :=
+  (evmWordIs_sp64_unfold sp v).symm
+
+/-- Mid-tree variant of `evmWordIs_sp_unfold`: threads a remainder `Q` so
+    `rw ←` can fold `(sp ↦ₘ v.getLimbN 0) ** …` back into `evmWordIs sp v`
+    even when the atoms sit mid-chain. Simpler call than
+    `evmWordIs_sp_limbs_eq_right` when the caller already has the atoms
+    in `v.getLimbN k` form (no explicit `hk : v.getLimbN k = wk` threads). -/
+theorem evmWordIs_sp_unfold_right (sp : Word) (v : EvmWord) (Q : Assertion) :
+    ((sp ↦ₘ v.getLimbN 0) ** ((sp + 8) ↦ₘ v.getLimbN 1) **
+     ((sp + 16) ↦ₘ v.getLimbN 2) ** ((sp + 24) ↦ₘ v.getLimbN 3) ** Q) =
+    (evmWordIs sp v ** Q) := by
+  rw [evmWordIs_sp_unfold]
+  rw [sepConj_assoc', sepConj_assoc', sepConj_assoc']
+
+/-- Mid-tree variant of `evmWordIs_sp32_unfold`. -/
+theorem evmWordIs_sp32_unfold_right (sp : Word) (v : EvmWord) (Q : Assertion) :
+    (((sp + 32) ↦ₘ v.getLimbN 0) ** ((sp + 40) ↦ₘ v.getLimbN 1) **
+     ((sp + 48) ↦ₘ v.getLimbN 2) ** ((sp + 56) ↦ₘ v.getLimbN 3) ** Q) =
+    (evmWordIs (sp + 32) v ** Q) := by
+  rw [evmWordIs_sp32_unfold]
+  rw [sepConj_assoc', sepConj_assoc', sepConj_assoc']
+
+/-- Mid-tree variant of `evmWordIs_sp64_unfold`. Third-slot companion. -/
+theorem evmWordIs_sp64_unfold_right (sp : Word) (v : EvmWord) (Q : Assertion) :
+    (((sp + 64) ↦ₘ v.getLimbN 0) ** ((sp + 72) ↦ₘ v.getLimbN 1) **
+     ((sp + 80) ↦ₘ v.getLimbN 2) ** ((sp + 88) ↦ₘ v.getLimbN 3) ** Q) =
+    (evmWordIs (sp + 64) v ** Q) := by
+  rw [evmWordIs_sp64_unfold]
+  rw [sepConj_assoc', sepConj_assoc', sepConj_assoc']
 
 /-- Rewrite `evmWordIs sp v` to four limb atoms given explicit getLimbN
     equalities. Decouples the caller's representation of `v` from the limb
@@ -295,6 +401,50 @@ theorem evmWordIs_one (addr : Word) :
   rw [EvmWord.getLimbN_one_zero, EvmWord.getLimbN_one_one,
       EvmWord.getLimbN_one_two, EvmWord.getLimbN_one_three]
 
+/-- `evmWordIs addr (EvmWord.fromLimbs (fun _ => w))` unfolds to four
+    identical-valued memIs atoms. Specializes the generic
+    `evmWordIs_sp_limbs_eq` to the uniform-limb constant case; covers
+    both the all-zero (`evmWordIs_zero`) and all-ones (e.g. `-1` in
+    two's complement) patterns uniformly. -/
+theorem evmWordIs_fromLimbs_const (addr : Word) (w : Word) :
+    evmWordIs addr (EvmWord.fromLimbs (fun _ => w)) =
+    ((addr ↦ₘ w) ** ((addr + 8) ↦ₘ w) **
+     ((addr + 16) ↦ₘ w) ** ((addr + 24) ↦ₘ w)) := by
+  unfold evmWordIs
+  rw [EvmWord.getLimbN_fromLimbs_const_0, EvmWord.getLimbN_fromLimbs_const_1,
+      EvmWord.getLimbN_fromLimbs_const_2, EvmWord.getLimbN_fromLimbs_const_3]
+
+/-- Mid-tree variant of `evmWordIs_fromLimbs_const`: threads a remainder
+    `Q` so `rw ←` can fold four identical-valued memIs atoms back into
+    `evmWordIs addr (fromLimbs (fun _ => w))` even when they sit in the
+    middle of a longer sepConj chain. -/
+theorem evmWordIs_fromLimbs_const_right (addr : Word) (w : Word) (Q : Assertion) :
+    ((addr ↦ₘ w) ** ((addr + 8) ↦ₘ w) **
+     ((addr + 16) ↦ₘ w) ** ((addr + 24) ↦ₘ w) ** Q) =
+    (evmWordIs addr (EvmWord.fromLimbs (fun _ => w)) ** Q) := by
+  rw [evmWordIs_fromLimbs_const]
+  rw [sepConj_assoc', sepConj_assoc', sepConj_assoc']
+
+/-- Mid-tree variant of `evmWordIs_zero`: threads a remainder `Q` so
+    `rw ←` can fold four zero memIs atoms back into `evmWordIs addr 0`
+    even when they sit in the middle of a longer sepConj chain. -/
+theorem evmWordIs_zero_right (addr : Word) (Q : Assertion) :
+    ((addr ↦ₘ (0 : Word)) ** ((addr + 8) ↦ₘ (0 : Word)) **
+     ((addr + 16) ↦ₘ (0 : Word)) ** ((addr + 24) ↦ₘ (0 : Word)) ** Q) =
+    (evmWordIs addr (0 : EvmWord) ** Q) := by
+  rw [evmWordIs_zero]
+  rw [sepConj_assoc', sepConj_assoc', sepConj_assoc']
+
+/-- Mid-tree variant of `evmWordIs_one`: threads a remainder `Q` so
+    `rw ←` can fold `(addr ↦ₘ 1) ** (addr+8 ↦ₘ 0) ** (addr+16 ↦ₘ 0) **
+    (addr+24 ↦ₘ 0)` back into `evmWordIs addr 1` mid-chain. -/
+theorem evmWordIs_one_right (addr : Word) (Q : Assertion) :
+    ((addr ↦ₘ (1 : Word)) ** ((addr + 8) ↦ₘ (0 : Word)) **
+     ((addr + 16) ↦ₘ (0 : Word)) ** ((addr + 24) ↦ₘ (0 : Word)) ** Q) =
+    (evmWordIs addr (1 : EvmWord) ** Q) := by
+  rw [evmWordIs_one]
+  rw [sepConj_assoc', sepConj_assoc', sepConj_assoc']
+
 -- ============================================================================
 -- Shared infrastructure for stack operation specs
 -- ============================================================================
@@ -345,6 +495,20 @@ theorem evmStackIs_snoc (sp : Word) (xs : List EvmWord) (v : EvmWord) :
     evmStackIs sp (xs ++ [v]) =
     (evmStackIs sp xs ** evmWordIs (sp + BitVec.ofNat 64 (xs.length * 32)) v) := by
   rw [evmStackIs_append, evmStackIs_single]
+
+/-- `evmStackIs sp ([] ++ xs) = evmStackIs sp xs`. Trivial consequence of
+    `List.nil_append`. Named so call sites can reach for it by name
+    rather than chaining `List.nil_append` + `evmStackIs_congr`. -/
+theorem evmStackIs_nil_append (sp : Word) (xs : List EvmWord) :
+    evmStackIs sp ([] ++ xs) = evmStackIs sp xs := by
+  rw [List.nil_append]
+
+/-- `evmStackIs sp (xs ++ []) = evmStackIs sp xs`. Symmetric companion
+    of `evmStackIs_nil_append`. Useful when a `List.map`-produced
+    suffix turns out to be empty. -/
+theorem evmStackIs_append_nil (sp : Word) (xs : List EvmWord) :
+    evmStackIs sp (xs ++ []) = evmStackIs sp xs := by
+  rw [List.append_nil]
 
 /-- Mid-tree variant of `evmStackIs_append`: threads a remainder `Q` so
     `rw ←` can fold two contiguous `evmStackIs` segments back into a single

@@ -27,11 +27,13 @@ import EvmAsm.Rv64.ByteOps
 import EvmAsm.Rv64.SyscallSpecs
 import EvmAsm.Rv64.CPSSpec
 import EvmAsm.Rv64.Program
+import EvmAsm.Rv64.AddrNorm
 import EvmAsm.Rv64.Tactics.XSimp
 
 namespace EvmAsm.Rv64.RLP
 
 open EvmAsm.Rv64
+open EvmAsm.Rv64.AddrNorm (se12_0 se12_1 bv6_toNat_8)
 
 -- ============================================================================
 -- Program definition
@@ -54,20 +56,20 @@ example : rlp_phase2_long_iter_prog.length = 5 := rfl
     unchanged. -/
 @[irreducible]
 def rlp_phase2_long_iter_post
-    (len ptr cnt byte_zext word_val dwordAddr : Word) : Assertion :=
-  let length' := (len <<< 8) + byte_zext
+    (len ptr cnt byteZext wordVal dwordAddr : Word) : Assertion :=
+  let length' := (len <<< 8) + byteZext
   let ptr'    := ptr + 1
   let cnt'    := cnt + signExtend12 (-1 : BitVec 12)
   (.x11 ↦ᵣ length') ** (.x13 ↦ᵣ ptr') ** (.x14 ↦ᵣ cnt') **
-    (.x12 ↦ᵣ byte_zext) ** (dwordAddr ↦ₘ word_val)
+    (.x12 ↦ᵣ byteZext) ** (dwordAddr ↦ₘ wordVal)
 
 theorem rlp_phase2_long_iter_post_unfold
-    (len ptr cnt byte_zext word_val dwordAddr : Word) :
-    rlp_phase2_long_iter_post len ptr cnt byte_zext word_val dwordAddr =
-    ((.x11 ↦ᵣ ((len <<< 8) + byte_zext)) **
+    (len ptr cnt byteZext wordVal dwordAddr : Word) :
+    rlp_phase2_long_iter_post len ptr cnt byteZext wordVal dwordAddr =
+    ((.x11 ↦ᵣ ((len <<< 8) + byteZext)) **
      (.x13 ↦ᵣ (ptr + 1)) **
      (.x14 ↦ᵣ (cnt + signExtend12 (-1 : BitVec 12))) **
-     (.x12 ↦ᵣ byte_zext) ** (dwordAddr ↦ₘ word_val)) := by
+     (.x12 ↦ᵣ byteZext) ** (dwordAddr ↦ₘ wordVal)) := by
   delta rlp_phase2_long_iter_post; rfl
 
 -- ============================================================================
@@ -111,31 +113,31 @@ private theorem iter_addrs_distinct (base : Word) :
     ADDI (counter) — each framed with the registers and memory not
     touched by that instruction. -/
 theorem rlp_phase2_long_iter_spec
-    (len ptr cnt v12_old word_val dwordAddr : Word) (base : Word)
+    (len ptr cnt v12Old wordVal dwordAddr : Word) (base : Word)
     (halign : alignToDword ptr = dwordAddr)
     (hvalid : isValidByteAccess ptr = true) :
-    let byte_zext := (extractByte word_val (byteOffset ptr)).zeroExtend 64
+    let byteZext := (extractByte wordVal (byteOffset ptr)).zeroExtend 64
     cpsTriple base (base + 20)
       (CodeReq.ofProg base rlp_phase2_long_iter_prog)
       ((.x11 ↦ᵣ len) ** (.x13 ↦ᵣ ptr) ** (.x14 ↦ᵣ cnt) **
-       (.x12 ↦ᵣ v12_old) ** (dwordAddr ↦ₘ word_val))
-      (rlp_phase2_long_iter_post len ptr cnt byte_zext word_val dwordAddr) := by
+       (.x12 ↦ᵣ v12Old) ** (dwordAddr ↦ₘ wordVal))
+      (rlp_phase2_long_iter_post len ptr cnt byteZext wordVal dwordAddr) := by
   simp only [rlp_phase2_long_iter_post_unfold]
   rw [iter_code_split]
   -- Helpers: `signExtend12 1 = 1` and `signExtend12 0 = 0`.
-  have h_se1 : signExtend12 (1 : BitVec 12) = (1 : Word) := by decide
-  have h_se0 : signExtend12 (0 : BitVec 12) = (0 : Word) := by decide
-  have h_shamt : (8 : BitVec 6).toNat = 8 := by decide
+  have h_se1 := se12_1
+  have h_se0 := se12_0
+  have h_shamt := bv6_toNat_8
   -- Distinct-addresses plumbing.
   obtain ⟨h01, h02, h03, h04, h12, h13, h14, h23, h24, h34⟩ :=
     iter_addrs_distinct base
-  set byte_zext := (extractByte word_val (byteOffset ptr)).zeroExtend 64
+  set byteZext := (extractByte wordVal (byteOffset ptr)).zeroExtend 64
   -- Step 1: LBU x12, x13, 0.
   have halign0 : alignToDword (ptr + signExtend12 (0 : BitVec 12)) = dwordAddr := by
     rw [h_se0]; simpa using halign
   have hvalid0 : isValidByteAccess (ptr + signExtend12 (0 : BitVec 12)) = true := by
     rw [h_se0]; simpa using hvalid
-  have lbu_raw := generic_lbu_spec .x12 .x13 ptr v12_old 0 base dwordAddr word_val
+  have lbu_raw := generic_lbu_spec .x12 .x13 ptr v12Old 0 base dwordAddr wordVal
     (by nofun) halign0 hvalid0
   rw [show ptr + signExtend12 (0 : BitVec 12) = ptr from by
         rw [h_se0]; bv_omega] at lbu_raw
@@ -144,7 +146,7 @@ theorem rlp_phase2_long_iter_spec
   rw [show (base + 4 : Word) + 4 = base + 8 from by bv_omega] at slli_raw
   rw [h_shamt] at slli_raw
   -- Step 3: ADD x11, x11, x12.
-  have add_raw := add_spec_gen_rd_eq_rs1 .x11 .x12 (len <<< 8) byte_zext
+  have add_raw := add_spec_gen_rd_eq_rs1 .x11 .x12 (len <<< 8) byteZext
     (base + 8) (by nofun)
   rw [show (base + 8 : Word) + 4 = base + 12 from by bv_omega] at add_raw
   -- Step 4: ADDI x13, x13, 1.
@@ -155,78 +157,78 @@ theorem rlp_phase2_long_iter_spec
   have addi_cnt_raw := addi_spec_gen_same .x14 cnt (-1) (base + 16) (by nofun)
   rw [show (base + 16 : Word) + 4 = base + 20 from by bv_omega] at addi_cnt_raw
   -- Frame each step with the assertions it doesn't touch, and chain.
-  -- To keep the proof compact, we use `cpsTriple_consequence` with
+  -- To keep the proof compact, we use `cpsTriple_weaken` with
   -- `xperm_hyp` to reshape pre/post to a common right-associated form.
   have frame_and_perm :=
     fun {entry exit_ : Word} {cr : CodeReq} {P P' Q Q' : Assertion}
         (hpre : ∀ h, P' h → P h) (hpost : ∀ h, Q h → Q' h)
         (h : cpsTriple entry exit_ cr P Q) =>
-      cpsTriple_consequence entry exit_ cr P P' Q Q' hpre hpost h
+      cpsTriple_weaken (P := P) (Q := Q) (P' := P') (Q' := Q') hpre hpost h
   -- Step 1 framed with (x11, x14, memory) — leaves (x12, x13) to LBU.
   have s1 : cpsTriple base (base + 4)
       (CodeReq.singleton base (.LBU .x12 .x13 0))
       ((.x11 ↦ᵣ len) ** (.x13 ↦ᵣ ptr) ** (.x14 ↦ᵣ cnt) **
-       (.x12 ↦ᵣ v12_old) ** (dwordAddr ↦ₘ word_val))
+       (.x12 ↦ᵣ v12Old) ** (dwordAddr ↦ₘ wordVal))
       ((.x11 ↦ᵣ len) ** (.x13 ↦ᵣ ptr) ** (.x14 ↦ᵣ cnt) **
-       (.x12 ↦ᵣ byte_zext) ** (dwordAddr ↦ₘ word_val)) :=
+       (.x12 ↦ᵣ byteZext) ** (dwordAddr ↦ₘ wordVal)) :=
     frame_and_perm
       (fun h hp => by xperm_hyp hp) (fun h hp => by xperm_hyp hp)
-      (cpsTriple_frame_left _ _ _ _ _
+      (cpsTriple_frameR
         ((.x11 ↦ᵣ len) ** (.x14 ↦ᵣ cnt)) (by pcFree) lbu_raw)
   -- Step 2 (SLLI x11 x11 8) — leaves (x13, x14, x12, mem) untouched.
   have s2 : cpsTriple (base + 4) (base + 8)
       (CodeReq.singleton (base + 4) (.SLLI .x11 .x11 8))
       ((.x11 ↦ᵣ len) ** (.x13 ↦ᵣ ptr) ** (.x14 ↦ᵣ cnt) **
-       (.x12 ↦ᵣ byte_zext) ** (dwordAddr ↦ₘ word_val))
+       (.x12 ↦ᵣ byteZext) ** (dwordAddr ↦ₘ wordVal))
       ((.x11 ↦ᵣ (len <<< 8)) ** (.x13 ↦ᵣ ptr) ** (.x14 ↦ᵣ cnt) **
-       (.x12 ↦ᵣ byte_zext) ** (dwordAddr ↦ₘ word_val)) :=
+       (.x12 ↦ᵣ byteZext) ** (dwordAddr ↦ₘ wordVal)) :=
     frame_and_perm
       (fun h hp => by xperm_hyp hp) (fun h hp => by xperm_hyp hp)
-      (cpsTriple_frame_left _ _ _ _ _
-        ((.x13 ↦ᵣ ptr) ** (.x14 ↦ᵣ cnt) ** (.x12 ↦ᵣ byte_zext) **
-         (dwordAddr ↦ₘ word_val)) (by pcFree) slli_raw)
+      (cpsTriple_frameR
+        ((.x13 ↦ᵣ ptr) ** (.x14 ↦ᵣ cnt) ** (.x12 ↦ᵣ byteZext) **
+         (dwordAddr ↦ₘ wordVal)) (by pcFree) slli_raw)
   -- Step 3 (ADD x11 x11 x12) — uses (x11, x12); frames (x13, x14, mem).
   have s3 : cpsTriple (base + 8) (base + 12)
       (CodeReq.singleton (base + 8) (.ADD .x11 .x11 .x12))
       ((.x11 ↦ᵣ (len <<< 8)) ** (.x13 ↦ᵣ ptr) ** (.x14 ↦ᵣ cnt) **
-       (.x12 ↦ᵣ byte_zext) ** (dwordAddr ↦ₘ word_val))
-      ((.x11 ↦ᵣ ((len <<< 8) + byte_zext)) ** (.x13 ↦ᵣ ptr) **
-       (.x14 ↦ᵣ cnt) ** (.x12 ↦ᵣ byte_zext) **
-       (dwordAddr ↦ₘ word_val)) :=
+       (.x12 ↦ᵣ byteZext) ** (dwordAddr ↦ₘ wordVal))
+      ((.x11 ↦ᵣ ((len <<< 8) + byteZext)) ** (.x13 ↦ᵣ ptr) **
+       (.x14 ↦ᵣ cnt) ** (.x12 ↦ᵣ byteZext) **
+       (dwordAddr ↦ₘ wordVal)) :=
     frame_and_perm
       (fun h hp => by xperm_hyp hp) (fun h hp => by xperm_hyp hp)
-      (cpsTriple_frame_left _ _ _ _ _
-        ((.x13 ↦ᵣ ptr) ** (.x14 ↦ᵣ cnt) ** (dwordAddr ↦ₘ word_val))
+      (cpsTriple_frameR
+        ((.x13 ↦ᵣ ptr) ** (.x14 ↦ᵣ cnt) ** (dwordAddr ↦ₘ wordVal))
         (by pcFree) add_raw)
   -- Step 4 (ADDI x13 x13 1) — mutates x13; frames the rest.
   have s4 : cpsTriple (base + 12) (base + 16)
       (CodeReq.singleton (base + 12) (.ADDI .x13 .x13 1))
-      ((.x11 ↦ᵣ ((len <<< 8) + byte_zext)) ** (.x13 ↦ᵣ ptr) **
-       (.x14 ↦ᵣ cnt) ** (.x12 ↦ᵣ byte_zext) **
-       (dwordAddr ↦ₘ word_val))
-      ((.x11 ↦ᵣ ((len <<< 8) + byte_zext)) ** (.x13 ↦ᵣ (ptr + 1)) **
-       (.x14 ↦ᵣ cnt) ** (.x12 ↦ᵣ byte_zext) **
-       (dwordAddr ↦ₘ word_val)) :=
+      ((.x11 ↦ᵣ ((len <<< 8) + byteZext)) ** (.x13 ↦ᵣ ptr) **
+       (.x14 ↦ᵣ cnt) ** (.x12 ↦ᵣ byteZext) **
+       (dwordAddr ↦ₘ wordVal))
+      ((.x11 ↦ᵣ ((len <<< 8) + byteZext)) ** (.x13 ↦ᵣ (ptr + 1)) **
+       (.x14 ↦ᵣ cnt) ** (.x12 ↦ᵣ byteZext) **
+       (dwordAddr ↦ₘ wordVal)) :=
     frame_and_perm
       (fun h hp => by xperm_hyp hp) (fun h hp => by xperm_hyp hp)
-      (cpsTriple_frame_left _ _ _ _ _
-        ((.x11 ↦ᵣ ((len <<< 8) + byte_zext)) ** (.x14 ↦ᵣ cnt) **
-         (.x12 ↦ᵣ byte_zext) ** (dwordAddr ↦ₘ word_val))
+      (cpsTriple_frameR
+        ((.x11 ↦ᵣ ((len <<< 8) + byteZext)) ** (.x14 ↦ᵣ cnt) **
+         (.x12 ↦ᵣ byteZext) ** (dwordAddr ↦ₘ wordVal))
         (by pcFree) addi_ptr_raw)
   -- Step 5 (ADDI x14 x14 -1) — mutates x14; frames the rest.
   have s5 : cpsTriple (base + 16) (base + 20)
       (CodeReq.singleton (base + 16) (.ADDI .x14 .x14 (-1)))
-      ((.x11 ↦ᵣ ((len <<< 8) + byte_zext)) ** (.x13 ↦ᵣ (ptr + 1)) **
-       (.x14 ↦ᵣ cnt) ** (.x12 ↦ᵣ byte_zext) **
-       (dwordAddr ↦ₘ word_val))
-      ((.x11 ↦ᵣ ((len <<< 8) + byte_zext)) ** (.x13 ↦ᵣ (ptr + 1)) **
+      ((.x11 ↦ᵣ ((len <<< 8) + byteZext)) ** (.x13 ↦ᵣ (ptr + 1)) **
+       (.x14 ↦ᵣ cnt) ** (.x12 ↦ᵣ byteZext) **
+       (dwordAddr ↦ₘ wordVal))
+      ((.x11 ↦ᵣ ((len <<< 8) + byteZext)) ** (.x13 ↦ᵣ (ptr + 1)) **
        (.x14 ↦ᵣ (cnt + signExtend12 (-1 : BitVec 12))) **
-       (.x12 ↦ᵣ byte_zext) ** (dwordAddr ↦ₘ word_val)) :=
+       (.x12 ↦ᵣ byteZext) ** (dwordAddr ↦ₘ wordVal)) :=
     frame_and_perm
       (fun h hp => by xperm_hyp hp) (fun h hp => by xperm_hyp hp)
-      (cpsTriple_frame_left _ _ _ _ _
-        ((.x11 ↦ᵣ ((len <<< 8) + byte_zext)) ** (.x13 ↦ᵣ (ptr + 1)) **
-         (.x12 ↦ᵣ byte_zext) ** (dwordAddr ↦ₘ word_val))
+      (cpsTriple_frameR
+        ((.x11 ↦ᵣ ((len <<< 8) + byteZext)) ** (.x13 ↦ᵣ (ptr + 1)) **
+         (.x12 ↦ᵣ byteZext) ** (dwordAddr ↦ₘ wordVal))
         (by pcFree) addi_cnt_raw)
   -- Disjointness builders for the union chain produced by `cpsTriple_seq`.
   have hd5 : CodeReq.Disjoint
