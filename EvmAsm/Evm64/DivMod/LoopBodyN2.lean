@@ -592,4 +592,125 @@ def loopBodyPostN2
   (sp + signExtend12 3944 ↦ₘ sunv)
 
 
+-- ============================================================================
+-- Unified max-path loop body 
+-- ============================================================================
+
+/-- Unified loop body (BLTU ntaken) for n=2, parameterized by borrow condition.
+    `borrow_zero = true` → skip path; `borrow_zero = false` → addback+BEQ path.
+    Entry: base+loopBodyOff, cpsBranch to base+loopBodyOff/denormOff. -/
+theorem divK_loop_body_n2_max_unified_spec
+    (borrow_zero : Bool)
+    (sp j jOld v5Old v6Old v7Old v10Old v11Old v2Old
+     v0 v1 v2 v3 u0 u1 u2 u3 uTop qOld : Word)
+    (base : Word)
+    (hbltu : ¬BitVec.ult u2 v1)
+    (hcarry : ¬borrow_zero →
+      let ms := mulsubN4 (signExtend12 4095 : Word) v0 v1 v2 v3 u0 u1 u2 u3
+      let ab := addbackN4 ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 (uTop - ms.2.2.2.2) v0 v1 v2 v3
+      addbackN4_carry ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 v0 v1 v2 v3 = 0 →
+      addbackN4_carry ab.1 ab.2.1 ab.2.2.1 ab.2.2.2.1 v0 v1 v2 v3 ≠ 0)
+    (hborrow : if borrow_zero
+               then (if BitVec.ult uTop
+                        (mulsubN4_c3 (signExtend12 4095 : Word) v0 v1 v2 v3 u0 u1 u2 u3)
+                     then (1 : Word) else 0) = (0 : Word)
+               else (if BitVec.ult uTop
+                        (mulsubN4_c3 (signExtend12 4095 : Word) v0 v1 v2 v3 u0 u1 u2 u3)
+                     then (1 : Word) else 0) ≠ (0 : Word)) :
+    cpsBranch (base + loopBodyOff) (sharedDivModCode base)
+      (loopBodyPre (2 : Word) sp j jOld v5Old v6Old v7Old v10Old v11Old v2Old
+        v0 v1 v2 v3 u0 u1 u2 u3 uTop qOld)
+      (base + loopBodyOff)
+      (loopBodyUnifiedPostN2 borrow_zero sp j (signExtend12 4095 : Word) v0 v1 v2 v3 u0 u1 u2 u3 uTop)
+      (base + denormOff)
+      (loopBodyUnifiedPostN2 borrow_zero sp j (signExtend12 4095 : Word) v0 v1 v2 v3 u0 u1 u2 u3 uTop) := by
+  cases borrow_zero
+  · -- false (addback+BEQ path)
+    rw [if_neg (by decide)] at hborrow
+    simp only [loopBodyUnifiedPostN2, loopBodyUnifiedPost_false]
+    have base_spec := divK_loop_body_n2_max_addback_spec
+      sp j jOld v5Old v6Old v7Old v10Old v11Old v2Old
+      v0 v1 v2 v3 u0 u1 u2 u3 uTop qOld base hbltu (hcarry (by decide)) hborrow
+    exact cpsBranch_consequence _ _ _ _ _ _ _ _ _ _
+      (fun _ hp => by delta loopBodyPre at hp; xperm_hyp hp)
+      (fun _ hp => hp)
+      (fun _ hp => hp)
+      base_spec
+  · -- true (skip path)
+    rw [if_pos rfl] at hborrow
+    simp only [loopBodyUnifiedPostN2, loopBodyUnifiedPost_true]
+    have base_spec := divK_loop_body_n2_max_skip_spec
+      sp j jOld v5Old v6Old v7Old v10Old v11Old v2Old
+      v0 v1 v2 v3 u0 u1 u2 u3 uTop qOld base hbltu hborrow
+    exact cpsBranch_consequence _ _ _ _ _ _ _ _ _ _
+      (fun _ hp => by delta loopBodyPre at hp; xperm_hyp hp)
+      (fun _ hp => hp)
+      (fun _ hp => hp)
+      base_spec
+
+/-- Unified loop body (BLTU taken, call path) for n=2, parameterized by borrow condition.
+    `borrow_zero = true` → skip path; `borrow_zero = false` → addback+BEQ path.
+    Includes div128 scratch cells in postcondition. -/
+theorem divK_loop_body_n2_call_unified_spec
+    (borrow_zero : Bool)
+    (sp j jOld v5Old v6Old v7Old v10Old v11Old v2Old
+     v0 v1 v2 v3 u0 u1 u2 u3 uTop qOld : Word)
+    (retMem dMem dloMem scratch_un0 : Word)
+    (base : Word)
+    (halign : ((base + 516) + signExtend12 (0 : BitVec 12)) &&& ~~~(1 : Word) = base + 516)
+    (hbltu : BitVec.ult u2 v1)
+    (hcarry : ¬borrow_zero →
+      let ms := mulsubN4 (div128Quot u2 u1 v1) v0 v1 v2 v3 u0 u1 u2 u3
+      let ab := addbackN4 ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 (uTop - ms.2.2.2.2) v0 v1 v2 v3
+      addbackN4_carry ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 v0 v1 v2 v3 = 0 →
+      addbackN4_carry ab.1 ab.2.1 ab.2.2.1 ab.2.2.2.1 v0 v1 v2 v3 ≠ 0)
+    (hborrow : if borrow_zero
+               then (if BitVec.ult uTop
+                        (mulsubN4_c3 (div128Quot u2 u1 v1) v0 v1 v2 v3 u0 u1 u2 u3)
+                     then (1 : Word) else 0) = (0 : Word)
+               else (if BitVec.ult uTop
+                        (mulsubN4_c3 (div128Quot u2 u1 v1) v0 v1 v2 v3 u0 u1 u2 u3)
+                     then (1 : Word) else 0) ≠ (0 : Word)) :
+    cpsBranch (base + loopBodyOff) (sharedDivModCode base)
+      (loopBodyPreWithScratch (2 : Word) sp j jOld v5Old v6Old v7Old v10Old v11Old v2Old
+        v0 v1 v2 v3 u0 u1 u2 u3 uTop qOld
+        retMem dMem dloMem scratch_un0)
+      (base + loopBodyOff)
+      (loopBodyUnifiedPostN2 borrow_zero sp j (div128Quot u2 u1 v1) v0 v1 v2 v3 u0 u1 u2 u3 uTop **
+       (sp + signExtend12 3968 ↦ₘ (base + 516)) **
+       (sp + signExtend12 3960 ↦ₘ v1) **
+       (sp + signExtend12 3952 ↦ₘ div128DLo v1) **
+       (sp + signExtend12 3944 ↦ₘ div128Un0 u1))
+      (base + denormOff)
+      (loopBodyUnifiedPostN2 borrow_zero sp j (div128Quot u2 u1 v1) v0 v1 v2 v3 u0 u1 u2 u3 uTop **
+       (sp + signExtend12 3968 ↦ₘ (base + 516)) **
+       (sp + signExtend12 3960 ↦ₘ v1) **
+       (sp + signExtend12 3952 ↦ₘ div128DLo v1) **
+       (sp + signExtend12 3944 ↦ₘ div128Un0 u1)) := by
+  cases borrow_zero
+  · -- false (addback+BEQ path)
+    rw [if_neg (by decide)] at hborrow
+    simp only [loopBodyUnifiedPostN2, loopBodyUnifiedPost_false]
+    have base_spec := divK_loop_body_n2_call_addback_spec
+      sp j jOld v5Old v6Old v7Old v10Old v11Old v2Old
+      v0 v1 v2 v3 u0 u1 u2 u3 uTop qOld retMem dMem dloMem scratch_un0
+      base halign hbltu (hcarry (by decide)) hborrow
+    exact cpsBranch_consequence _ _ _ _ _ _ _ _ _ _
+      (fun _ hp => by delta loopBodyPreWithScratch loopBodyPre at hp; xperm_hyp hp)
+      (fun _ hp => hp)
+      (fun _ hp => hp)
+      base_spec
+  · -- true (skip path)
+    rw [if_pos rfl] at hborrow
+    simp only [loopBodyUnifiedPostN2, loopBodyUnifiedPost_true]
+    have base_spec := divK_loop_body_n2_call_skip_spec
+      sp j jOld v5Old v6Old v7Old v10Old v11Old v2Old
+      v0 v1 v2 v3 u0 u1 u2 u3 uTop qOld retMem dMem dloMem scratch_un0
+      base halign hbltu hborrow
+    exact cpsBranch_consequence _ _ _ _ _ _ _ _ _ _
+      (fun _ hp => by delta loopBodyPreWithScratch loopBodyPre at hp; xperm_hyp hp)
+      (fun _ hp => hp)
+      (fun _ hp => hp)
+      base_spec
+
 end EvmAsm.Evm64
