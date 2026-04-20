@@ -414,17 +414,6 @@ theorem cpsTriple_seq_cpsBranch_perm_same_cr {entry mid : Word} {cr : CodeReq}
   cpsTriple_seq_cpsBranch_same_cr entry mid cr P Q2 exit_t Q_t exit_f Q_f
     (cpsTriple_weaken (fun _ hp => hp) hperm h1) h2
 
-/-- Explicit-argument variant of `cpsTriple_seq_cpsBranch_perm_same_cr`. Deprecated;
-    prefer `cpsTriple_seq_cpsBranch_perm_same_cr` in new code. -/
-@[deprecated cpsTriple_seq_cpsBranch_perm_same_cr (since := "2026-04-19")]
-theorem cpsTriple_seq_cpsBranch_with_perm_same_cr (entry mid : Word) (cr : CodeReq)
-    (P Q1 Q2 : Assertion) (exit_t : Word) (Q_t : Assertion) (exit_f : Word) (Q_f : Assertion)
-    (hperm : ∀ h, Q1 h → Q2 h)
-    (h1 : cpsTriple entry mid cr P Q1)
-    (h2 : cpsBranch mid cr Q2 exit_t Q_t exit_f Q_f) :
-    cpsBranch entry cr P exit_t Q_t exit_f Q_f :=
-  cpsTriple_seq_cpsBranch_perm_same_cr hperm h1 h2
-
 -- ============================================================================
 -- N-exit CPS specifications
 -- ============================================================================
@@ -935,8 +924,7 @@ theorem cpsTriple_frameL {entry exit_ : Word} {cr : CodeReq} {P Q : Assertion}
   exact ⟨k, s', hstep, hpc', holdsFor_sepConj_pull_second.mpr hpost⟩
 
 /-- Frame for cpsBranch: add `F` on the right. Position/code/pre/post args
-    are all implicit; prefer this over `cpsBranch_frame_left` (which takes
-    seven explicit `_` arguments before the frame `F`). -/
+    are all implicit. -/
 theorem cpsBranch_frameR {entry : Word} {cr : CodeReq} {P : Assertion}
     {exit_t : Word} {Q_t : Assertion} {exit_f : Word} {Q_f : Assertion}
     (F : Assertion) (hF : F.pcFree)
@@ -948,17 +936,6 @@ theorem cpsBranch_frameR {entry : Word} {cr : CodeReq} {P : Assertion}
   exact ⟨k, s', hstep, hcase.elim
     (fun ⟨hpc', hpost⟩ => Or.inl ⟨hpc', holdsFor_sepConj_assoc.mpr hpost⟩)
     (fun ⟨hpc', hpost⟩ => Or.inr ⟨hpc', holdsFor_sepConj_assoc.mpr hpost⟩)⟩
-
-/-- Explicit-argument variant of `cpsBranch_frameR`. Kept for backwards
-    compatibility; prefer `cpsBranch_frameR` in new code. -/
-@[deprecated cpsBranch_frameR (since := "2026-04-19")]
-theorem cpsBranch_frame_left (entry : Word) (cr : CodeReq)
-    (P : Assertion) (exit_t : Word) (Q_t : Assertion)
-    (exit_f : Word) (Q_f : Assertion)
-    (F : Assertion) (hF : F.pcFree)
-    (h : cpsBranch entry cr P exit_t Q_t exit_f Q_f) :
-    cpsBranch entry cr (P ** F) exit_t (Q_t ** F) exit_f (Q_f ** F) :=
-  cpsBranch_frameR F hF h
 
 /-- Frame on the right for cpsHaltTriple. -/
 theorem cpsHaltTriple_frame_left (entry : Word) (cr : CodeReq)
