@@ -150,15 +150,15 @@ theorem divK_loop_body_n4_call_addback_j0_beq_norm (sp base : Word)
 @[irreducible]
 def preloopMaxAddbackBeqPostN4 (sp a0 a1 a2 a3 b0 b1 b2 b3 : Word) : Assertion :=
   let shift := (clzResult b3).1
-  let anti_shift := signExtend12 (0 : BitVec 12) - shift
-  let b3' := (b3 <<< (shift.toNat % 64)) ||| (b2 >>> (anti_shift.toNat % 64))
-  let b2' := (b2 <<< (shift.toNat % 64)) ||| (b1 >>> (anti_shift.toNat % 64))
-  let b1' := (b1 <<< (shift.toNat % 64)) ||| (b0 >>> (anti_shift.toNat % 64))
+  let antiShift := signExtend12 (0 : BitVec 12) - shift
+  let b3' := (b3 <<< (shift.toNat % 64)) ||| (b2 >>> (antiShift.toNat % 64))
+  let b2' := (b2 <<< (shift.toNat % 64)) ||| (b1 >>> (antiShift.toNat % 64))
+  let b1' := (b1 <<< (shift.toNat % 64)) ||| (b0 >>> (antiShift.toNat % 64))
   let b0' := b0 <<< (shift.toNat % 64)
-  let u4 := a3 >>> (anti_shift.toNat % 64)
-  let u3 := (a3 <<< (shift.toNat % 64)) ||| (a2 >>> (anti_shift.toNat % 64))
-  let u2 := (a2 <<< (shift.toNat % 64)) ||| (a1 >>> (anti_shift.toNat % 64))
-  let u1 := (a1 <<< (shift.toNat % 64)) ||| (a0 >>> (anti_shift.toNat % 64))
+  let u4 := a3 >>> (antiShift.toNat % 64)
+  let u3 := (a3 <<< (shift.toNat % 64)) ||| (a2 >>> (antiShift.toNat % 64))
+  let u2 := (a2 <<< (shift.toNat % 64)) ||| (a1 >>> (antiShift.toNat % 64))
+  let u1 := (a1 <<< (shift.toNat % 64)) ||| (a0 >>> (antiShift.toNat % 64))
   let u0 := a0 <<< (shift.toNat % 64)
   loopBodyN4AddbackBeqPost sp (0 : Word) (signExtend12 4095) b0' b1' b2' b3' u0 u1 u2 u3 u4 **
   ((sp + 0) ↦ₘ a0) ** ((sp + 8) ↦ₘ a1) **
@@ -174,15 +174,15 @@ def preloopMaxAddbackBeqPostN4 (sp a0 a1 a2 a3 b0 b1 b2 b3 : Word) : Assertion :
 /-- Double-addback carry2≠0 condition at n=4 with max trial quotient (expressed over a/b). -/
 def isAddbackCarry2NzN4MaxAb (a0 a1 a2 a3 b0 b1 b2 b3 : Word) : Prop :=
   let shift := (clzResult b3).1
-  let anti_shift := signExtend12 (0 : BitVec 12) - shift
-  let b3' := (b3 <<< (shift.toNat % 64)) ||| (b2 >>> (anti_shift.toNat % 64))
-  let b2' := (b2 <<< (shift.toNat % 64)) ||| (b1 >>> (anti_shift.toNat % 64))
-  let b1' := (b1 <<< (shift.toNat % 64)) ||| (b0 >>> (anti_shift.toNat % 64))
+  let antiShift := signExtend12 (0 : BitVec 12) - shift
+  let b3' := (b3 <<< (shift.toNat % 64)) ||| (b2 >>> (antiShift.toNat % 64))
+  let b2' := (b2 <<< (shift.toNat % 64)) ||| (b1 >>> (antiShift.toNat % 64))
+  let b1' := (b1 <<< (shift.toNat % 64)) ||| (b0 >>> (antiShift.toNat % 64))
   let b0' := b0 <<< (shift.toNat % 64)
-  let u4 := a3 >>> (anti_shift.toNat % 64)
-  let u3 := (a3 <<< (shift.toNat % 64)) ||| (a2 >>> (anti_shift.toNat % 64))
-  let u2 := (a2 <<< (shift.toNat % 64)) ||| (a1 >>> (anti_shift.toNat % 64))
-  let u1 := (a1 <<< (shift.toNat % 64)) ||| (a0 >>> (anti_shift.toNat % 64))
+  let u4 := a3 >>> (antiShift.toNat % 64)
+  let u3 := (a3 <<< (shift.toNat % 64)) ||| (a2 >>> (antiShift.toNat % 64))
+  let u2 := (a2 <<< (shift.toNat % 64)) ||| (a1 >>> (antiShift.toNat % 64))
+  let u1 := (a1 <<< (shift.toNat % 64)) ||| (a0 >>> (antiShift.toNat % 64))
   let u0 := a0 <<< (shift.toNat % 64)
   isAddbackCarry2NzN4Max b0' b1' b2' b3' u0 u1 u2 u3 u4
 
@@ -237,15 +237,15 @@ theorem evm_div_n4_preloop_max_addback_beq_spec (sp base : Word)
   unfold isAddbackBorrowN4Max at hborrow
   unfold isAddbackCarry2NzN4MaxAb at hcarry2_nz
   let shift := (clzResult b3).1
-  let anti_shift := signExtend12 (0 : BitVec 12) - shift
-  let b3' := (b3 <<< (shift.toNat % 64)) ||| (b2 >>> (anti_shift.toNat % 64))
-  let b2' := (b2 <<< (shift.toNat % 64)) ||| (b1 >>> (anti_shift.toNat % 64))
-  let b1' := (b1 <<< (shift.toNat % 64)) ||| (b0 >>> (anti_shift.toNat % 64))
+  let antiShift := signExtend12 (0 : BitVec 12) - shift
+  let b3' := (b3 <<< (shift.toNat % 64)) ||| (b2 >>> (antiShift.toNat % 64))
+  let b2' := (b2 <<< (shift.toNat % 64)) ||| (b1 >>> (antiShift.toNat % 64))
+  let b1' := (b1 <<< (shift.toNat % 64)) ||| (b0 >>> (antiShift.toNat % 64))
   let b0' := b0 <<< (shift.toNat % 64)
-  let u4 := a3 >>> (anti_shift.toNat % 64)
-  let u3 := (a3 <<< (shift.toNat % 64)) ||| (a2 >>> (anti_shift.toNat % 64))
-  let u2 := (a2 <<< (shift.toNat % 64)) ||| (a1 >>> (anti_shift.toNat % 64))
-  let u1 := (a1 <<< (shift.toNat % 64)) ||| (a0 >>> (anti_shift.toNat % 64))
+  let u4 := a3 >>> (antiShift.toNat % 64)
+  let u3 := (a3 <<< (shift.toNat % 64)) ||| (a2 >>> (antiShift.toNat % 64))
+  let u2 := (a2 <<< (shift.toNat % 64)) ||| (a1 >>> (antiShift.toNat % 64))
+  let u1 := (a1 <<< (shift.toNat % 64)) ||| (a0 >>> (antiShift.toNat % 64))
   let u0 := a0 <<< (shift.toNat % 64)
   have hv_v0 : isValidDwordAccess (sp + 32) = true := hvalid 4 (by omega)
   have hv_v1 : isValidDwordAccess (sp + 40) = true := hvalid 5 (by omega)
@@ -261,7 +261,7 @@ theorem evm_div_n4_preloop_max_addback_beq_spec (sp base : Word)
     ((.x11 ↦ᵣ v11_old) ** ((sp + signExtend12 3976) ↦ₘ j_mem))
     (by pcFree) hPre
   have hLoop := divK_loop_body_n4_max_addback_j0_beq_norm sp base
-    j_mem (4 : Word) shift u0 (a0 >>> (anti_shift.toNat % 64)) v11_old anti_shift
+    j_mem (4 : Word) shift u0 (a0 >>> (antiShift.toNat % 64)) v11_old antiShift
     b0' b1' b2' b3' u0 u1 u2 u3 u4 (0 : Word)
 
     hbltu hcarry2_nz
@@ -298,15 +298,15 @@ theorem evm_div_n4_preloop_max_addback_beq_spec (sp base : Word)
 @[irreducible]
 def preloopCallAddbackBeqPostN4 (sp base a0 a1 a2 a3 b0 b1 b2 b3 : Word) : Assertion :=
   let shift := (clzResult b3).1
-  let anti_shift := signExtend12 (0 : BitVec 12) - shift
-  let b3' := (b3 <<< (shift.toNat % 64)) ||| (b2 >>> (anti_shift.toNat % 64))
-  let b2' := (b2 <<< (shift.toNat % 64)) ||| (b1 >>> (anti_shift.toNat % 64))
-  let b1' := (b1 <<< (shift.toNat % 64)) ||| (b0 >>> (anti_shift.toNat % 64))
+  let antiShift := signExtend12 (0 : BitVec 12) - shift
+  let b3' := (b3 <<< (shift.toNat % 64)) ||| (b2 >>> (antiShift.toNat % 64))
+  let b2' := (b2 <<< (shift.toNat % 64)) ||| (b1 >>> (antiShift.toNat % 64))
+  let b1' := (b1 <<< (shift.toNat % 64)) ||| (b0 >>> (antiShift.toNat % 64))
   let b0' := b0 <<< (shift.toNat % 64)
-  let u4 := a3 >>> (anti_shift.toNat % 64)
-  let u3 := (a3 <<< (shift.toNat % 64)) ||| (a2 >>> (anti_shift.toNat % 64))
-  let u2 := (a2 <<< (shift.toNat % 64)) ||| (a1 >>> (anti_shift.toNat % 64))
-  let u1 := (a1 <<< (shift.toNat % 64)) ||| (a0 >>> (anti_shift.toNat % 64))
+  let u4 := a3 >>> (antiShift.toNat % 64)
+  let u3 := (a3 <<< (shift.toNat % 64)) ||| (a2 >>> (antiShift.toNat % 64))
+  let u2 := (a2 <<< (shift.toNat % 64)) ||| (a1 >>> (antiShift.toNat % 64))
+  let u1 := (a1 <<< (shift.toNat % 64)) ||| (a0 >>> (antiShift.toNat % 64))
   let u0 := a0 <<< (shift.toNat % 64)
   let q_hat := div128Quot u4 u3 b3'
   let d_lo := (b3' <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat
@@ -329,15 +329,15 @@ def preloopCallAddbackBeqPostN4 (sp base a0 a1 a2 a3 b0 b1 b2 b3 : Word) : Asser
 /-- Double-addback carry2≠0 condition at n=4 with call trial quotient (expressed over a/b). -/
 def isAddbackCarry2NzN4CallAb (a0 a1 a2 a3 b0 b1 b2 b3 : Word) : Prop :=
   let shift := (clzResult b3).1
-  let anti_shift := signExtend12 (0 : BitVec 12) - shift
-  let b3' := (b3 <<< (shift.toNat % 64)) ||| (b2 >>> (anti_shift.toNat % 64))
-  let b2' := (b2 <<< (shift.toNat % 64)) ||| (b1 >>> (anti_shift.toNat % 64))
-  let b1' := (b1 <<< (shift.toNat % 64)) ||| (b0 >>> (anti_shift.toNat % 64))
+  let antiShift := signExtend12 (0 : BitVec 12) - shift
+  let b3' := (b3 <<< (shift.toNat % 64)) ||| (b2 >>> (antiShift.toNat % 64))
+  let b2' := (b2 <<< (shift.toNat % 64)) ||| (b1 >>> (antiShift.toNat % 64))
+  let b1' := (b1 <<< (shift.toNat % 64)) ||| (b0 >>> (antiShift.toNat % 64))
   let b0' := b0 <<< (shift.toNat % 64)
-  let u4 := a3 >>> (anti_shift.toNat % 64)
-  let u3 := (a3 <<< (shift.toNat % 64)) ||| (a2 >>> (anti_shift.toNat % 64))
-  let u2 := (a2 <<< (shift.toNat % 64)) ||| (a1 >>> (anti_shift.toNat % 64))
-  let u1 := (a1 <<< (shift.toNat % 64)) ||| (a0 >>> (anti_shift.toNat % 64))
+  let u4 := a3 >>> (antiShift.toNat % 64)
+  let u3 := (a3 <<< (shift.toNat % 64)) ||| (a2 >>> (antiShift.toNat % 64))
+  let u2 := (a2 <<< (shift.toNat % 64)) ||| (a1 >>> (antiShift.toNat % 64))
+  let u1 := (a1 <<< (shift.toNat % 64)) ||| (a0 >>> (antiShift.toNat % 64))
   let u0 := a0 <<< (shift.toNat % 64)
   isAddbackCarry2NzN4Call b0' b1' b2' b3' u0 u1 u2 u3 u4
 
@@ -395,15 +395,15 @@ theorem evm_div_n4_preloop_call_addback_beq_spec (sp base : Word)
   unfold isAddbackBorrowN4Call at hborrow
   unfold isAddbackCarry2NzN4CallAb at hcarry2_nz
   let shift := (clzResult b3).1
-  let anti_shift := signExtend12 (0 : BitVec 12) - shift
-  let b3' := (b3 <<< (shift.toNat % 64)) ||| (b2 >>> (anti_shift.toNat % 64))
-  let b2' := (b2 <<< (shift.toNat % 64)) ||| (b1 >>> (anti_shift.toNat % 64))
-  let b1' := (b1 <<< (shift.toNat % 64)) ||| (b0 >>> (anti_shift.toNat % 64))
+  let antiShift := signExtend12 (0 : BitVec 12) - shift
+  let b3' := (b3 <<< (shift.toNat % 64)) ||| (b2 >>> (antiShift.toNat % 64))
+  let b2' := (b2 <<< (shift.toNat % 64)) ||| (b1 >>> (antiShift.toNat % 64))
+  let b1' := (b1 <<< (shift.toNat % 64)) ||| (b0 >>> (antiShift.toNat % 64))
   let b0' := b0 <<< (shift.toNat % 64)
-  let u4 := a3 >>> (anti_shift.toNat % 64)
-  let u3 := (a3 <<< (shift.toNat % 64)) ||| (a2 >>> (anti_shift.toNat % 64))
-  let u2 := (a2 <<< (shift.toNat % 64)) ||| (a1 >>> (anti_shift.toNat % 64))
-  let u1 := (a1 <<< (shift.toNat % 64)) ||| (a0 >>> (anti_shift.toNat % 64))
+  let u4 := a3 >>> (antiShift.toNat % 64)
+  let u3 := (a3 <<< (shift.toNat % 64)) ||| (a2 >>> (antiShift.toNat % 64))
+  let u2 := (a2 <<< (shift.toNat % 64)) ||| (a1 >>> (antiShift.toNat % 64))
+  let u1 := (a1 <<< (shift.toNat % 64)) ||| (a0 >>> (antiShift.toNat % 64))
   let u0 := a0 <<< (shift.toNat % 64)
   have hv_v0 : isValidDwordAccess (sp + 32) = true := hvalid 4 (by omega)
   have hv_v1 : isValidDwordAccess (sp + 40) = true := hvalid 5 (by omega)
@@ -421,7 +421,7 @@ theorem evm_div_n4_preloop_call_addback_beq_spec (sp base : Word)
      (sp + signExtend12 3952 ↦ₘ dlo_mem) ** (sp + signExtend12 3944 ↦ₘ scratch_un0))
     (by pcFree) hPre
   have hLoop := divK_loop_body_n4_call_addback_j0_beq_norm sp base
-    j_mem (4 : Word) shift u0 (a0 >>> (anti_shift.toNat % 64)) v11_old anti_shift
+    j_mem (4 : Word) shift u0 (a0 >>> (antiShift.toNat % 64)) v11_old antiShift
     b0' b1' b2' b3' u0 u1 u2 u3 u4 (0 : Word)
     ret_mem d_mem dlo_mem scratch_un0
     hv_j hv_n hv_uhi hv_ulo hv_vtop hv_ret hv_d hv_dlo hv_scratch_un0 halign
@@ -455,15 +455,15 @@ theorem evm_div_n4_preloop_call_addback_beq_spec (sp base : Word)
 theorem preloopMaxAddbackBeqPostN4_unfold (sp a0 a1 a2 a3 b0 b1 b2 b3 : Word) :
     preloopMaxAddbackBeqPostN4 sp a0 a1 a2 a3 b0 b1 b2 b3 =
     let shift := (clzResult b3).1
-    let anti_shift := signExtend12 (0 : BitVec 12) - shift
-    let b3' := (b3 <<< (shift.toNat % 64)) ||| (b2 >>> (anti_shift.toNat % 64))
-    let b2' := (b2 <<< (shift.toNat % 64)) ||| (b1 >>> (anti_shift.toNat % 64))
-    let b1' := (b1 <<< (shift.toNat % 64)) ||| (b0 >>> (anti_shift.toNat % 64))
+    let antiShift := signExtend12 (0 : BitVec 12) - shift
+    let b3' := (b3 <<< (shift.toNat % 64)) ||| (b2 >>> (antiShift.toNat % 64))
+    let b2' := (b2 <<< (shift.toNat % 64)) ||| (b1 >>> (antiShift.toNat % 64))
+    let b1' := (b1 <<< (shift.toNat % 64)) ||| (b0 >>> (antiShift.toNat % 64))
     let b0' := b0 <<< (shift.toNat % 64)
-    let u4 := a3 >>> (anti_shift.toNat % 64)
-    let u3 := (a3 <<< (shift.toNat % 64)) ||| (a2 >>> (anti_shift.toNat % 64))
-    let u2 := (a2 <<< (shift.toNat % 64)) ||| (a1 >>> (anti_shift.toNat % 64))
-    let u1 := (a1 <<< (shift.toNat % 64)) ||| (a0 >>> (anti_shift.toNat % 64))
+    let u4 := a3 >>> (antiShift.toNat % 64)
+    let u3 := (a3 <<< (shift.toNat % 64)) ||| (a2 >>> (antiShift.toNat % 64))
+    let u2 := (a2 <<< (shift.toNat % 64)) ||| (a1 >>> (antiShift.toNat % 64))
+    let u1 := (a1 <<< (shift.toNat % 64)) ||| (a0 >>> (antiShift.toNat % 64))
     let u0 := a0 <<< (shift.toNat % 64)
     let q_hat : Word := signExtend12 4095
     let ms := mulsubN4 q_hat b0' b1' b2' b3' u0 u1 u2 u3
@@ -511,19 +511,19 @@ theorem preloopMaxAddbackBeqPostN4_unfold (sp a0 a1 a2 a3 b0 b1 b2 b3 : Word) :
 @[irreducible]
 def fullDivN4MaxAddbackBeqPost (sp a0 a1 a2 a3 b0 b1 b2 b3 : Word) : Assertion :=
   let shift := (clzResult b3).1
-  let anti_shift := signExtend12 (0 : BitVec 12) - shift
-  let b3' := (b3 <<< (shift.toNat % 64)) ||| (b2 >>> (anti_shift.toNat % 64))
-  let b2' := (b2 <<< (shift.toNat % 64)) ||| (b1 >>> (anti_shift.toNat % 64))
-  let b1' := (b1 <<< (shift.toNat % 64)) ||| (b0 >>> (anti_shift.toNat % 64))
+  let antiShift := signExtend12 (0 : BitVec 12) - shift
+  let b3' := (b3 <<< (shift.toNat % 64)) ||| (b2 >>> (antiShift.toNat % 64))
+  let b2' := (b2 <<< (shift.toNat % 64)) ||| (b1 >>> (antiShift.toNat % 64))
+  let b1' := (b1 <<< (shift.toNat % 64)) ||| (b0 >>> (antiShift.toNat % 64))
   let b0' := b0 <<< (shift.toNat % 64)
-  let u3 := (a3 <<< (shift.toNat % 64)) ||| (a2 >>> (anti_shift.toNat % 64))
-  let u2 := (a2 <<< (shift.toNat % 64)) ||| (a1 >>> (anti_shift.toNat % 64))
-  let u1 := (a1 <<< (shift.toNat % 64)) ||| (a0 >>> (anti_shift.toNat % 64))
+  let u3 := (a3 <<< (shift.toNat % 64)) ||| (a2 >>> (antiShift.toNat % 64))
+  let u2 := (a2 <<< (shift.toNat % 64)) ||| (a1 >>> (antiShift.toNat % 64))
+  let u1 := (a1 <<< (shift.toNat % 64)) ||| (a0 >>> (antiShift.toNat % 64))
   let u0 := a0 <<< (shift.toNat % 64)
   let q_hat : Word := signExtend12 4095
   let ms := mulsubN4 q_hat b0' b1' b2' b3' u0 u1 u2 u3
   let c3 := ms.2.2.2.2
-  let u4_new := (a3 >>> (anti_shift.toNat % 64)) - c3
+  let u4_new := (a3 >>> (antiShift.toNat % 64)) - c3
   let ab := addbackN4 ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 u4_new b0' b1' b2' b3'
   let ab' := addbackN4 ab.1 ab.2.1 ab.2.2.1 ab.2.2.2.1 ab.2.2.2.2 b0' b1' b2' b3'
   let carry := addbackN4_carry ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 b0' b1' b2' b3'
@@ -594,19 +594,19 @@ theorem evm_div_n4_full_max_addback_beq_spec (sp base : Word)
        ((sp + signExtend12 3976) ↦ₘ j_mem))
       (fullDivN4MaxAddbackBeqPost sp a0 a1 a2 a3 b0 b1 b2 b3) := by
   let shift := (clzResult b3).1
-  let anti_shift := signExtend12 (0 : BitVec 12) - shift
-  let b3' := (b3 <<< (shift.toNat % 64)) ||| (b2 >>> (anti_shift.toNat % 64))
-  let b2' := (b2 <<< (shift.toNat % 64)) ||| (b1 >>> (anti_shift.toNat % 64))
-  let b1' := (b1 <<< (shift.toNat % 64)) ||| (b0 >>> (anti_shift.toNat % 64))
+  let antiShift := signExtend12 (0 : BitVec 12) - shift
+  let b3' := (b3 <<< (shift.toNat % 64)) ||| (b2 >>> (antiShift.toNat % 64))
+  let b2' := (b2 <<< (shift.toNat % 64)) ||| (b1 >>> (antiShift.toNat % 64))
+  let b1' := (b1 <<< (shift.toNat % 64)) ||| (b0 >>> (antiShift.toNat % 64))
   let b0' := b0 <<< (shift.toNat % 64)
-  let u3 := (a3 <<< (shift.toNat % 64)) ||| (a2 >>> (anti_shift.toNat % 64))
-  let u2 := (a2 <<< (shift.toNat % 64)) ||| (a1 >>> (anti_shift.toNat % 64))
-  let u1 := (a1 <<< (shift.toNat % 64)) ||| (a0 >>> (anti_shift.toNat % 64))
+  let u3 := (a3 <<< (shift.toNat % 64)) ||| (a2 >>> (antiShift.toNat % 64))
+  let u2 := (a2 <<< (shift.toNat % 64)) ||| (a1 >>> (antiShift.toNat % 64))
+  let u1 := (a1 <<< (shift.toNat % 64)) ||| (a0 >>> (antiShift.toNat % 64))
   let u0 := a0 <<< (shift.toNat % 64)
   let q_hat : Word := signExtend12 4095
   let ms := mulsubN4 q_hat b0' b1' b2' b3' u0 u1 u2 u3
   let c3 := ms.2.2.2.2
-  let u4_new := (a3 >>> (anti_shift.toNat % 64)) - c3
+  let u4_new := (a3 >>> (antiShift.toNat % 64)) - c3
   let ab := addbackN4 ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 u4_new b0' b1' b2' b3'
   let ab' := addbackN4 ab.1 ab.2.1 ab.2.2.1 ab.2.2.2.1 ab.2.2.2.2 b0' b1' b2' b3'
   let carry := addbackN4_carry ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 b0' b1' b2' b3'
@@ -658,15 +658,15 @@ theorem evm_div_n4_full_max_addback_beq_spec (sp base : Word)
 theorem preloopCallAddbackBeqPostN4_unfold (sp base a0 a1 a2 a3 b0 b1 b2 b3 : Word) :
     preloopCallAddbackBeqPostN4 sp base a0 a1 a2 a3 b0 b1 b2 b3 =
     let shift := (clzResult b3).1
-    let anti_shift := signExtend12 (0 : BitVec 12) - shift
-    let b3' := (b3 <<< (shift.toNat % 64)) ||| (b2 >>> (anti_shift.toNat % 64))
-    let b2' := (b2 <<< (shift.toNat % 64)) ||| (b1 >>> (anti_shift.toNat % 64))
-    let b1' := (b1 <<< (shift.toNat % 64)) ||| (b0 >>> (anti_shift.toNat % 64))
+    let antiShift := signExtend12 (0 : BitVec 12) - shift
+    let b3' := (b3 <<< (shift.toNat % 64)) ||| (b2 >>> (antiShift.toNat % 64))
+    let b2' := (b2 <<< (shift.toNat % 64)) ||| (b1 >>> (antiShift.toNat % 64))
+    let b1' := (b1 <<< (shift.toNat % 64)) ||| (b0 >>> (antiShift.toNat % 64))
     let b0' := b0 <<< (shift.toNat % 64)
-    let u4 := a3 >>> (anti_shift.toNat % 64)
-    let u3 := (a3 <<< (shift.toNat % 64)) ||| (a2 >>> (anti_shift.toNat % 64))
-    let u2 := (a2 <<< (shift.toNat % 64)) ||| (a1 >>> (anti_shift.toNat % 64))
-    let u1 := (a1 <<< (shift.toNat % 64)) ||| (a0 >>> (anti_shift.toNat % 64))
+    let u4 := a3 >>> (antiShift.toNat % 64)
+    let u3 := (a3 <<< (shift.toNat % 64)) ||| (a2 >>> (antiShift.toNat % 64))
+    let u2 := (a2 <<< (shift.toNat % 64)) ||| (a1 >>> (antiShift.toNat % 64))
+    let u1 := (a1 <<< (shift.toNat % 64)) ||| (a0 >>> (antiShift.toNat % 64))
     let u0 := a0 <<< (shift.toNat % 64)
     let q_hat := div128Quot u4 u3 b3'
     let d_lo := (b3' <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat
@@ -715,15 +715,15 @@ theorem preloopCallAddbackBeqPostN4_unfold (sp base a0 a1 a2 a3 b0 b1 b2 b3 : Wo
 @[irreducible]
 def fullDivN4CallAddbackBeqPost (sp base a0 a1 a2 a3 b0 b1 b2 b3 : Word) : Assertion :=
   let shift := (clzResult b3).1
-  let anti_shift := signExtend12 (0 : BitVec 12) - shift
-  let b3' := (b3 <<< (shift.toNat % 64)) ||| (b2 >>> (anti_shift.toNat % 64))
-  let b2' := (b2 <<< (shift.toNat % 64)) ||| (b1 >>> (anti_shift.toNat % 64))
-  let b1' := (b1 <<< (shift.toNat % 64)) ||| (b0 >>> (anti_shift.toNat % 64))
+  let antiShift := signExtend12 (0 : BitVec 12) - shift
+  let b3' := (b3 <<< (shift.toNat % 64)) ||| (b2 >>> (antiShift.toNat % 64))
+  let b2' := (b2 <<< (shift.toNat % 64)) ||| (b1 >>> (antiShift.toNat % 64))
+  let b1' := (b1 <<< (shift.toNat % 64)) ||| (b0 >>> (antiShift.toNat % 64))
   let b0' := b0 <<< (shift.toNat % 64)
-  let u4 := a3 >>> (anti_shift.toNat % 64)
-  let u3 := (a3 <<< (shift.toNat % 64)) ||| (a2 >>> (anti_shift.toNat % 64))
-  let u2 := (a2 <<< (shift.toNat % 64)) ||| (a1 >>> (anti_shift.toNat % 64))
-  let u1 := (a1 <<< (shift.toNat % 64)) ||| (a0 >>> (anti_shift.toNat % 64))
+  let u4 := a3 >>> (antiShift.toNat % 64)
+  let u3 := (a3 <<< (shift.toNat % 64)) ||| (a2 >>> (antiShift.toNat % 64))
+  let u2 := (a2 <<< (shift.toNat % 64)) ||| (a1 >>> (antiShift.toNat % 64))
+  let u1 := (a1 <<< (shift.toNat % 64)) ||| (a0 >>> (antiShift.toNat % 64))
   let u0 := a0 <<< (shift.toNat % 64)
   let q_hat := div128Quot u4 u3 b3'
   let d_lo := (b3' <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat
@@ -808,20 +808,20 @@ theorem evm_div_n4_full_call_addback_beq_spec (sp base : Word)
        (sp + signExtend12 3952 ↦ₘ dlo_mem) ** (sp + signExtend12 3944 ↦ₘ scratch_un0))
       (fullDivN4CallAddbackBeqPost sp base a0 a1 a2 a3 b0 b1 b2 b3) := by
   let shift := (clzResult b3).1
-  let anti_shift := signExtend12 (0 : BitVec 12) - shift
-  let b3' := (b3 <<< (shift.toNat % 64)) ||| (b2 >>> (anti_shift.toNat % 64))
-  let b2' := (b2 <<< (shift.toNat % 64)) ||| (b1 >>> (anti_shift.toNat % 64))
-  let b1' := (b1 <<< (shift.toNat % 64)) ||| (b0 >>> (anti_shift.toNat % 64))
+  let antiShift := signExtend12 (0 : BitVec 12) - shift
+  let b3' := (b3 <<< (shift.toNat % 64)) ||| (b2 >>> (antiShift.toNat % 64))
+  let b2' := (b2 <<< (shift.toNat % 64)) ||| (b1 >>> (antiShift.toNat % 64))
+  let b1' := (b1 <<< (shift.toNat % 64)) ||| (b0 >>> (antiShift.toNat % 64))
   let b0' := b0 <<< (shift.toNat % 64)
-  let u4 := a3 >>> (anti_shift.toNat % 64)
-  let u3 := (a3 <<< (shift.toNat % 64)) ||| (a2 >>> (anti_shift.toNat % 64))
+  let u4 := a3 >>> (antiShift.toNat % 64)
+  let u3 := (a3 <<< (shift.toNat % 64)) ||| (a2 >>> (antiShift.toNat % 64))
   let u0 := a0 <<< (shift.toNat % 64)
   let q_hat := div128Quot u4 u3 b3'
   let d_lo := (b3' <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat
   let div_un0 := (u3 <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat
   let ms := mulsubN4 q_hat b0' b1' b2' b3' u0
-    ((a1 <<< (shift.toNat % 64)) ||| (a0 >>> (anti_shift.toNat % 64)))
-    ((a2 <<< (shift.toNat % 64)) ||| (a1 >>> (anti_shift.toNat % 64)))
+    ((a1 <<< (shift.toNat % 64)) ||| (a0 >>> (antiShift.toNat % 64)))
+    ((a2 <<< (shift.toNat % 64)) ||| (a1 >>> (antiShift.toNat % 64)))
     u3
   let c3 := ms.2.2.2.2
   let u4_new := u4 - c3

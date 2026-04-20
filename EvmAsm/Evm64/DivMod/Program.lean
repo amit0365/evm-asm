@@ -30,7 +30,7 @@
   Register allocation:
     x12 = EVM stack pointer (preserved)
     x1  = loop counter j / temp
-    x2  = anti_shift / subroutine return addr
+    x2  = antiShift / subroutine return addr
     x5  = general temp
     x6  = general temp / u_base in mul-sub
     x7  = general temp
@@ -168,15 +168,15 @@ def divK_clz : Program :=
   SRLI .x7 .x5 63 ;; single (.BNE .x7 .x0 8) ;;
   ADDI .x6 .x6 1
 
-/-- Phase C2: Store shift, compute anti_shift, BEQ if shift=0.
-    4 instructions. x6 = shift, x2 = anti_shift. -/
+/-- Phase C2: Store shift, compute antiShift, BEQ if shift=0.
+    4 instructions. x6 = shift, x2 = antiShift. -/
 def divK_phaseC2 (shift0_off : BitVec 13) : Program :=
   SD .x12 .x6 3992 ;;
   ADDI .x2 .x0 0 ;; single (.SUB .x2 .x2 .x6) ;;
   single (.BEQ .x6 .x0 shift0_off)
 
 /-- Phase C3a: Normalize b in-place (shift > 0).
-    21 instructions. x6 = shift, x2 = anti_shift. -/
+    21 instructions. x6 = shift, x2 = antiShift. -/
 def divK_normB : Program :=
   LD .x5 .x12 56 ;; LD .x7 .x12 48 ;;
   single (.SLL .x5 .x5 .x6) ;; single (.SRL .x7 .x7 .x2) ;; single (.OR .x5 .x5 .x7) ;;
@@ -395,7 +395,7 @@ def divK_loopBody (subr_off : BitVec 21) (loop_back_off : BitVec 13) : Program :
 def divK_denorm : Program :=
   LD .x6 .x12 3992 ;;                         -- [0] shift
   single (.BEQ .x6 .x0 96) ;;                -- [1] if shift=0, skip → [25]
-  ADDI .x2 .x0 0 ;; single (.SUB .x2 .x2 .x6) ;; -- [2,3] anti_shift
+  ADDI .x2 .x0 0 ;; single (.SUB .x2 .x2 .x6) ;; -- [2,3] antiShift
   -- u[0]
   LD .x5 .x12 4056 ;; LD .x7 .x12 4048 ;;    -- [4,5]
   single (.SRL .x5 .x5 .x6) ;;               -- [6]
