@@ -217,10 +217,10 @@ def divK_copyAU : Program :=
 
 /-- Loop setup: compute m = 4-n, j = m (start of loop counter).
     4 instructions. BLT if j < 0 (signed). -/
-def divK_loopSetup (blt_off : BitVec 13) : Program :=
+def divK_loopSetup (bltOff : BitVec 13) : Program :=
   LD .x5 .x12 3984 ;;
   ADDI .x1 .x0 4 ;; single (.SUB .x1 .x1 .x5) ;;
-  single (.BLT .x1 .x0 blt_off)
+  single (.BLT .x1 .x0 bltOff)
 
 /-- Loop body: trial quotient + multiply-subtract + correction + store q[j].
     Starts at loop_start. Includes save/restore of j.

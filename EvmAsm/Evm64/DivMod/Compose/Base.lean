@@ -382,7 +382,7 @@ theorem divScratchValues_implies_divScratchOwn
     and normalized u[0..4] as internal let bindings.
     Marked @[irreducible] so xperm treats this as 1 opaque atom. -/
 @[irreducible]
-def loopSetupPost (sp n_val shift a0 a1 a2 a3 b0 b1 b2 b3 : Word) : Assertion :=
+def loopSetupPost (sp nVal shift a0 a1 a2 a3 b0 b1 b2 b3 : Word) : Assertion :=
   let anti_shift := signExtend12 (0 : BitVec 12) - shift
   let b3' := (b3 <<< (shift.toNat % 64)) ||| (b2 >>> (anti_shift.toNat % 64))
   let b2' := (b2 <<< (shift.toNat % 64)) ||| (b1 >>> (anti_shift.toNat % 64))
@@ -393,10 +393,10 @@ def loopSetupPost (sp n_val shift a0 a1 a2 a3 b0 b1 b2 b3 : Word) : Assertion :=
   let u2 := (a2 <<< (shift.toNat % 64)) ||| (a1 >>> (anti_shift.toNat % 64))
   let u1 := (a1 <<< (shift.toNat % 64)) ||| (a0 >>> (anti_shift.toNat % 64))
   let u0 := a0 <<< (shift.toNat % 64)
-  (.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ n_val) ** (.x10 ↦ᵣ (a0 >>> (anti_shift.toNat % 64))) **
+  (.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ nVal) ** (.x10 ↦ᵣ (a0 >>> (anti_shift.toNat % 64))) **
   (.x0 ↦ᵣ (0 : Word)) **
   (.x6 ↦ᵣ shift) ** (.x7 ↦ᵣ u0) ** (.x2 ↦ᵣ anti_shift) **
-  (.x1 ↦ᵣ signExtend12 (4 : BitVec 12) - n_val) **
+  (.x1 ↦ᵣ signExtend12 (4 : BitVec 12) - nVal) **
   ((sp + 0) ↦ₘ a0) ** ((sp + 8) ↦ₘ a1) **
   ((sp + 16) ↦ₘ a2) ** ((sp + 24) ↦ₘ a3) **
   ((sp + 32) ↦ₘ b0') ** ((sp + 40) ↦ₘ b1') **
@@ -407,12 +407,12 @@ def loopSetupPost (sp n_val shift a0 a1 a2 a3 b0 b1 b2 b3 : Word) : Assertion :=
   ((sp + signExtend12 4040) ↦ₘ u2) ** ((sp + signExtend12 4032) ↦ₘ u3) **
   ((sp + signExtend12 4024) ↦ₘ u4) **
   ((sp + signExtend12 4016) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4008) ↦ₘ (0 : Word)) **
-  ((sp + signExtend12 4000) ↦ₘ (0 : Word)) ** ((sp + signExtend12 3984) ↦ₘ n_val) **
+  ((sp + signExtend12 4000) ↦ₘ (0 : Word)) ** ((sp + signExtend12 3984) ↦ₘ nVal) **
   ((sp + signExtend12 3992) ↦ₘ shift)
 
 /-- Unfold the opaque loopSetupPost back to its expanded form. -/
-theorem loopSetupPost_unfold (sp n_val shift a0 a1 a2 a3 b0 b1 b2 b3 : Word) :
-    loopSetupPost sp n_val shift a0 a1 a2 a3 b0 b1 b2 b3 =
+theorem loopSetupPost_unfold (sp nVal shift a0 a1 a2 a3 b0 b1 b2 b3 : Word) :
+    loopSetupPost sp nVal shift a0 a1 a2 a3 b0 b1 b2 b3 =
     let anti_shift := signExtend12 (0 : BitVec 12) - shift
     let b3' := (b3 <<< (shift.toNat % 64)) ||| (b2 >>> (anti_shift.toNat % 64))
     let b2' := (b2 <<< (shift.toNat % 64)) ||| (b1 >>> (anti_shift.toNat % 64))
@@ -423,10 +423,10 @@ theorem loopSetupPost_unfold (sp n_val shift a0 a1 a2 a3 b0 b1 b2 b3 : Word) :
     let u2 := (a2 <<< (shift.toNat % 64)) ||| (a1 >>> (anti_shift.toNat % 64))
     let u1 := (a1 <<< (shift.toNat % 64)) ||| (a0 >>> (anti_shift.toNat % 64))
     let u0 := a0 <<< (shift.toNat % 64)
-    (.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ n_val) ** (.x10 ↦ᵣ (a0 >>> (anti_shift.toNat % 64))) **
+    (.x12 ↦ᵣ sp) ** (.x5 ↦ᵣ nVal) ** (.x10 ↦ᵣ (a0 >>> (anti_shift.toNat % 64))) **
     (.x0 ↦ᵣ (0 : Word)) **
     (.x6 ↦ᵣ shift) ** (.x7 ↦ᵣ u0) ** (.x2 ↦ᵣ anti_shift) **
-    (.x1 ↦ᵣ signExtend12 (4 : BitVec 12) - n_val) **
+    (.x1 ↦ᵣ signExtend12 (4 : BitVec 12) - nVal) **
     ((sp + 0) ↦ₘ a0) ** ((sp + 8) ↦ₘ a1) **
     ((sp + 16) ↦ₘ a2) ** ((sp + 24) ↦ₘ a3) **
     ((sp + 32) ↦ₘ b0') ** ((sp + 40) ↦ₘ b1') **
@@ -437,19 +437,19 @@ theorem loopSetupPost_unfold (sp n_val shift a0 a1 a2 a3 b0 b1 b2 b3 : Word) :
     ((sp + signExtend12 4040) ↦ₘ u2) ** ((sp + signExtend12 4032) ↦ₘ u3) **
     ((sp + signExtend12 4024) ↦ₘ u4) **
     ((sp + signExtend12 4016) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4008) ↦ₘ (0 : Word)) **
-    ((sp + signExtend12 4000) ↦ₘ (0 : Word)) ** ((sp + signExtend12 3984) ↦ₘ n_val) **
+    ((sp + signExtend12 4000) ↦ₘ (0 : Word)) ** ((sp + signExtend12 3984) ↦ₘ nVal) **
     ((sp + signExtend12 3992) ↦ₘ shift) := by
   delta loopSetupPost; rfl
 
 /-- `loopSetupPost` is pc-free: all its atoms are `regIs` / `memIs`. -/
-theorem pcFree_loopSetupPost (sp n_val shift a0 a1 a2 a3 b0 b1 b2 b3 : Word) :
-    (loopSetupPost sp n_val shift a0 a1 a2 a3 b0 b1 b2 b3).pcFree := by
+theorem pcFree_loopSetupPost (sp nVal shift a0 a1 a2 a3 b0 b1 b2 b3 : Word) :
+    (loopSetupPost sp nVal shift a0 a1 a2 a3 b0 b1 b2 b3).pcFree := by
   rw [loopSetupPost_unfold]; pcFree
 
 instance pcFreeInst_loopSetupPost
-    (sp n_val shift a0 a1 a2 a3 b0 b1 b2 b3 : Word) :
-    Assertion.PCFree (loopSetupPost sp n_val shift a0 a1 a2 a3 b0 b1 b2 b3) :=
-  ⟨pcFree_loopSetupPost sp n_val shift a0 a1 a2 a3 b0 b1 b2 b3⟩
+    (sp nVal shift a0 a1 a2 a3 b0 b1 b2 b3 : Word) :
+    Assertion.PCFree (loopSetupPost sp nVal shift a0 a1 a2 a3 b0 b1 b2 b3) :=
+  ⟨pcFree_loopSetupPost sp nVal shift a0 a1 a2 a3 b0 b1 b2 b3⟩
 
 -- ============================================================================
 -- Postcondition bundles for denorm + epilogue paths
@@ -546,7 +546,7 @@ instance pcFreeInst_denormModPost (sp shift u0 u1 u2 u3 : Word) :
 /-- Postcondition after PhaseAB + CLZ + PhaseC2(ntaken) + NormB.
     Encapsulates shift, anti_shift, and normalized b'[0..3]. -/
 @[irreducible]
-def normBPost (sp n_val shift b0 b1 b2 b3 : Word) : Assertion :=
+def normBPost (sp nVal shift b0 b1 b2 b3 : Word) : Assertion :=
   let anti_shift := signExtend12 (0 : BitVec 12) - shift
   let b3' := (b3 <<< (shift.toNat % 64)) ||| (b2 >>> (anti_shift.toNat % 64))
   let b2' := (b2 <<< (shift.toNat % 64)) ||| (b1 >>> (anti_shift.toNat % 64))
@@ -560,11 +560,11 @@ def normBPost (sp n_val shift b0 b1 b2 b3 : Word) : Assertion :=
   ((sp + signExtend12 4088) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4080) ↦ₘ (0 : Word)) **
   ((sp + signExtend12 4072) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4064) ↦ₘ (0 : Word)) **
   ((sp + signExtend12 4016) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4008) ↦ₘ (0 : Word)) **
-  ((sp + signExtend12 4000) ↦ₘ (0 : Word)) ** ((sp + signExtend12 3984) ↦ₘ n_val) **
+  ((sp + signExtend12 4000) ↦ₘ (0 : Word)) ** ((sp + signExtend12 3984) ↦ₘ nVal) **
   ((sp + signExtend12 3992) ↦ₘ shift)
 
-theorem normBPost_unfold (sp n_val shift b0 b1 b2 b3 : Word) :
-    normBPost sp n_val shift b0 b1 b2 b3 =
+theorem normBPost_unfold (sp nVal shift b0 b1 b2 b3 : Word) :
+    normBPost sp nVal shift b0 b1 b2 b3 =
     let anti_shift := signExtend12 (0 : BitVec 12) - shift
     let b3' := (b3 <<< (shift.toNat % 64)) ||| (b2 >>> (anti_shift.toNat % 64))
     let b2' := (b2 <<< (shift.toNat % 64)) ||| (b1 >>> (anti_shift.toNat % 64))
@@ -578,18 +578,18 @@ theorem normBPost_unfold (sp n_val shift b0 b1 b2 b3 : Word) :
     ((sp + signExtend12 4088) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4080) ↦ₘ (0 : Word)) **
     ((sp + signExtend12 4072) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4064) ↦ₘ (0 : Word)) **
     ((sp + signExtend12 4016) ↦ₘ (0 : Word)) ** ((sp + signExtend12 4008) ↦ₘ (0 : Word)) **
-    ((sp + signExtend12 4000) ↦ₘ (0 : Word)) ** ((sp + signExtend12 3984) ↦ₘ n_val) **
+    ((sp + signExtend12 4000) ↦ₘ (0 : Word)) ** ((sp + signExtend12 3984) ↦ₘ nVal) **
     ((sp + signExtend12 3992) ↦ₘ shift) := by
   delta normBPost; rfl
 
 /-- `normBPost` is pc-free: all its atoms are `regIs` / `memIs`. -/
-theorem pcFree_normBPost (sp n_val shift b0 b1 b2 b3 : Word) :
-    (normBPost sp n_val shift b0 b1 b2 b3).pcFree := by
+theorem pcFree_normBPost (sp nVal shift b0 b1 b2 b3 : Word) :
+    (normBPost sp nVal shift b0 b1 b2 b3).pcFree := by
   rw [normBPost_unfold]; pcFree
 
-instance pcFreeInst_normBPost (sp n_val shift b0 b1 b2 b3 : Word) :
-    Assertion.PCFree (normBPost sp n_val shift b0 b1 b2 b3) :=
-  ⟨pcFree_normBPost sp n_val shift b0 b1 b2 b3⟩
+instance pcFreeInst_normBPost (sp nVal shift b0 b1 b2 b3 : Word) :
+    Assertion.PCFree (normBPost sp nVal shift b0 b1 b2 b3) :=
+  ⟨pcFree_normBPost sp nVal shift b0 b1 b2 b3⟩
 
 -- ============================================================================
 -- `se12_32`/`se12_40`/`se12_48`/`se12_56` were deleted by issue #493 / #494:
