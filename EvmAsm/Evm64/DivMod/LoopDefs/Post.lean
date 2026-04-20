@@ -78,19 +78,19 @@ abbrev loopExitPostN4 := loopExitPost (4 : Word)
 -- ============================================================================
 /-- Full mulsub-skip postcondition for n loop body. -/
 @[irreducible]
-def loopBodySkipPost (n : Word) (sp j q_hat v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : Assertion :=
-  let ms := mulsubN4 q_hat v0 v1 v2 v3 u0 u1 u2 u3
-  loopExitPost n sp j q_hat ms.2.2.2.2 ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 (u_top - ms.2.2.2.2) v0 v1 v2 v3
+def loopBodySkipPost (n : Word) (sp j qHat v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : Assertion :=
+  let ms := mulsubN4 qHat v0 v1 v2 v3 u0 u1 u2 u3
+  loopExitPost n sp j qHat ms.2.2.2.2 ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 (u_top - ms.2.2.2.2) v0 v1 v2 v3
 
 /-- Full mulsub-addback postcondition for n loop body. -/
 @[irreducible]
-def loopBodyAddbackPost (n : Word) (sp j q_hat v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : Assertion :=
-  let ms := mulsubN4 q_hat v0 v1 v2 v3 u0 u1 u2 u3
+def loopBodyAddbackPost (n : Word) (sp j qHat v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : Assertion :=
+  let ms := mulsubN4 qHat v0 v1 v2 v3 u0 u1 u2 u3
   let un0 := ms.1; let un1 := ms.2.1; let un2 := ms.2.2.1
   let un3 := ms.2.2.2.1; let c3 := ms.2.2.2.2
   let u4_new := u_top - c3
   let ab := addbackN4 un0 un1 un2 un3 u4_new v0 v1 v2 v3
-  loopExitPost n sp j (q_hat + signExtend12 4095) c3 ab.1 ab.2.1 ab.2.2.1 ab.2.2.2.1 ab.2.2.2.2 v0 v1 v2 v3
+  loopExitPost n sp j (qHat + signExtend12 4095) c3 ab.1 ab.2.1 ab.2.2.1 ab.2.2.2.1 ab.2.2.2.2 v0 v1 v2 v3
 
 /-- Backward-compatible abbreviations for loopBodySkipPost and loopBodyAddbackPost. -/
 abbrev loopBodyN1SkipPost := loopBodySkipPost (1 : Word)
@@ -105,14 +105,14 @@ abbrev loopBodyN4AddbackPost := loopBodyAddbackPost (4 : Word)
 /-- Full mulsub-addback postcondition with BEQ double-addback handling.
     Handles both carry=0 (double addback) and carry≠0 (single addback) cases. -/
 @[irreducible]
-def loopBodyAddbackBeqPost (n : Word) (sp j q_hat v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : Assertion :=
-  let ms := mulsubN4 q_hat v0 v1 v2 v3 u0 u1 u2 u3
+def loopBodyAddbackBeqPost (n : Word) (sp j qHat v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : Assertion :=
+  let ms := mulsubN4 qHat v0 v1 v2 v3 u0 u1 u2 u3
   let c3 := ms.2.2.2.2
   let carry := addbackN4_carry ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 v0 v1 v2 v3
   let ab := addbackN4 ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 (u_top - c3) v0 v1 v2 v3
   let ab' := addbackN4 ab.1 ab.2.1 ab.2.2.1 ab.2.2.2.1 ab.2.2.2.2 v0 v1 v2 v3
-  let q_out := if carry = 0 then q_hat + signExtend12 4095 + signExtend12 4095
-               else q_hat + signExtend12 4095
+  let q_out := if carry = 0 then qHat + signExtend12 4095 + signExtend12 4095
+               else qHat + signExtend12 4095
   let un0_out := if carry = 0 then ab'.1 else ab.1
   let un1_out := if carry = 0 then ab'.2.1 else ab.2.1
   let un2_out := if carry = 0 then ab'.2.2.1 else ab.2.2.1
@@ -133,8 +133,8 @@ abbrev loopBodyN4AddbackBeqPost := loopBodyAddbackBeqPost (4 : Word)
     Bundles div128Quot computation + loopBodyN3SkipPost + scratch cells. -/
 @[irreducible]
 def loopBodyN3CallSkipPost (sp base v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : Assertion :=
-  let q_hat := div128Quot u3 u2 v2
-  loopBodyN3SkipPost sp (0 : Word) q_hat v0 v1 v2 v3 u0 u1 u2 u3 u_top **
+  let qHat := div128Quot u3 u2 v2
+  loopBodyN3SkipPost sp (0 : Word) qHat v0 v1 v2 v3 u0 u1 u2 u3 u_top **
   (sp + signExtend12 3968 ↦ₘ (base + 516)) **
   (sp + signExtend12 3960 ↦ₘ v2) **
   (sp + signExtend12 3952 ↦ₘ div128DLo v2) **
@@ -144,8 +144,8 @@ def loopBodyN3CallSkipPost (sp base v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : Asse
     Bundles div128Quot computation + loopBodyN3AddbackPost + scratch cells. -/
 @[irreducible]
 def loopBodyN3CallAddbackPost (sp base v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : Assertion :=
-  let q_hat := div128Quot u3 u2 v2
-  loopBodyN3AddbackPost sp (0 : Word) q_hat v0 v1 v2 v3 u0 u1 u2 u3 u_top **
+  let qHat := div128Quot u3 u2 v2
+  loopBodyN3AddbackPost sp (0 : Word) qHat v0 v1 v2 v3 u0 u1 u2 u3 u_top **
   (sp + signExtend12 3968 ↦ₘ (base + 516)) **
   (sp + signExtend12 3960 ↦ₘ v2) **
   (sp + signExtend12 3952 ↦ₘ div128DLo v2) **
@@ -153,13 +153,13 @@ def loopBodyN3CallAddbackPost (sp base v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : A
 
 /-- Borrow condition for n=3 call+skip: mulsub doesn't overflow. -/
 def isSkipBorrowN3Call (v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : Prop :=
-  let q_hat := div128Quot u3 u2 v2
-  (if BitVec.ult u_top (mulsubN4_c3 q_hat v0 v1 v2 v3 u0 u1 u2 u3) then (1 : Word) else 0) = (0 : Word)
+  let qHat := div128Quot u3 u2 v2
+  (if BitVec.ult u_top (mulsubN4_c3 qHat v0 v1 v2 v3 u0 u1 u2 u3) then (1 : Word) else 0) = (0 : Word)
 
 /-- Borrow condition for n=3 call+addback: mulsub overflows. -/
 def isAddbackBorrowN3Call (v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : Prop :=
-  let q_hat := div128Quot u3 u2 v2
-  (if BitVec.ult u_top (mulsubN4_c3 q_hat v0 v1 v2 v3 u0 u1 u2 u3) then (1 : Word) else 0) ≠ (0 : Word)
+  let qHat := div128Quot u3 u2 v2
+  (if BitVec.ult u_top (mulsubN4_c3 qHat v0 v1 v2 v3 u0 u1 u2 u3) then (1 : Word) else 0) ≠ (0 : Word)
 
 -- ============================================================================
 -- Generic j versions of call path postconditions (for multi-iteration loops)
@@ -169,8 +169,8 @@ def isAddbackBorrowN3Call (v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : Prop :=
     Bundles div128Quot computation + loopBodyN3SkipPost + scratch cells. -/
 @[irreducible]
 def loopBodyN3CallSkipPostJ (sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : Assertion :=
-  let q_hat := div128Quot u3 u2 v2
-  loopBodyN3SkipPost sp j q_hat v0 v1 v2 v3 u0 u1 u2 u3 u_top **
+  let qHat := div128Quot u3 u2 v2
+  loopBodyN3SkipPost sp j qHat v0 v1 v2 v3 u0 u1 u2 u3 u_top **
   (sp + signExtend12 3968 ↦ₘ (base + 516)) **
   (sp + signExtend12 3960 ↦ₘ v2) **
   (sp + signExtend12 3952 ↦ₘ div128DLo v2) **
@@ -180,8 +180,8 @@ def loopBodyN3CallSkipPostJ (sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : A
     Bundles div128Quot computation + loopBodyN3AddbackPost + scratch cells. -/
 @[irreducible]
 def loopBodyN3CallAddbackPostJ (sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : Assertion :=
-  let q_hat := div128Quot u3 u2 v2
-  loopBodyN3AddbackPost sp j q_hat v0 v1 v2 v3 u0 u1 u2 u3 u_top **
+  let qHat := div128Quot u3 u2 v2
+  loopBodyN3AddbackPost sp j qHat v0 v1 v2 v3 u0 u1 u2 u3 u_top **
   (sp + signExtend12 3968 ↦ₘ (base + 516)) **
   (sp + signExtend12 3960 ↦ₘ v2) **
   (sp + signExtend12 3952 ↦ₘ div128DLo v2) **
@@ -190,8 +190,8 @@ def loopBodyN3CallAddbackPostJ (sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) 
 /-- Call+addback BEQ postcondition for n=3 at j=0, with double-addback handling. -/
 @[irreducible]
 def loopBodyN3CallAddbackBeqPost (sp base v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : Assertion :=
-  let q_hat := div128Quot u3 u2 v2
-  loopBodyN3AddbackBeqPost sp (0 : Word) q_hat v0 v1 v2 v3 u0 u1 u2 u3 u_top **
+  let qHat := div128Quot u3 u2 v2
+  loopBodyN3AddbackBeqPost sp (0 : Word) qHat v0 v1 v2 v3 u0 u1 u2 u3 u_top **
   (sp + signExtend12 3968 ↦ₘ (base + 516)) **
   (sp + signExtend12 3960 ↦ₘ v2) **
   (sp + signExtend12 3952 ↦ₘ div128DLo v2) **
@@ -200,8 +200,8 @@ def loopBodyN3CallAddbackBeqPost (sp base v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) 
 /-- Call+addback BEQ postcondition for n=3, generic j, with double-addback handling. -/
 @[irreducible]
 def loopBodyN3CallAddbackBeqPostJ (sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : Assertion :=
-  let q_hat := div128Quot u3 u2 v2
-  loopBodyN3AddbackBeqPost sp j q_hat v0 v1 v2 v3 u0 u1 u2 u3 u_top **
+  let qHat := div128Quot u3 u2 v2
+  loopBodyN3AddbackBeqPost sp j qHat v0 v1 v2 v3 u0 u1 u2 u3 u_top **
   (sp + signExtend12 3968 ↦ₘ (base + 516)) **
   (sp + signExtend12 3960 ↦ₘ v2) **
   (sp + signExtend12 3952 ↦ₘ div128DLo v2) **
@@ -223,8 +223,8 @@ theorem loopBodyN3CallAddbackBeqPost_eq_J (sp base v0 v1 v2 v3 u0 u1 u2 u3 u_top
     For n=1: div128 uses u_hi=u1, u_lo=u0, v_top=v0. -/
 @[irreducible]
 def loopBodyN1CallSkipPostJ (sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : Assertion :=
-  let q_hat := div128Quot u1 u0 v0
-  loopBodyN1SkipPost sp j q_hat v0 v1 v2 v3 u0 u1 u2 u3 u_top **
+  let qHat := div128Quot u1 u0 v0
+  loopBodyN1SkipPost sp j qHat v0 v1 v2 v3 u0 u1 u2 u3 u_top **
   (sp + signExtend12 3968 ↦ₘ (base + 516)) **
   (sp + signExtend12 3960 ↦ₘ v0) **
   (sp + signExtend12 3952 ↦ₘ div128DLo v0) **
@@ -234,8 +234,8 @@ def loopBodyN1CallSkipPostJ (sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : A
     Bundles div128Quot computation + loopBodyN1AddbackPost + scratch cells. -/
 @[irreducible]
 def loopBodyN1CallAddbackPostJ (sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : Assertion :=
-  let q_hat := div128Quot u1 u0 v0
-  loopBodyN1AddbackPost sp j q_hat v0 v1 v2 v3 u0 u1 u2 u3 u_top **
+  let qHat := div128Quot u1 u0 v0
+  loopBodyN1AddbackPost sp j qHat v0 v1 v2 v3 u0 u1 u2 u3 u_top **
   (sp + signExtend12 3968 ↦ₘ (base + 516)) **
   (sp + signExtend12 3960 ↦ₘ v0) **
   (sp + signExtend12 3952 ↦ₘ div128DLo v0) **
@@ -244,8 +244,8 @@ def loopBodyN1CallAddbackPostJ (sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) 
 /-- Call+addback BEQ postcondition for n=1, generic j, with double-addback handling. -/
 @[irreducible]
 def loopBodyN1CallAddbackBeqPostJ (sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : Assertion :=
-  let q_hat := div128Quot u1 u0 v0
-  loopBodyN1AddbackBeqPost sp j q_hat v0 v1 v2 v3 u0 u1 u2 u3 u_top **
+  let qHat := div128Quot u1 u0 v0
+  loopBodyN1AddbackBeqPost sp j qHat v0 v1 v2 v3 u0 u1 u2 u3 u_top **
   (sp + signExtend12 3968 ↦ₘ (base + 516)) **
   (sp + signExtend12 3960 ↦ₘ v0) **
   (sp + signExtend12 3952 ↦ₘ div128DLo v0) **
@@ -260,8 +260,8 @@ def loopBodyN1CallAddbackBeqPostJ (sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Wor
     For n=2: div128 uses u_hi=u2, u_lo=u1, v_top=v1. -/
 @[irreducible]
 def loopBodyN2CallSkipPostJ (sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : Assertion :=
-  let q_hat := div128Quot u2 u1 v1
-  loopBodyN2SkipPost sp j q_hat v0 v1 v2 v3 u0 u1 u2 u3 u_top **
+  let qHat := div128Quot u2 u1 v1
+  loopBodyN2SkipPost sp j qHat v0 v1 v2 v3 u0 u1 u2 u3 u_top **
   (sp + signExtend12 3968 ↦ₘ (base + 516)) **
   (sp + signExtend12 3960 ↦ₘ v1) **
   (sp + signExtend12 3952 ↦ₘ div128DLo v1) **
@@ -271,8 +271,8 @@ def loopBodyN2CallSkipPostJ (sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : A
     Bundles div128Quot computation + loopBodyN2AddbackPost + scratch cells. -/
 @[irreducible]
 def loopBodyN2CallAddbackPostJ (sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : Assertion :=
-  let q_hat := div128Quot u2 u1 v1
-  loopBodyN2AddbackPost sp j q_hat v0 v1 v2 v3 u0 u1 u2 u3 u_top **
+  let qHat := div128Quot u2 u1 v1
+  loopBodyN2AddbackPost sp j qHat v0 v1 v2 v3 u0 u1 u2 u3 u_top **
   (sp + signExtend12 3968 ↦ₘ (base + 516)) **
   (sp + signExtend12 3960 ↦ₘ v1) **
   (sp + signExtend12 3952 ↦ₘ div128DLo v1) **
@@ -281,8 +281,8 @@ def loopBodyN2CallAddbackPostJ (sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) 
 /-- Call+addback BEQ postcondition for n=2, generic j, with double-addback handling. -/
 @[irreducible]
 def loopBodyN2CallAddbackBeqPostJ (sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : Assertion :=
-  let q_hat := div128Quot u2 u1 v1
-  loopBodyN2AddbackBeqPost sp j q_hat v0 v1 v2 v3 u0 u1 u2 u3 u_top **
+  let qHat := div128Quot u2 u1 v1
+  loopBodyN2AddbackBeqPost sp j qHat v0 v1 v2 v3 u0 u1 u2 u3 u_top **
   (sp + signExtend12 3968 ↦ₘ (base + 516)) **
   (sp + signExtend12 3960 ↦ₘ v1) **
   (sp + signExtend12 3952 ↦ₘ div128DLo v1) **
@@ -296,14 +296,14 @@ def loopBodyN2CallAddbackBeqPostJ (sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Wor
     Includes the j=0 exit postcondition plus j=1's carried frame atoms (u4_new, q[1]). -/
 @[irreducible]
 def loopN3MaxSkipSkipPost (sp v0 v1 v2 v3 u0 u1 u2 u3 u_top u0_orig : Word) : Assertion :=
-  let q_hat : Word := signExtend12 4095
-  let ms := mulsubN4 q_hat v0 v1 v2 v3 u0 u1 u2 u3
+  let qHat : Word := signExtend12 4095
+  let ms := mulsubN4 qHat v0 v1 v2 v3 u0 u1 u2 u3
   let u_base_1 := sp + signExtend12 4056 - (1 : Word) <<< (3 : BitVec 6).toNat
   let q_addr_1 := sp + signExtend12 4088 - (1 : Word) <<< (3 : BitVec 6).toNat
-  loopBodyN3SkipPost sp (0 : Word) q_hat v0 v1 v2 v3
+  loopBodyN3SkipPost sp (0 : Word) qHat v0 v1 v2 v3
     u0_orig ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 **
   ((u_base_1 + signExtend12 4064) ↦ₘ (u_top - ms.2.2.2.2)) **
-  (q_addr_1 ↦ₘ q_hat)
+  (q_addr_1 ↦ₘ qHat)
 
 -- ============================================================================
 -- Double-addback iteration postconditions
@@ -332,8 +332,8 @@ theorem loopIterPostN1Max_skip (sp j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word)
 
 @[irreducible] def loopIterPostN1Call (sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : Assertion :=
   let r := iterN1Call v0 v1 v2 v3 u0 u1 u2 u3 u_top
-  let q_hat := div128Quot u1 u0 v0
-  let c3 := (mulsubN4 q_hat v0 v1 v2 v3 u0 u1 u2 u3).2.2.2.2
+  let qHat := div128Quot u1 u0 v0
+  let c3 := (mulsubN4 qHat v0 v1 v2 v3 u0 u1 u2 u3).2.2.2.2
   loopExitPostN1 sp j r.1 c3 r.2.1 r.2.2.1 r.2.2.2.1 r.2.2.2.2.1 r.2.2.2.2.2 v0 v1 v2 v3 **
   (sp + signExtend12 3968 ↦ₘ (base + 516)) **
   (sp + signExtend12 3960 ↦ₘ v0) **
@@ -384,8 +384,8 @@ theorem loopIterPostN2Max_skip (sp j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word)
 
 @[irreducible] def loopIterPostN2Call (sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : Assertion :=
   let r := iterN2Call v0 v1 v2 v3 u0 u1 u2 u3 u_top
-  let q_hat := div128Quot u2 u1 v1
-  let c3 := (mulsubN4 q_hat v0 v1 v2 v3 u0 u1 u2 u3).2.2.2.2
+  let qHat := div128Quot u2 u1 v1
+  let c3 := (mulsubN4 qHat v0 v1 v2 v3 u0 u1 u2 u3).2.2.2.2
   loopExitPostN2 sp j r.1 c3 r.2.1 r.2.2.1 r.2.2.2.1 r.2.2.2.2.1 r.2.2.2.2.2 v0 v1 v2 v3 **
   (sp + signExtend12 3968 ↦ₘ (base + 516)) **
   (sp + signExtend12 3960 ↦ₘ v1) **
@@ -438,8 +438,8 @@ theorem loopIterPostN3Max_skip (sp j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word)
 
 @[irreducible] def loopIterPostN3Call (sp base j v0 v1 v2 v3 u0 u1 u2 u3 u_top : Word) : Assertion :=
   let r := iterN3Call v0 v1 v2 v3 u0 u1 u2 u3 u_top
-  let q_hat := div128Quot u3 u2 v2
-  let c3 := (mulsubN4 q_hat v0 v1 v2 v3 u0 u1 u2 u3).2.2.2.2
+  let qHat := div128Quot u3 u2 v2
+  let c3 := (mulsubN4 qHat v0 v1 v2 v3 u0 u1 u2 u3).2.2.2.2
   loopExitPostN3 sp j r.1 c3 r.2.1 r.2.2.1 r.2.2.2.1 r.2.2.2.2.1 r.2.2.2.2.2 v0 v1 v2 v3 **
   (sp + signExtend12 3968 ↦ₘ (base + 516)) **
   (sp + signExtend12 3960 ↦ₘ v2) **

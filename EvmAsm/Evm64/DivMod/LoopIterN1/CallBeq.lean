@@ -72,7 +72,7 @@ theorem divK_loop_body_n1_call_addback_j0_beq_spec
   let q0_dlo := q0c * d_lo
   let rhat2_un0 := (rhat2c <<< (32 : BitVec 6).toNat) ||| div_un0
   let q0' := if BitVec.ult rhat2_un0 q0_dlo then q0c + signExtend12 4095 else q0c
-  let q_hat := (q1' <<< (32 : BitVec 6).toNat) ||| q0'
+  let qHat := (q1' <<< (32 : BitVec 6).toNat) ||| q0'
   unfold isAddbackBorrowN1Call div128Quot at hborrow
   let vtop_base := sp + ((1 : Word) + signExtend12 4095) <<< (3 : BitVec 6).toNat
   have TF := divK_trial_call_full_spec sp (0 : Word) (1 : Word) j_old v5_old v6_old v7_old v10_old v11_old v2_old
@@ -82,13 +82,13 @@ theorem divK_loop_body_n1_call_addback_j0_beq_spec
   rw [u_addr_eq_n1 sp (0 : Word)] at TF
   rw [u_addr8_eq_n1 sp (0 : Word)] at TF
   rw [vtop_eq_v0_n1 sp] at TF
-  let ms := mulsubN4 q_hat v0 v1 v2 v3 u0 u1 u2 u3
+  let ms := mulsubN4 qHat v0 v1 v2 v3 u0 u1 u2 u3
   let c3 := ms.2.2.2.2
   let carry := addbackN4_carry ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 v0 v1 v2 v3
   let ab := addbackN4 ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 (u_top - c3) v0 v1 v2 v3
   let ab' := addbackN4 ab.1 ab.2.1 ab.2.2.1 ab.2.2.2.1 ab.2.2.2.2 v0 v1 v2 v3
-  let q_out := if carry = 0 then q_hat + signExtend12 4095 + signExtend12 4095
-               else q_hat + signExtend12 4095
+  let q_out := if carry = 0 then qHat + signExtend12 4095 + signExtend12 4095
+               else qHat + signExtend12 4095
   let un0_out := if carry = 0 then ab'.1 else ab.1
   let un1_out := if carry = 0 then ab'.2.1 else ab.2.1
   let un2_out := if carry = 0 then ab'.2.2.1 else ab.2.2.1
@@ -97,7 +97,7 @@ theorem divK_loop_body_n1_call_addback_j0_beq_spec
   let carry_out := if carry = 0 then
       addbackN4_carry ab.1 ab.2.1 ab.2.2.1 ab.2.2.2.1 v0 v1 v2 v3
     else carry
-  have MCA := divK_mulsub_correction_addback_beq_spec sp q_hat (0 : Word) v0 v1 v2 v3 u0 u1 u2 u3 u_top
+  have MCA := divK_mulsub_correction_addback_beq_spec sp qHat (0 : Word) v0 v1 v2 v3 u0 u1 u2 u3 u_top
     rhat2_un0 q0' d_hi q0_dlo q1' (base + 516) base
 
   intro_lets at MCA
@@ -190,7 +190,7 @@ theorem divK_loop_body_n1_call_addback_j1_beq_spec
   let q0_dlo := q0c * d_lo
   let rhat2_un0 := (rhat2c <<< (32 : BitVec 6).toNat) ||| div_un0
   let q0' := if BitVec.ult rhat2_un0 q0_dlo then q0c + signExtend12 4095 else q0c
-  let q_hat := (q1' <<< (32 : BitVec 6).toNat) ||| q0'
+  let qHat := (q1' <<< (32 : BitVec 6).toNat) ||| q0'
   unfold isAddbackBorrowN1Call div128Quot at hborrow
   let vtop_base := sp + ((1 : Word) + signExtend12 4095) <<< (3 : BitVec 6).toNat
   have TF := divK_trial_call_full_spec sp (1 : Word) (1 : Word) j_old v5_old v6_old v7_old v10_old v11_old v2_old
@@ -200,13 +200,13 @@ theorem divK_loop_body_n1_call_addback_j1_beq_spec
   rw [u_addr_eq_n1 sp (1 : Word)] at TF
   rw [u_addr8_eq_n1 sp (1 : Word)] at TF
   rw [vtop_eq_v0_n1 sp] at TF
-  let ms := mulsubN4 q_hat v0 v1 v2 v3 u0 u1 u2 u3
+  let ms := mulsubN4 qHat v0 v1 v2 v3 u0 u1 u2 u3
   let c3 := ms.2.2.2.2
   let carry := addbackN4_carry ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 v0 v1 v2 v3
   let ab := addbackN4 ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 (u_top - c3) v0 v1 v2 v3
   let ab' := addbackN4 ab.1 ab.2.1 ab.2.2.1 ab.2.2.2.1 ab.2.2.2.2 v0 v1 v2 v3
-  let q_out := if carry = 0 then q_hat + signExtend12 4095 + signExtend12 4095
-               else q_hat + signExtend12 4095
+  let q_out := if carry = 0 then qHat + signExtend12 4095 + signExtend12 4095
+               else qHat + signExtend12 4095
   let un0_out := if carry = 0 then ab'.1 else ab.1
   let un1_out := if carry = 0 then ab'.2.1 else ab.2.1
   let un2_out := if carry = 0 then ab'.2.2.1 else ab.2.2.1
@@ -215,7 +215,7 @@ theorem divK_loop_body_n1_call_addback_j1_beq_spec
   let carry_out := if carry = 0 then
       addbackN4_carry ab.1 ab.2.1 ab.2.2.1 ab.2.2.2.1 v0 v1 v2 v3
     else carry
-  have MCA := divK_mulsub_correction_addback_beq_spec sp q_hat (1 : Word) v0 v1 v2 v3 u0 u1 u2 u3 u_top
+  have MCA := divK_mulsub_correction_addback_beq_spec sp qHat (1 : Word) v0 v1 v2 v3 u0 u1 u2 u3 u_top
     rhat2_un0 q0' d_hi q0_dlo q1' (base + 516) base
 
   intro_lets at MCA
@@ -309,7 +309,7 @@ theorem divK_loop_body_n1_call_addback_j2_beq_spec
   let q0_dlo := q0c * d_lo
   let rhat2_un0 := (rhat2c <<< (32 : BitVec 6).toNat) ||| div_un0
   let q0' := if BitVec.ult rhat2_un0 q0_dlo then q0c + signExtend12 4095 else q0c
-  let q_hat := (q1' <<< (32 : BitVec 6).toNat) ||| q0'
+  let qHat := (q1' <<< (32 : BitVec 6).toNat) ||| q0'
   unfold isAddbackBorrowN1Call div128Quot at hborrow
   let vtop_base := sp + ((1 : Word) + signExtend12 4095) <<< (3 : BitVec 6).toNat
   have TF := divK_trial_call_full_spec sp (2 : Word) (1 : Word) j_old v5_old v6_old v7_old v10_old v11_old v2_old
@@ -319,13 +319,13 @@ theorem divK_loop_body_n1_call_addback_j2_beq_spec
   rw [u_addr_eq_n1 sp (2 : Word)] at TF
   rw [u_addr8_eq_n1 sp (2 : Word)] at TF
   rw [vtop_eq_v0_n1 sp] at TF
-  let ms := mulsubN4 q_hat v0 v1 v2 v3 u0 u1 u2 u3
+  let ms := mulsubN4 qHat v0 v1 v2 v3 u0 u1 u2 u3
   let c3 := ms.2.2.2.2
   let carry := addbackN4_carry ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 v0 v1 v2 v3
   let ab := addbackN4 ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 (u_top - c3) v0 v1 v2 v3
   let ab' := addbackN4 ab.1 ab.2.1 ab.2.2.1 ab.2.2.2.1 ab.2.2.2.2 v0 v1 v2 v3
-  let q_out := if carry = 0 then q_hat + signExtend12 4095 + signExtend12 4095
-               else q_hat + signExtend12 4095
+  let q_out := if carry = 0 then qHat + signExtend12 4095 + signExtend12 4095
+               else qHat + signExtend12 4095
   let un0_out := if carry = 0 then ab'.1 else ab.1
   let un1_out := if carry = 0 then ab'.2.1 else ab.2.1
   let un2_out := if carry = 0 then ab'.2.2.1 else ab.2.2.1
@@ -334,7 +334,7 @@ theorem divK_loop_body_n1_call_addback_j2_beq_spec
   let carry_out := if carry = 0 then
       addbackN4_carry ab.1 ab.2.1 ab.2.2.1 ab.2.2.2.1 v0 v1 v2 v3
     else carry
-  have MCA := divK_mulsub_correction_addback_beq_spec sp q_hat (2 : Word) v0 v1 v2 v3 u0 u1 u2 u3 u_top
+  have MCA := divK_mulsub_correction_addback_beq_spec sp qHat (2 : Word) v0 v1 v2 v3 u0 u1 u2 u3 u_top
     rhat2_un0 q0' d_hi q0_dlo q1' (base + 516) base
 
   intro_lets at MCA
@@ -428,7 +428,7 @@ theorem divK_loop_body_n1_call_addback_j3_beq_spec
   let q0_dlo := q0c * d_lo
   let rhat2_un0 := (rhat2c <<< (32 : BitVec 6).toNat) ||| div_un0
   let q0' := if BitVec.ult rhat2_un0 q0_dlo then q0c + signExtend12 4095 else q0c
-  let q_hat := (q1' <<< (32 : BitVec 6).toNat) ||| q0'
+  let qHat := (q1' <<< (32 : BitVec 6).toNat) ||| q0'
   unfold isAddbackBorrowN1Call div128Quot at hborrow
   let vtop_base := sp + ((1 : Word) + signExtend12 4095) <<< (3 : BitVec 6).toNat
   have TF := divK_trial_call_full_spec sp (3 : Word) (1 : Word) j_old v5_old v6_old v7_old v10_old v11_old v2_old
@@ -438,13 +438,13 @@ theorem divK_loop_body_n1_call_addback_j3_beq_spec
   rw [u_addr_eq_n1 sp (3 : Word)] at TF
   rw [u_addr8_eq_n1 sp (3 : Word)] at TF
   rw [vtop_eq_v0_n1 sp] at TF
-  let ms := mulsubN4 q_hat v0 v1 v2 v3 u0 u1 u2 u3
+  let ms := mulsubN4 qHat v0 v1 v2 v3 u0 u1 u2 u3
   let c3 := ms.2.2.2.2
   let carry := addbackN4_carry ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 v0 v1 v2 v3
   let ab := addbackN4 ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 (u_top - c3) v0 v1 v2 v3
   let ab' := addbackN4 ab.1 ab.2.1 ab.2.2.1 ab.2.2.2.1 ab.2.2.2.2 v0 v1 v2 v3
-  let q_out := if carry = 0 then q_hat + signExtend12 4095 + signExtend12 4095
-               else q_hat + signExtend12 4095
+  let q_out := if carry = 0 then qHat + signExtend12 4095 + signExtend12 4095
+               else qHat + signExtend12 4095
   let un0_out := if carry = 0 then ab'.1 else ab.1
   let un1_out := if carry = 0 then ab'.2.1 else ab.2.1
   let un2_out := if carry = 0 then ab'.2.2.1 else ab.2.2.1
@@ -453,7 +453,7 @@ theorem divK_loop_body_n1_call_addback_j3_beq_spec
   let carry_out := if carry = 0 then
       addbackN4_carry ab.1 ab.2.1 ab.2.2.1 ab.2.2.2.1 v0 v1 v2 v3
     else carry
-  have MCA := divK_mulsub_correction_addback_beq_spec sp q_hat (3 : Word) v0 v1 v2 v3 u0 u1 u2 u3 u_top
+  have MCA := divK_mulsub_correction_addback_beq_spec sp qHat (3 : Word) v0 v1 v2 v3 u0 u1 u2 u3 u_top
     rhat2_un0 q0' d_hi q0_dlo q1' (base + 516) base
 
   intro_lets at MCA

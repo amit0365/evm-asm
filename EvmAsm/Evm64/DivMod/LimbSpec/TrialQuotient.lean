@@ -10,7 +10,7 @@
     * `divK_trial_load_vtop_spec` — 5-instruction block loading
       `v_top = b[n-1]` and leaving its address in x6.
     * `divK_trial_max_spec` — 2-instruction MAX path (ADDI x11, JAL)
-      that clamps q_hat to MAX64 and jumps past the div128 call.
+      that clamps qHat to MAX64 and jumps past the div128 call.
 
   Nineteenth chunk of the `LimbSpec.lean` split tracked by issue #312.
   The consumer surface is unchanged: `LimbSpec.lean` re-exports this file
@@ -118,7 +118,7 @@ theorem divK_trial_load_vtop_spec (sp n v6_old v10_old v_top : Word)
   have I4 := ld_spec_gen .x10 .x6 vtopBase v10_old v_top 32 (base + 16) (by nofun)
   runBlock I0 I1 I2 I3 I4
 
-/-- Trial quotient MAX path: set q_hat = MAX64, jump over div128 call. -/
+/-- Trial quotient MAX path: set qHat = MAX64, jump over div128 call. -/
 theorem divK_trial_max_spec (v11_old : Word) (base : Word) :
     let cr :=
       CodeReq.union (CodeReq.singleton base (.ADDI .x11 .x0 4095))

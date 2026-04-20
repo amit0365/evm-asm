@@ -41,8 +41,8 @@ theorem divK_loop_body_n4_max_addback_j0_beq_norm (sp base : Word)
     (hv_q : isValidDwordAccess (sp + signExtend12 4088) = true)
     (hbltu : ¬BitVec.ult u_top v3)
     (hcarry2_nz : isAddbackCarry2NzN4Max v0 v1 v2 v3 u0 u1 u2 u3 u_top) :
-    let q_hat : Word := signExtend12 4095
-    (if BitVec.ult u_top (mulsubN4_c3 q_hat v0 v1 v2 v3 u0 u1 u2 u3)
+    let qHat : Word := signExtend12 4095
+    (if BitVec.ult u_top (mulsubN4_c3 qHat v0 v1 v2 v3 u0 u1 u2 u3)
      then (1 : Word) else 0) ≠ (0 : Word) →
     cpsTriple (base + loopBodyOff) (base + denormOff) (divCode base)
       ((.x12 ↦ᵣ sp) ** (.x1 ↦ᵣ (0 : Word)) **
@@ -56,8 +56,8 @@ theorem divK_loop_body_n4_max_addback_j0_beq_norm (sp base : Word)
        ((sp + 56) ↦ₘ v3) ** ((sp + signExtend12 4032) ↦ₘ u3) **
        ((sp + signExtend12 4024) ↦ₘ u_top) **
        ((sp + signExtend12 4088) ↦ₘ q_old))
-      (loopBodyN4AddbackBeqPost sp (0 : Word) q_hat v0 v1 v2 v3 u0 u1 u2 u3 u_top) := by
-  intro q_hat hborrow
+      (loopBodyN4AddbackBeqPost sp (0 : Word) qHat v0 v1 v2 v3 u0 u1 u2 u3 u_top) := by
+  intro qHat hborrow
   rw [← se12_32] at hv_v0; rw [← se12_40] at
   rw [← se12_48] at hv_v2; rw [← se12_56] at
   rw [← u_base_off0_j0] at hv_u0; rw [← u_base_off4088_j0] at
@@ -99,10 +99,10 @@ theorem divK_loop_body_n4_call_addback_j0_beq_norm (sp base : Word)
     (hv_q : isValidDwordAccess (sp + signExtend12 4088) = true)
     (hbltu : BitVec.ult u_top v3)
     (hcarry2_nz : isAddbackCarry2NzN4Call v0 v1 v2 v3 u0 u1 u2 u3 u_top) :
-    let q_hat := div128Quot u_top u3 v3
+    let qHat := div128Quot u_top u3 v3
     let d_lo := (v3 <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat
     let div_un0 := (u3 <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat
-    (if BitVec.ult u_top (mulsubN4_c3 q_hat v0 v1 v2 v3 u0 u1 u2 u3)
+    (if BitVec.ult u_top (mulsubN4_c3 qHat v0 v1 v2 v3 u0 u1 u2 u3)
      then (1 : Word) else 0) ≠ (0 : Word) →
     cpsTriple (base + loopBodyOff) (base + denormOff) (divCode base)
       ((.x12 ↦ᵣ sp) ** (.x1 ↦ᵣ (0 : Word)) **
@@ -120,12 +120,12 @@ theorem divK_loop_body_n4_call_addback_j0_beq_norm (sp base : Word)
        (sp + signExtend12 3960 ↦ₘ d_mem) **
        (sp + signExtend12 3952 ↦ₘ dlo_mem) **
        (sp + signExtend12 3944 ↦ₘ scratch_un0))
-      (loopBodyN4AddbackBeqPost sp (0 : Word) q_hat v0 v1 v2 v3 u0 u1 u2 u3 u_top **
+      (loopBodyN4AddbackBeqPost sp (0 : Word) qHat v0 v1 v2 v3 u0 u1 u2 u3 u_top **
        (sp + signExtend12 3968 ↦ₘ (base + 516)) **
        (sp + signExtend12 3960 ↦ₘ v3) **
        (sp + signExtend12 3952 ↦ₘ d_lo) **
        (sp + signExtend12 3944 ↦ₘ div_un0)) := by
-  intro q_hat d_lo div_un0 hborrow
+  intro qHat d_lo div_un0 hborrow
   rw [← se12_32] at hv_v0; rw [← se12_40] at
   rw [← se12_48] at hv_v2; rw [← se12_56] at
   rw [← u_base_off0_j0] at hv_u0; rw [← u_base_off4088_j0] at
@@ -308,10 +308,10 @@ def preloopCallAddbackBeqPostN4 (sp base a0 a1 a2 a3 b0 b1 b2 b3 : Word) : Asser
   let u2 := (a2 <<< (shift.toNat % 64)) ||| (a1 >>> (anti_shift.toNat % 64))
   let u1 := (a1 <<< (shift.toNat % 64)) ||| (a0 >>> (anti_shift.toNat % 64))
   let u0 := a0 <<< (shift.toNat % 64)
-  let q_hat := div128Quot u4 u3 b3'
+  let qHat := div128Quot u4 u3 b3'
   let d_lo := (b3' <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat
   let div_un0 := (u3 <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat
-  loopBodyN4AddbackBeqPost sp (0 : Word) q_hat b0' b1' b2' b3' u0 u1 u2 u3 u4 **
+  loopBodyN4AddbackBeqPost sp (0 : Word) qHat b0' b1' b2' b3' u0 u1 u2 u3 u4 **
   (sp + signExtend12 3968 ↦ₘ (base + 516)) **
   (sp + signExtend12 3960 ↦ₘ b3') **
   (sp + signExtend12 3952 ↦ₘ d_lo) **
@@ -465,15 +465,15 @@ theorem preloopMaxAddbackBeqPostN4_unfold (sp a0 a1 a2 a3 b0 b1 b2 b3 : Word) :
     let u2 := (a2 <<< (shift.toNat % 64)) ||| (a1 >>> (anti_shift.toNat % 64))
     let u1 := (a1 <<< (shift.toNat % 64)) ||| (a0 >>> (anti_shift.toNat % 64))
     let u0 := a0 <<< (shift.toNat % 64)
-    let q_hat : Word := signExtend12 4095
-    let ms := mulsubN4 q_hat b0' b1' b2' b3' u0 u1 u2 u3
+    let qHat : Word := signExtend12 4095
+    let ms := mulsubN4 qHat b0' b1' b2' b3' u0 u1 u2 u3
     let c3 := ms.2.2.2.2
     let u4_new := u4 - c3
     let ab := addbackN4 ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 u4_new b0' b1' b2' b3'
     let ab' := addbackN4 ab.1 ab.2.1 ab.2.2.1 ab.2.2.2.1 ab.2.2.2.2 b0' b1' b2' b3'
     let carry := addbackN4_carry ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 b0' b1' b2' b3'
-    let q_out := if carry = 0 then q_hat + signExtend12 4095 + signExtend12 4095
-                 else q_hat + signExtend12 4095
+    let q_out := if carry = 0 then qHat + signExtend12 4095 + signExtend12 4095
+                 else qHat + signExtend12 4095
     let un0_out := if carry = 0 then ab'.1 else ab.1
     let un1_out := if carry = 0 then ab'.2.1 else ab.2.1
     let un2_out := if carry = 0 then ab'.2.2.1 else ab.2.2.1
@@ -520,15 +520,15 @@ def fullDivN4MaxAddbackBeqPost (sp a0 a1 a2 a3 b0 b1 b2 b3 : Word) : Assertion :
   let u2 := (a2 <<< (shift.toNat % 64)) ||| (a1 >>> (anti_shift.toNat % 64))
   let u1 := (a1 <<< (shift.toNat % 64)) ||| (a0 >>> (anti_shift.toNat % 64))
   let u0 := a0 <<< (shift.toNat % 64)
-  let q_hat : Word := signExtend12 4095
-  let ms := mulsubN4 q_hat b0' b1' b2' b3' u0 u1 u2 u3
+  let qHat : Word := signExtend12 4095
+  let ms := mulsubN4 qHat b0' b1' b2' b3' u0 u1 u2 u3
   let c3 := ms.2.2.2.2
   let u4_new := (a3 >>> (anti_shift.toNat % 64)) - c3
   let ab := addbackN4 ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 u4_new b0' b1' b2' b3'
   let ab' := addbackN4 ab.1 ab.2.1 ab.2.2.1 ab.2.2.2.1 ab.2.2.2.2 b0' b1' b2' b3'
   let carry := addbackN4_carry ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 b0' b1' b2' b3'
-  let q_out := if carry = 0 then q_hat + signExtend12 4095 + signExtend12 4095
-               else q_hat + signExtend12 4095
+  let q_out := if carry = 0 then qHat + signExtend12 4095 + signExtend12 4095
+               else qHat + signExtend12 4095
   let un0_out := if carry = 0 then ab'.1 else ab.1
   let un1_out := if carry = 0 then ab'.2.1 else ab.2.1
   let un2_out := if carry = 0 then ab'.2.2.1 else ab.2.2.1
@@ -603,15 +603,15 @@ theorem evm_div_n4_full_max_addback_beq_spec (sp base : Word)
   let u2 := (a2 <<< (shift.toNat % 64)) ||| (a1 >>> (anti_shift.toNat % 64))
   let u1 := (a1 <<< (shift.toNat % 64)) ||| (a0 >>> (anti_shift.toNat % 64))
   let u0 := a0 <<< (shift.toNat % 64)
-  let q_hat : Word := signExtend12 4095
-  let ms := mulsubN4 q_hat b0' b1' b2' b3' u0 u1 u2 u3
+  let qHat : Word := signExtend12 4095
+  let ms := mulsubN4 qHat b0' b1' b2' b3' u0 u1 u2 u3
   let c3 := ms.2.2.2.2
   let u4_new := (a3 >>> (anti_shift.toNat % 64)) - c3
   let ab := addbackN4 ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 u4_new b0' b1' b2' b3'
   let ab' := addbackN4 ab.1 ab.2.1 ab.2.2.1 ab.2.2.2.1 ab.2.2.2.2 b0' b1' b2' b3'
   let carry := addbackN4_carry ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 b0' b1' b2' b3'
-  let q_out := if carry = 0 then q_hat + signExtend12 4095 + signExtend12 4095
-               else q_hat + signExtend12 4095
+  let q_out := if carry = 0 then qHat + signExtend12 4095 + signExtend12 4095
+               else qHat + signExtend12 4095
   let un0_out := if carry = 0 then ab'.1 else ab.1
   let un1_out := if carry = 0 then ab'.2.1 else ab.2.1
   let un2_out := if carry = 0 then ab'.2.2.1 else ab.2.2.1
@@ -668,17 +668,17 @@ theorem preloopCallAddbackBeqPostN4_unfold (sp base a0 a1 a2 a3 b0 b1 b2 b3 : Wo
     let u2 := (a2 <<< (shift.toNat % 64)) ||| (a1 >>> (anti_shift.toNat % 64))
     let u1 := (a1 <<< (shift.toNat % 64)) ||| (a0 >>> (anti_shift.toNat % 64))
     let u0 := a0 <<< (shift.toNat % 64)
-    let q_hat := div128Quot u4 u3 b3'
+    let qHat := div128Quot u4 u3 b3'
     let d_lo := (b3' <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat
     let div_un0 := (u3 <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat
-    let ms := mulsubN4 q_hat b0' b1' b2' b3' u0 u1 u2 u3
+    let ms := mulsubN4 qHat b0' b1' b2' b3' u0 u1 u2 u3
     let c3 := ms.2.2.2.2
     let u4_new := u4 - c3
     let ab := addbackN4 ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 u4_new b0' b1' b2' b3'
     let ab' := addbackN4 ab.1 ab.2.1 ab.2.2.1 ab.2.2.2.1 ab.2.2.2.2 b0' b1' b2' b3'
     let carry := addbackN4_carry ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 b0' b1' b2' b3'
-    let q_out := if carry = 0 then q_hat + signExtend12 4095 + signExtend12 4095
-                 else q_hat + signExtend12 4095
+    let q_out := if carry = 0 then qHat + signExtend12 4095 + signExtend12 4095
+                 else qHat + signExtend12 4095
     let un0_out := if carry = 0 then ab'.1 else ab.1
     let un1_out := if carry = 0 then ab'.2.1 else ab.2.1
     let un2_out := if carry = 0 then ab'.2.2.1 else ab.2.2.1
@@ -725,17 +725,17 @@ def fullDivN4CallAddbackBeqPost (sp base a0 a1 a2 a3 b0 b1 b2 b3 : Word) : Asser
   let u2 := (a2 <<< (shift.toNat % 64)) ||| (a1 >>> (anti_shift.toNat % 64))
   let u1 := (a1 <<< (shift.toNat % 64)) ||| (a0 >>> (anti_shift.toNat % 64))
   let u0 := a0 <<< (shift.toNat % 64)
-  let q_hat := div128Quot u4 u3 b3'
+  let qHat := div128Quot u4 u3 b3'
   let d_lo := (b3' <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat
   let div_un0 := (u3 <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat
-  let ms := mulsubN4 q_hat b0' b1' b2' b3' u0 u1 u2 u3
+  let ms := mulsubN4 qHat b0' b1' b2' b3' u0 u1 u2 u3
   let c3 := ms.2.2.2.2
   let u4_new := u4 - c3
   let ab := addbackN4 ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 u4_new b0' b1' b2' b3'
   let ab' := addbackN4 ab.1 ab.2.1 ab.2.2.1 ab.2.2.2.1 ab.2.2.2.2 b0' b1' b2' b3'
   let carry := addbackN4_carry ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 b0' b1' b2' b3'
-  let q_out := if carry = 0 then q_hat + signExtend12 4095 + signExtend12 4095
-               else q_hat + signExtend12 4095
+  let q_out := if carry = 0 then qHat + signExtend12 4095 + signExtend12 4095
+               else qHat + signExtend12 4095
   let un0_out := if carry = 0 then ab'.1 else ab.1
   let un1_out := if carry = 0 then ab'.2.1 else ab.2.1
   let un2_out := if carry = 0 then ab'.2.2.1 else ab.2.2.1
@@ -816,10 +816,10 @@ theorem evm_div_n4_full_call_addback_beq_spec (sp base : Word)
   let u4 := a3 >>> (anti_shift.toNat % 64)
   let u3 := (a3 <<< (shift.toNat % 64)) ||| (a2 >>> (anti_shift.toNat % 64))
   let u0 := a0 <<< (shift.toNat % 64)
-  let q_hat := div128Quot u4 u3 b3'
+  let qHat := div128Quot u4 u3 b3'
   let d_lo := (b3' <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat
   let div_un0 := (u3 <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat
-  let ms := mulsubN4 q_hat b0' b1' b2' b3' u0
+  let ms := mulsubN4 qHat b0' b1' b2' b3' u0
     ((a1 <<< (shift.toNat % 64)) ||| (a0 >>> (anti_shift.toNat % 64)))
     ((a2 <<< (shift.toNat % 64)) ||| (a1 >>> (anti_shift.toNat % 64)))
     u3
@@ -828,8 +828,8 @@ theorem evm_div_n4_full_call_addback_beq_spec (sp base : Word)
   let ab := addbackN4 ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 u4_new b0' b1' b2' b3'
   let ab' := addbackN4 ab.1 ab.2.1 ab.2.2.1 ab.2.2.2.1 ab.2.2.2.2 b0' b1' b2' b3'
   let carry := addbackN4_carry ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 b0' b1' b2' b3'
-  let q_out := if carry = 0 then q_hat + signExtend12 4095 + signExtend12 4095
-               else q_hat + signExtend12 4095
+  let q_out := if carry = 0 then qHat + signExtend12 4095 + signExtend12 4095
+               else qHat + signExtend12 4095
   let un0_out := if carry = 0 then ab'.1 else ab.1
   let un1_out := if carry = 0 then ab'.2.1 else ab.2.1
   let un2_out := if carry = 0 then ab'.2.2.1 else ab.2.2.1

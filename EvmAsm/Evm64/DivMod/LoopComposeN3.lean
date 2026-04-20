@@ -79,8 +79,8 @@ theorem divK_loop_n3_max_skip_skip_spec
   -- Unfold bundled condition defs
   delta isMaxBltuN3After_j1_skip isSkipBorrowN3After_j1_skip at hbltu_0 hborrow_0
   simp only [] at hbltu_0 hborrow_0
-  let q_hat : Word := signExtend12 4095
-  let ms := mulsubN4 q_hat v0 v1 v2 v3 u0 u1 u2 u3
+  let qHat : Word := signExtend12 4095
+  let ms := mulsubN4 qHat v0 v1 v2 v3 u0 u1 u2 u3
   -- 1. j=1 iteration spec
   have J1 := divK_loop_body_n3_max_skip_j1_spec sp j_old v5_old v6_old v7_old v10_old v11_old v2_old
     v0 v1 v2 v3 u0 u1 u2 u3 u_top q1_old base
@@ -92,7 +92,7 @@ theorem divK_loop_n3_max_skip_skip_spec
     (((u_base_0 + signExtend12 0) ↦ₘ u0_orig) ** (q_addr_0 ↦ₘ q0_old))
     (by pcFree) J1s
   have J0 := divK_loop_body_n3_max_skip_j0_spec sp (1 : Word)
-    ((1 : Word) <<< (3 : BitVec 6).toNat) u_base_1 q_addr_1 ms.2.2.2.2 q_hat ms.2.2.2.1
+    ((1 : Word) <<< (3 : BitVec 6).toNat) u_base_1 q_addr_1 ms.2.2.2.2 qHat ms.2.2.2.1
     v0 v1 v2 v3 u0_orig ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 q0_old base
 
     hbltu_0
@@ -100,7 +100,7 @@ theorem divK_loop_n3_max_skip_skip_spec
   have J0s := J0 hborrow_0
   -- Frame j=0 with j=1's carried atoms (u4_new, q[1])
   have J0f := cpsTriple_frameR
-    (((u_base_1 + signExtend12 4064) ↦ₘ (u_top - ms.2.2.2.2)) ** (q_addr_1 ↦ₘ q_hat))
+    (((u_base_1 + signExtend12 4064) ↦ₘ (u_top - ms.2.2.2.2)) ** (q_addr_1 ↦ₘ qHat))
     (by pcFree) J0s
   -- 3. Compose via perm: rewrite j=1 postcondition addresses → j=0 precondition
   have full := cpsTriple_seq_perm_same_cr

@@ -7,7 +7,7 @@
       memory in preparation for the trial-quotient estimation.
     * `divK_store_qj_spec` — 4-instruction composition (store_qj_addr
       + store_qj_write) that computes `qAddr = sp + 4088 - 8*j` and
-      stores `q_hat` there.
+      stores `qHat` there.
 
   Twenty-eighth chunk of the `LimbSpec.lean` split tracked by issue #312.
   The consumer surface is unchanged: `LimbSpec.lean` re-exports this file
@@ -85,9 +85,9 @@ theorem divK_trial_load_spec
   have I11 := ld_spec_gen .x10 .x6 vtopBase v10_old v_top 32 (base + 44) (by nofun)
   runBlock I0 I1 I2 I3 I4 I5 I6 I7 I8 I9 I10 I11
 
-/-- Store q[j]: compute address and store q_hat. 4 instructions.
+/-- Store q[j]: compute address and store qHat. 4 instructions.
     qAddr = sp + 4088 - j*8. -/
-theorem divK_store_qj_spec (sp j q_hat v5_old v7_old q_old : Word)
+theorem divK_store_qj_spec (sp j qHat v5_old v7_old q_old : Word)
     (base : Word) :
     let j_x8 := j <<< (3 : BitVec 6).toNat
     let qAddr := sp + signExtend12 4088 - j_x8
@@ -97,18 +97,18 @@ theorem divK_store_qj_spec (sp j q_hat v5_old v7_old q_old : Word)
       (CodeReq.union (CodeReq.singleton (base + 8) (.SUB .x7 .x7 .x5))
        (CodeReq.singleton (base + 12) (.SD .x7 .x11 0))))
     cpsTriple base (base + 16) cr
-      ((.x1 ↦ᵣ j) ** (.x12 ↦ᵣ sp) ** (.x11 ↦ᵣ q_hat) **
+      ((.x1 ↦ᵣ j) ** (.x12 ↦ᵣ sp) ** (.x11 ↦ᵣ qHat) **
        (.x5 ↦ᵣ v5_old) ** (.x7 ↦ᵣ v7_old) **
        (qAddr ↦ₘ q_old))
-      ((.x1 ↦ᵣ j) ** (.x12 ↦ᵣ sp) ** (.x11 ↦ᵣ q_hat) **
+      ((.x1 ↦ᵣ j) ** (.x12 ↦ᵣ sp) ** (.x11 ↦ᵣ qHat) **
        (.x5 ↦ᵣ j_x8) ** (.x7 ↦ᵣ qAddr) **
-       (qAddr ↦ₘ q_hat)) := by
+       (qAddr ↦ₘ qHat)) := by
   intro j_x8 qAddr cr
   have I0 := slli_spec_gen .x5 .x1 v5_old j 3 base (by nofun)
   have I1 := addi_spec_gen .x7 .x12 v7_old sp 4088 (base + 4) (by nofun)
   have I2 := sub_spec_gen_rd_eq_rs1 .x7 .x5 (sp + signExtend12 4088) j_x8 (base + 8) (by nofun)
   have haddr : qAddr + signExtend12 (0 : BitVec 12) = qAddr := by rw [se12_0]; bv_omega
-  have I3 := sd_spec_gen .x7 .x11 qAddr q_hat q_old 0 (base + 12)
+  have I3 := sd_spec_gen .x7 .x11 qAddr qHat q_old 0 (base + 12)
   rw [haddr] at I3
   runBlock I0 I1 I2 I3
 

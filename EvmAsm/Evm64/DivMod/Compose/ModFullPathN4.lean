@@ -141,8 +141,8 @@ theorem evm_mod_n4_full_max_skip_spec (sp base : Word)
   let u2 := (a2 <<< (shift.toNat % 64)) ||| (a1 >>> (anti_shift.toNat % 64))
   let u1 := (a1 <<< (shift.toNat % 64)) ||| (a0 >>> (anti_shift.toNat % 64))
   let u0 := a0 <<< (shift.toNat % 64)
-  let q_hat : Word := signExtend12 4095
-  let ms := mulsubN4 q_hat b0' b1' b2' b3' u0 u1 u2 u3
+  let qHat : Word := signExtend12 4095
+  let ms := mulsubN4 qHat b0' b1' b2' b3' u0 u1 u2 u3
   -- 1. Pre-loop + loop body: base → base+denormOff
   have hA := evm_mod_n4_preloop_max_skip_spec sp base
     a0 a1 a2 a3 b0 b1 b2 b3 v5 v6 v7 v10 v11_old
@@ -157,7 +157,7 @@ theorem evm_mod_n4_full_max_skip_spec (sp base : Word)
     hshift_nz
   -- Frame post-loop with remainder atoms (4 q cells, a-atoms, zeros, x1, x11)
   have hBF := cpsTriple_frameR
-    (((sp + signExtend12 4088) ↦ₘ q_hat) **
+    (((sp + signExtend12 4088) ↦ₘ qHat) **
      ((sp + signExtend12 4080) ↦ₘ (0 : Word)) **
      ((sp + signExtend12 4072) ↦ₘ (0 : Word)) **
      ((sp + signExtend12 4064) ↦ₘ (0 : Word)) **
@@ -169,7 +169,7 @@ theorem evm_mod_n4_full_max_skip_spec (sp base : Word)
      ((sp + signExtend12 4000) ↦ₘ (0 : Word)) **
      (sp + signExtend12 3984 ↦ₘ (4 : Word)) **
      (sp + signExtend12 3976 ↦ₘ (0 : Word)) **
-     (.x1 ↦ᵣ signExtend12 4095) ** (.x11 ↦ᵣ q_hat))
+     (.x1 ↦ᵣ signExtend12 4095) ** (.x11 ↦ᵣ qHat))
     (by pcFree) hB
   -- 3. Compose A + B
   have hFull := cpsTriple_seq_perm_same_cr

@@ -102,7 +102,7 @@ def isMaxTrialN4Evm (a b : EvmWord) : Prop :=
 
 /-- Skip-addback condition at n=4 max in EvmWord form: the runtime borrow
     check `u4 < mulsubN4_c3` does not fire, so the algorithm skips the
-    addback step and uses `q_hat` as the quotient digit. -/
+    addback step and uses `qHat` as the quotient digit. -/
 def isSkipBorrowN4MaxEvm (a b : EvmWord) : Prop :=
   isSkipBorrowN4Max (a.getLimbN 0) (a.getLimbN 1) (a.getLimbN 2) (a.getLimbN 3)
                     (b.getLimbN 0) (b.getLimbN 1) (b.getLimbN 2) (b.getLimbN 3)

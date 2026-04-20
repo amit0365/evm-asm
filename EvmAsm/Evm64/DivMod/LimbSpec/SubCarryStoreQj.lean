@@ -9,7 +9,7 @@
     * `divK_store_qj_addr_spec` — 3 instructions (SLLI, ADDI, SUB) that
       compute `qAddr = sp + 4088 - 8*j` into x7.
     * `divK_store_qj_write_spec` — 1-instruction SD that actually
-      writes `q_hat` at `qAddr`.
+      writes `qHat` at `qAddr`.
 
   Sixteenth chunk of the `LimbSpec.lean` split tracked by issue #312.
   The consumer surface is unchanged: `LimbSpec.lean` re-exports this file
@@ -56,7 +56,7 @@ theorem divK_sub_carry_spec (u_base carry_in v5_old v7_old u_top : Word)
   have I3 := sd_spec_gen .x6 .x5 u_base uNew u_top u_off (base + 12)
   runBlock I0 I1 I2 I3
 
-/-- Store q[j]: compute &q[j] = sp+4088 - j*8, store q_hat.
+/-- Store q[j]: compute &q[j] = sp+4088 - j*8, store qHat.
     First 3 instructions compute qAddr. Then SD stores. Split into 3+1. -/
 theorem divK_store_qj_addr_spec (sp j v5_old v7_old : Word)
     (base : Word) :
@@ -78,15 +78,15 @@ theorem divK_store_qj_addr_spec (sp j v5_old v7_old : Word)
   have I2 := sub_spec_gen_rd_eq_rs1 .x7 .x5 sp_m8 j_x8 (base + 8) (by nofun)
   runBlock I0 I1 I2
 
-/-- Store q[j]: SD q_hat at qAddr. 1 instruction. -/
-theorem divK_store_qj_write_spec (qAddr q_hat q_old : Word) (base : Word) :
+/-- Store q[j]: SD qHat at qAddr. 1 instruction. -/
+theorem divK_store_qj_write_spec (qAddr qHat q_old : Word) (base : Word) :
     let cr := CodeReq.singleton base (.SD .x7 .x11 0)
     cpsTriple base (base + 4) cr
-      ((.x7 ↦ᵣ qAddr) ** (.x11 ↦ᵣ q_hat) ** (qAddr ↦ₘ q_old))
-      ((.x7 ↦ᵣ qAddr) ** (.x11 ↦ᵣ q_hat) ** (qAddr ↦ₘ q_hat)) := by
+      ((.x7 ↦ᵣ qAddr) ** (.x11 ↦ᵣ qHat) ** (qAddr ↦ₘ q_old))
+      ((.x7 ↦ᵣ qAddr) ** (.x11 ↦ᵣ qHat) ** (qAddr ↦ₘ qHat)) := by
   intro cr
   have haddr : qAddr + signExtend12 (0 : BitVec 12) = qAddr := by rw [se12_0]; bv_omega
-  have I0 := sd_spec_gen .x7 .x11 qAddr q_hat q_old 0 base
+  have I0 := sd_spec_gen .x7 .x11 qAddr qHat q_old 0 base
   rw [haddr] at I0
   runBlock I0
 

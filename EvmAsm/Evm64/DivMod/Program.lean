@@ -35,7 +35,7 @@
     x6  = general temp / u_base in mul-sub
     x7  = general temp
     x10 = general temp / carry in mul-sub
-    x11 = general temp / q_hat
+    x11 = general temp / qHat
 -/
 
 import EvmAsm.Evm64.Stack
@@ -260,7 +260,7 @@ def divK_loopBody (subr_off : BitVec 21) (loop_back_off : BitVec 13) : Program :
 
   -- Trial quotient
   single (.BLTU .x7 .x10 12) ;;              -- [13] u_hi < v_top? → [16] call 128/64
-  ADDI .x11 .x0 4095 ;;                       -- [14] q_hat = MAX64
+  ADDI .x11 .x0 4095 ;;                       -- [14] qHat = MAX64
   JAL .x0 8 ;;                                 -- [15] skip call → [17]
   JAL .x2 subr_off ;;                          -- [16] call 128/64 subroutine
 
@@ -331,11 +331,11 @@ def divK_loopBody (subr_off : BitVec 21) (loop_back_off : BitVec 13) : Program :
   single (.SUB .x5 .x5 .x10) ;;              -- [68]
   SD .x6 .x5 4064 ;;                          -- [69]
 
-  -- CORRECTION: if borrow (x7 != 0), add v back and q_hat--
+  -- CORRECTION: if borrow (x7 != 0), add v back and qHat--
   -- BEQ x7 x0 skips 38 instructions → offset = 38*4+4 = 156
   single (.BEQ .x7 .x0 156) ;;               -- [70] skip correction → [109]
 
-  -- Add-back: v[0..3] to u[j..j+3] with carry, then u[j+4]++, q_hat--
+  -- Add-back: v[0..3] to u[j..j+3] with carry, then u[j+4]++, qHat--
   ADDI .x7 .x0 0 ;;                           -- [71] carry = 0
   -- Limb 0
   LD .x5 .x12 32 ;; LD .x2 .x6 0 ;;          -- [72,73]
@@ -373,7 +373,7 @@ def divK_loopBody (subr_off : BitVec 21) (loop_back_off : BitVec 13) : Program :
   LD .x5 .x6 4064 ;;                          -- [104]
   single (.ADD .x5 .x5 .x7) ;;               -- [105]
   SD .x6 .x5 4064 ;;                          -- [106]
-  -- q_hat--
+  -- qHat--
   ADDI .x11 .x11 4095 ;;                      -- [107]
 
   -- DOUBLE ADDBACK CHECK: if carry (x7) = 0, repeat addback
@@ -384,7 +384,7 @@ def divK_loopBody (subr_off : BitVec 21) (loop_back_off : BitVec 13) : Program :
   SLLI .x5 .x1 3 ;;                           -- [109] j*8
   ADDI .x7 .x12 4088 ;;                       -- [110] sp-8
   single (.SUB .x7 .x7 .x5) ;;               -- [111] &q[j]
-  SD .x7 .x11 0 ;;                            -- [112] q[j] = q_hat
+  SD .x7 .x11 0 ;;                            -- [112] q[j] = qHat
 
   -- LOOP CONTROL
   ADDI .x1 .x1 4095 ;;                        -- [113] j--
