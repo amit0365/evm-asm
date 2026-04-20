@@ -63,9 +63,9 @@ def cpsBranch (entry : Word) (cr : CodeReq) (P : Assertion)
 -- ============================================================================
 
 /-- Sequence: compose two CPS triples sharing a midpoint. -/
-theorem cpsTriple_seq (l1 l2 l3 : Word) (cr1 cr2 : CodeReq)
+theorem cpsTriple_seq {l1 l2 l3 : Word} {cr1 cr2 : CodeReq}
     (hd : cr1.Disjoint cr2)
-    (P Q R : Assertion)
+    {P Q R : Assertion}
     (h1 : cpsTriple l1 l2 cr1 P Q)
     (h2 : cpsTriple l2 l3 cr2 Q R) :
     cpsTriple l1 l3 (cr1.union cr2) P R := by
@@ -655,8 +655,7 @@ theorem cpsTriple_seq_with_perm (s m e : Word) (cr1 cr2 : CodeReq)
     (h1 : cpsTriple s m cr1 P Q1)
     (h2 : cpsTriple m e cr2 Q2 R) :
     cpsTriple s e (cr1.union cr2) P R :=
-  cpsTriple_seq s m e cr1 cr2 hd P Q2 R
-    (cpsTriple_weaken (fun _ hp => hp) hperm h1) h2
+  cpsTriple_seq hd (cpsTriple_weaken (fun _ hp => hp) hperm h1) h2
 
 /-- Sequence with same CodeReq: compose two CPS triples sharing the same CodeReq.
     Unlike `cpsTriple_seq`, does not require disjointness (same cr on both sides).
