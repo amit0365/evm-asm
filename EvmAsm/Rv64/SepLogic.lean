@@ -947,10 +947,10 @@ theorem holdsFor_pure (P : Prop) (s : MachineState) :
   · rintro ⟨h, _, rfl, hp⟩; exact hp
   · intro hp; exact ⟨PartialState.empty, PartialState.CompatibleWith_empty s, rfl, hp⟩
 
-theorem pcFree_pure (P : Prop) : (⌜P⌝).pcFree := by
+theorem pcFree_pure {P : Prop} : (⌜P⌝).pcFree := by
   intro h ⟨hemp, _⟩; subst hemp; rfl
 
-instance (P : Prop) : Assertion.PCFree (⌜P⌝) := ⟨pcFree_pure P⟩
+instance (P : Prop) : Assertion.PCFree (⌜P⌝) := ⟨pcFree_pure⟩
 
 theorem pure_true_eq_emp : ⌜True⌝ = empAssertion := by
   funext h; simp [pure, empAssertion]
@@ -2739,7 +2739,7 @@ macro_rules
       | exact pcFree_regOwn _
       | exact pcFree_memOwn _
       | exact pcFree_emp
-      | exact pcFree_pure _
+      | exact pcFree_pure
       | exact pcFree_programAt _))
 
 -- ============================================================================
