@@ -163,7 +163,7 @@ theorem val256_euclidean_to_div_mod
   have h_nat_eq : a.toNat = b.toNat * q.toNat + r.toNat := by
     rw [ha, hb, hq, hr]; nlinarith [Nat.mul_comm (val256 q0 q1 q2 q3) (val256 b0 b1 b2 b3)]
   have h_nat_lt : r.toNat < b.toNat := by rw [hr, hb]; exact hlt
-  exact div_from_mulsub a b q r hbnz' h_nat_eq h_nat_lt
+  exact div_from_mulsub hbnz' h_nat_eq h_nat_lt
 
 -- ============================================================================
 -- Normalization round-trip: normalized Euclidean → original div/mod
