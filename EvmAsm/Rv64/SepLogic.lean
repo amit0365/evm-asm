@@ -2111,7 +2111,7 @@ def CodeReq.Disjoint (cr1 cr2 : CodeReq) : Prop :=
 
 /-- Singleton CodeReqs at different addresses are disjoint. -/
 theorem CodeReq.Disjoint.singleton {a1 a2 : Word} (h : a1 ≠ a2)
-    (i1 i2 : Instr) : CodeReq.Disjoint (CodeReq.singleton a1 i1) (CodeReq.singleton a2 i2) := by
+    {i1 i2 : Instr} : CodeReq.Disjoint (CodeReq.singleton a1 i1) (CodeReq.singleton a2 i2) := by
   intro a
   simp only [CodeReq.singleton]
   cases hb1 : a == a1 with
