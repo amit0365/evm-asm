@@ -128,20 +128,20 @@ theorem Disjoint.symm {h1 h2 : PartialState} (hd : h1.Disjoint h2) :
   obtain ⟨hr, hm, hc, hpc, hpv, hpi⟩ := hd
   exact ⟨fun r => (hr r).symm, fun a => (hm a).symm, fun a => (hc a).symm, hpc.symm, hpv.symm, hpi.symm⟩
 
-theorem Disjoint_empty_left (h : PartialState) : empty.Disjoint h := by
+theorem Disjoint_empty_left {h : PartialState} : empty.Disjoint h := by
   exact ⟨fun _ => Or.inl rfl, fun _ => Or.inl rfl, fun _ => Or.inl rfl, Or.inl rfl, Or.inl rfl, Or.inl rfl⟩
 
-theorem Disjoint_empty_right (h : PartialState) : h.Disjoint empty := by
-  exact (Disjoint_empty_left h).symm
+theorem Disjoint_empty_right {h : PartialState} : h.Disjoint empty := by
+  exact Disjoint_empty_left.symm
 
 -- ============================================================================
 -- Union lemmas
 -- ============================================================================
 
-theorem union_empty_left (h : PartialState) : empty.union h = h := by
+theorem union_empty_left {h : PartialState} : empty.union h = h := by
   simp [union, empty]
 
-theorem union_self (h : PartialState) : h.union h = h := by
+theorem union_self {h : PartialState} : h.union h = h := by
   obtain ⟨regs, mem, code, pc, publicValues, privateInput⟩ := h
   simp only [union, PartialState.mk.injEq]
   refine ⟨?_, ?_, ?_, ?_, ?_, ?_⟩
@@ -152,7 +152,7 @@ theorem union_self (h : PartialState) : h.union h = h := by
   · cases publicValues <;> rfl
   · cases privateInput <;> rfl
 
-theorem union_empty_right (h : PartialState) : h.union empty = h := by
+theorem union_empty_right {h : PartialState} : h.union empty = h := by
   simp only [union, empty]
   obtain ⟨regs, mem, code, pc, publicValues, privateInput⟩ := h
   simp only [PartialState.mk.injEq]
@@ -189,7 +189,7 @@ theorem union_comm_of_disjoint {h1 h2 : PartialState} (hd : h1.Disjoint h2) :
 -- CompatibleWith lemmas
 -- ============================================================================
 
-theorem CompatibleWith_empty (s : MachineState) : empty.CompatibleWith s := by
+theorem CompatibleWith_empty {s : MachineState} : empty.CompatibleWith s := by
   exact ⟨fun _ _ h => by simp [empty] at h, fun _ _ h => by simp [empty] at h,
          fun _ _ h => by simp [empty] at h, fun _ h => by simp [empty] at h,
          fun _ h => by simp [empty] at h, fun _ h => by simp [empty] at h⟩
@@ -401,7 +401,7 @@ def Assertion.pcFree (P : Assertion) : Prop := ∀ h, P h → h.pc = none
 -- ============================================================================
 
 @[simp]
-theorem holdsFor_regIs (r : Reg) (v : Word) (s : MachineState) :
+theorem holdsFor_regIs {r : Reg} {v : Word} {s : MachineState} :
     (regIs r v).holdsFor s ↔ s.getReg r = v := by
   simp only [Assertion.holdsFor, regIs]
   constructor
@@ -446,7 +446,7 @@ theorem holdsFor_pcIs (v : Word) (s : MachineState) :
 theorem holdsFor_emp (s : MachineState) :
     empAssertion.holdsFor s ↔ True := by
   simp only [Assertion.holdsFor, empAssertion, iff_true]
-  exact ⟨PartialState.empty, PartialState.CompatibleWith_empty s, rfl⟩
+  exact ⟨PartialState.empty, PartialState.CompatibleWith_empty, rfl⟩
 
 @[simp]
 theorem holdsFor_regOwn (r : Reg) (s : MachineState) :
@@ -565,17 +565,17 @@ theorem holdsFor_sepConj_elim_right {P Q : Assertion} {s : MachineState}
 -- pcFree lemmas
 -- ============================================================================
 
-theorem pcFree_regIs (r : Reg) (v : Word) : (regIs r v).pcFree := by
+theorem pcFree_regIs {r : Reg} {v : Word} : (regIs r v).pcFree := by
   intro h hp; rw [regIs] at hp; subst hp; rfl
 
-theorem pcFree_memIs (a : Word) (v : Word) : (memIs a v).pcFree := by
+theorem pcFree_memIs {a : Word} {v : Word} : (memIs a v).pcFree := by
   intro h ⟨hp, _⟩; subst hp; rfl
 
-theorem pcFree_regOwn (r : Reg) : (regOwn r).pcFree := by
-  intro h ⟨v, hv⟩; exact pcFree_regIs r v h hv
+theorem pcFree_regOwn {r : Reg} : (regOwn r).pcFree := by
+  intro h ⟨v, hv⟩; exact pcFree_regIs h hv
 
-theorem pcFree_memOwn (a : Word) : (memOwn a).pcFree := by
-  intro h ⟨v, hv⟩; exact pcFree_memIs a v h hv
+theorem pcFree_memOwn {a : Word} : (memOwn a).pcFree := by
+  intro h ⟨v, hv⟩; exact pcFree_memIs h hv
 
 theorem pcFree_emp : empAssertion.pcFree := by
   intro h hp; rw [empAssertion] at hp; subst hp; rfl
@@ -593,10 +593,10 @@ class Assertion.PCFree (P : Assertion) : Prop where
   proof : P.pcFree
 
 instance : Assertion.PCFree empAssertion             := ⟨pcFree_emp⟩
-instance : Assertion.PCFree (r ↦ᵣ v)                := ⟨pcFree_regIs r v⟩
-instance : Assertion.PCFree (a ↦ₘ v)                := ⟨pcFree_memIs a v⟩
-instance : Assertion.PCFree (regOwn r)               := ⟨pcFree_regOwn r⟩
-instance : Assertion.PCFree (memOwn a)               := ⟨pcFree_memOwn a⟩
+instance : Assertion.PCFree (r ↦ᵣ v)                := ⟨pcFree_regIs⟩
+instance : Assertion.PCFree (a ↦ₘ v)                := ⟨pcFree_memIs⟩
+instance : Assertion.PCFree (regOwn r)               := ⟨pcFree_regOwn⟩
+instance : Assertion.PCFree (memOwn a)               := ⟨pcFree_memOwn⟩
 @[reducible, instance] def instPCFreeSepConj [hP : Assertion.PCFree P] [hQ : Assertion.PCFree Q] :
     Assertion.PCFree (P ** Q)                        := ⟨pcFree_sepConj hP.proof hQ.proof⟩
 
@@ -622,8 +622,8 @@ theorem sepConj_emp_left (P : Assertion) :
     rw [PartialState.union_empty_left] at hunion
     rw [← hunion]; exact hp
   · intro hp
-    exact ⟨PartialState.empty, h, PartialState.Disjoint_empty_left h,
-           PartialState.union_empty_left h, rfl, hp⟩
+    exact ⟨PartialState.empty, h, PartialState.Disjoint_empty_left,
+           PartialState.union_empty_left, rfl, hp⟩
 
 theorem sepConj_emp_right (P : Assertion) :
     ∀ h, (P ** empAssertion) h ↔ P h := by
@@ -945,12 +945,12 @@ theorem holdsFor_pure (P : Prop) (s : MachineState) :
   simp only [Assertion.holdsFor, pure]
   constructor
   · rintro ⟨h, _, rfl, hp⟩; exact hp
-  · intro hp; exact ⟨PartialState.empty, PartialState.CompatibleWith_empty s, rfl, hp⟩
+  · intro hp; exact ⟨PartialState.empty, PartialState.CompatibleWith_empty, rfl, hp⟩
 
-theorem pcFree_pure (P : Prop) : (⌜P⌝).pcFree := by
+theorem pcFree_pure {P : Prop} : (⌜P⌝).pcFree := by
   intro h ⟨hemp, _⟩; subst hemp; rfl
 
-instance (P : Prop) : Assertion.PCFree (⌜P⌝) := ⟨pcFree_pure P⟩
+instance (P : Prop) : Assertion.PCFree (⌜P⌝) := ⟨pcFree_pure⟩
 
 theorem pure_true_eq_emp : ⌜True⌝ = empAssertion := by
   funext h; simp [pure, empAssertion]
@@ -963,10 +963,10 @@ theorem sepConj_pure_left (P : Prop) (Q : Assertion) :
     subst hemp; rw [PartialState.union_empty_left] at hunion
     exact ⟨hp, hunion ▸ hq⟩
   · intro ⟨hp, hq⟩
-    exact ⟨PartialState.empty, h, PartialState.Disjoint_empty_left h,
-           PartialState.union_empty_left h, ⟨rfl, hp⟩, hq⟩
+    exact ⟨PartialState.empty, h, PartialState.Disjoint_empty_left,
+           PartialState.union_empty_left, ⟨rfl, hp⟩, hq⟩
 
-theorem sepConj_pure_right (P : Assertion) (Q : Prop) :
+theorem sepConj_pure_right {P : Assertion} {Q : Prop} :
     ∀ h, (P ** ⌜Q⌝) h ↔ P h ∧ Q := by
   intro h
   rw [sepConj_comm]
@@ -999,7 +999,7 @@ def publicValuesIs (vals : List (BitVec 8)) : Assertion :=
 
 namespace PartialState
 
-theorem CompatibleWith_singletonPublicValues (vals : List (BitVec 8)) (s : MachineState) :
+theorem CompatibleWith_singletonPublicValues {vals : List (BitVec 8)} {s : MachineState} :
     (singletonPublicValues vals).CompatibleWith s ↔ s.publicValues = vals := by
   constructor
   · intro ⟨_, _, _, _, hpv, _⟩
@@ -1020,19 +1020,19 @@ theorem holdsFor_publicValuesIs (vals : List (BitVec 8)) (s : MachineState) :
   simp only [Assertion.holdsFor, publicValuesIs]
   constructor
   · rintro ⟨h, hcompat, rfl⟩
-    exact (PartialState.CompatibleWith_singletonPublicValues vals s).mp hcompat
+    exact (PartialState.CompatibleWith_singletonPublicValues).mp hcompat
   · intro heq
-    exact ⟨_, (PartialState.CompatibleWith_singletonPublicValues vals s).mpr heq, rfl⟩
+    exact ⟨_, (PartialState.CompatibleWith_singletonPublicValues).mpr heq, rfl⟩
 
 -- ============================================================================
 -- pcFree for publicValuesIs
 -- ============================================================================
 
-theorem pcFree_publicValuesIs (vals : List (BitVec 8)) : (publicValuesIs vals).pcFree := by
+theorem pcFree_publicValuesIs {vals : List (BitVec 8)} : (publicValuesIs vals).pcFree := by
   intro h hp; rw [publicValuesIs] at hp; subst hp; rfl
 
 instance (vals : List (BitVec 8)) : Assertion.PCFree (publicValuesIs vals) :=
-  ⟨pcFree_publicValuesIs vals⟩
+  ⟨pcFree_publicValuesIs⟩
 
 -- ============================================================================
 -- Disjointness lemmas for publicValuesIs composition
@@ -1056,12 +1056,12 @@ theorem holdsFor_sepConj_regIs_publicValuesIs {r : Reg} {v : Word}
     rw [← hunion] at hcompat
     rw [PartialState.CompatibleWith_union hd] at hcompat
     exact ⟨(PartialState.CompatibleWith_singletonReg r v s).mp hcompat.1,
-           (PartialState.CompatibleWith_singletonPublicValues vals s).mp hcompat.2⟩
+           (PartialState.CompatibleWith_singletonPublicValues).mp hcompat.2⟩
   · intro ⟨h1, h2⟩
     have hd := singletonReg_disjoint_singletonPublicValues r v vals
     exact ⟨_, (PartialState.CompatibleWith_union hd).mpr
       ⟨(PartialState.CompatibleWith_singletonReg r v s).mpr h1,
-       (PartialState.CompatibleWith_singletonPublicValues vals s).mpr h2⟩,
+       (PartialState.CompatibleWith_singletonPublicValues).mpr h2⟩,
       _, _, hd, rfl, rfl, rfl⟩
 
 -- ============================================================================
@@ -1078,7 +1078,7 @@ def privateInputIs (vals : List (BitVec 8)) : Assertion :=
 
 namespace PartialState
 
-theorem CompatibleWith_singletonPrivateInput (vals : List (BitVec 8)) (s : MachineState) :
+theorem CompatibleWith_singletonPrivateInput {vals : List (BitVec 8)} {s : MachineState} :
     (singletonPrivateInput vals).CompatibleWith s ↔ s.privateInput = vals := by
   constructor
   · intro ⟨_, _, _, _, _, hpi⟩
@@ -1099,19 +1099,19 @@ theorem holdsFor_privateInputIs (vals : List (BitVec 8)) (s : MachineState) :
   simp only [Assertion.holdsFor, privateInputIs]
   constructor
   · rintro ⟨h, hcompat, rfl⟩
-    exact (PartialState.CompatibleWith_singletonPrivateInput vals s).mp hcompat
+    exact (PartialState.CompatibleWith_singletonPrivateInput).mp hcompat
   · intro heq
-    exact ⟨_, (PartialState.CompatibleWith_singletonPrivateInput vals s).mpr heq, rfl⟩
+    exact ⟨_, (PartialState.CompatibleWith_singletonPrivateInput).mpr heq, rfl⟩
 
 -- ============================================================================
 -- pcFree for privateInputIs
 -- ============================================================================
 
-theorem pcFree_privateInputIs (vals : List (BitVec 8)) : (privateInputIs vals).pcFree := by
+theorem pcFree_privateInputIs {vals : List (BitVec 8)} : (privateInputIs vals).pcFree := by
   intro h hp; rw [privateInputIs] at hp; subst hp; rfl
 
 instance (vals : List (BitVec 8)) : Assertion.PCFree (privateInputIs vals) :=
-  ⟨pcFree_privateInputIs vals⟩
+  ⟨pcFree_privateInputIs⟩
 
 -- ============================================================================
 -- Disjointness lemmas for privateInputIs composition
@@ -1135,12 +1135,12 @@ theorem holdsFor_sepConj_regIs_privateInputIs {r : Reg} {v : Word}
     rw [← hunion] at hcompat
     rw [PartialState.CompatibleWith_union hd] at hcompat
     exact ⟨(PartialState.CompatibleWith_singletonReg r v s).mp hcompat.1,
-           (PartialState.CompatibleWith_singletonPrivateInput vals s).mp hcompat.2⟩
+           (PartialState.CompatibleWith_singletonPrivateInput).mp hcompat.2⟩
   · intro ⟨h1, h2⟩
     have hd := singletonReg_disjoint_singletonPrivateInput r v vals
     exact ⟨_, (PartialState.CompatibleWith_union hd).mpr
       ⟨(PartialState.CompatibleWith_singletonReg r v s).mpr h1,
-       (PartialState.CompatibleWith_singletonPrivateInput vals s).mpr h2⟩,
+       (PartialState.CompatibleWith_singletonPrivateInput).mpr h2⟩,
       _, _, hd, rfl, rfl, rfl⟩
 
 -- ============================================================================
@@ -1284,13 +1284,13 @@ theorem sepConj_mono {P P' Q Q' : Assertion} (hp : ∀ h, P h → P' h) (hq : �
 theorem sepConj_strip_pure_end2 {A B : Assertion} {P : Prop} :
     ∀ h, (A ** B ** ⌜P⌝) h → (A ** B) h :=
   fun h hp => sepConj_mono_right
-    (fun h' hp' => ((sepConj_pure_right _ _ h').1 hp').1) h hp
+    (fun h' hp' => ((sepConj_pure_right h').1 hp').1) h hp
 
 /-- Strip a pure fact at depth 3: A ** B ** C ** ⌜P⌝ → A ** B ** C -/
 theorem sepConj_strip_pure_end3 {A B C : Assertion} {P : Prop} :
     ∀ h, (A ** B ** C ** ⌜P⌝) h → (A ** B ** C) h :=
   fun h hp => sepConj_mono_right (sepConj_mono_right
-    (fun h' hp' => ((sepConj_pure_right _ _ h').1 hp').1)) h hp
+    (fun h' hp' => ((sepConj_pure_right h').1 hp').1)) h hp
 
 /-- Strip a pure fact at depth 3 (middle position): A ** B ** C ** ⌜P⌝ ** D → A ** B ** C ** D -/
 theorem sepConj_strip_pure_depth3 {A B C D : Assertion} {P : Prop} :
@@ -1304,7 +1304,7 @@ theorem sepConj_extract_pure_end3 {A B C : Assertion} {P : Prop} :
   fun h hp => by
     obtain ⟨_, _, _, _, _, h2⟩ := hp
     obtain ⟨_, _, _, _, _, h3⟩ := h2
-    exact ((sepConj_pure_right _ _ _).1 h3).2
+    exact ((sepConj_pure_right _).1 h3).2
 
 /-- Push the outer atom of a 4-chain left-associated `(3-chain) ** D`
     into the right-associated 4-chain — the inverse of the tree shape
@@ -1501,7 +1501,7 @@ theorem holdsFor_setReg {P : Assertion} {r : Reg} {v : Word} {s : MachineState}
   obtain ⟨h, hcompat, hp⟩ := hP
   exact ⟨h, PartialState.CompatibleWith_setReg hcompat (hP_no_r h hp), hp⟩
 
-theorem holdsFor_pcFree_setPC {P : Assertion} (hP : P.pcFree) (s : MachineState) (v : Word) :
+theorem holdsFor_pcFree_setPC {P : Assertion} (hP : P.pcFree) {s : MachineState} {v : Word} :
     P.holdsFor s → P.holdsFor (s.setPC v) := by
   intro ⟨h, hcompat, hp⟩
   have hpc_none := hP h hp
@@ -1789,7 +1789,7 @@ theorem aAnd_holdsFor_intro {P Q : Assertion} {s : MachineState} {h : PartialSta
     (hcompat : h.CompatibleWith s) (hp : P h) (hq : Q h) :
     (P ⋒ Q).holdsFor s :=
   ⟨h, hcompat, h, h, PartialState.AgreesWith_refl h,
-    PartialState.union_self h, hp, hq⟩
+    PartialState.union_self, hp, hq⟩
 
 theorem aAnd_left {P Q : Assertion} :
     ∀ h, (P ⋒ Q) h → ∃ h1, P h1 :=
@@ -1961,7 +1961,7 @@ end PartialState
 -- ============================================================================
 
 @[simp]
-theorem holdsFor_instrAt (a : Word) (i : Instr) (s : MachineState) :
+theorem holdsFor_instrAt {a : Word} {i : Instr} {s : MachineState} :
     (instrAt a i).holdsFor s ↔ s.code a = some i := by
   simp only [Assertion.holdsFor, instrAt]
   constructor
@@ -1974,22 +1974,22 @@ theorem holdsFor_instrAt (a : Word) (i : Instr) (s : MachineState) :
 -- pcFree for code assertions
 -- ============================================================================
 
-theorem pcFree_instrAt (a : Word) (i : Instr) : (instrAt a i).pcFree := by
+theorem pcFree_instrAt {a : Word} {i : Instr} : (instrAt a i).pcFree := by
   intro h hp; rw [instrAt] at hp; subst hp; rfl
 
 theorem pcFree_programAt : ∀ prog, (programAt prog).pcFree
   | [] => pcFree_emp
-  | (a, i) :: rest =>
-    pcFree_sepConj (pcFree_instrAt a i) (pcFree_programAt rest)
+  | (_, _) :: rest =>
+    pcFree_sepConj pcFree_instrAt (pcFree_programAt rest)
 
-instance : Assertion.PCFree (instrAt a i) := ⟨pcFree_instrAt a i⟩
+instance : Assertion.PCFree (instrAt a i) := ⟨pcFree_instrAt⟩
 
 instance : Assertion.PCFree (programAt prog) := ⟨pcFree_programAt prog⟩
 
-theorem pcFree_progAt (base : Word) (prog : List Instr) : (progAt base prog).pcFree :=
+theorem pcFree_progAt {base : Word} {prog : List Instr} : (progAt base prog).pcFree :=
   pcFree_programAt (progIndexed base prog)
 
-instance : Assertion.PCFree (progAt base prog) := ⟨pcFree_progAt base prog⟩
+instance : Assertion.PCFree (progAt base prog) := ⟨pcFree_progAt⟩
 
 -- ============================================================================
 -- CodeReq: persistent code side-condition (for issue #35)
@@ -2111,7 +2111,7 @@ def CodeReq.Disjoint (cr1 cr2 : CodeReq) : Prop :=
 
 /-- Singleton CodeReqs at different addresses are disjoint. -/
 theorem CodeReq.Disjoint.singleton {a1 a2 : Word} (h : a1 ≠ a2)
-    (i1 i2 : Instr) : CodeReq.Disjoint (CodeReq.singleton a1 i1) (CodeReq.singleton a2 i2) := by
+    {i1 i2 : Instr} : CodeReq.Disjoint (CodeReq.singleton a1 i1) (CodeReq.singleton a2 i2) := by
   intro a
   simp only [CodeReq.singleton]
   cases hb1 : a == a1 with
@@ -2403,8 +2403,8 @@ theorem CodeReq.ofProg_some_range (base : Word) (prog : List Instr) (a : Word) (
 
 /-- Two ofProg blocks at non-overlapping address ranges are disjoint.
     Only requires the address-inequality predicate, not list expansion. -/
-theorem CodeReq.ofProg_disjoint_range (base1 : Word) (prog1 : List Instr)
-    (base2 : Word) (prog2 : List Instr)
+theorem CodeReq.ofProg_disjoint_range {base1 : Word} {prog1 : List Instr}
+    {base2 : Word} {prog2 : List Instr}
     (h : ∀ k1 k2, k1 < prog1.length → k2 < prog2.length →
       base1 + BitVec.ofNat 64 (4 * k1) ≠ base2 + BitVec.ofNat 64 (4 * k2)) :
     CodeReq.Disjoint (CodeReq.ofProg base1 prog1) (CodeReq.ofProg base2 prog2) := by
@@ -2429,7 +2429,7 @@ theorem CodeReq.ofProg_disjoint_range_len (base1 : Word) (prog1 : List Instr) (n
     (h : ∀ k1 k2, k1 < n1 → k2 < n2 →
       base1 + BitVec.ofNat 64 (4 * k1) ≠ base2 + BitVec.ofNat 64 (4 * k2)) :
     CodeReq.Disjoint (CodeReq.ofProg base1 prog1) (CodeReq.ofProg base2 prog2) :=
-  CodeReq.ofProg_disjoint_range base1 prog1 base2 prog2
+  CodeReq.ofProg_disjoint_range
     (fun k1 k2 hk1 hk2 => h k1 k2 (hlen1 ▸ hk1) (hlen2 ▸ hk2))
 
 -- ---------------------------------------------------------------------------
@@ -2562,7 +2562,7 @@ theorem CodeReq.mono_sub_unionAll (sub_cr : CodeReq) (crs : List CodeReq)
             have := h_disj (j + 1) (by omega)
             simp only [List.get] at this; exact this))
 
-theorem CodeReq.union_satisfiedBy (cr1 cr2 : CodeReq) (s : MachineState)
+theorem CodeReq.union_satisfiedBy {cr1 cr2 : CodeReq} {s : MachineState}
     (hd : cr1.Disjoint cr2) :
     (cr1.union cr2).SatisfiedBy s ↔ cr1.SatisfiedBy s ∧ cr2.SatisfiedBy s := by
   simp only [CodeReq.SatisfiedBy, CodeReq.union]
@@ -2588,7 +2588,7 @@ theorem CodeReq.empty_satisfiedBy (s : MachineState) : CodeReq.empty.SatisfiedBy
   fun _ _ h => by simp [CodeReq.empty] at h
 
 /-- A singleton CodeReq is satisfied iff the state has the instruction at that address. -/
-theorem CodeReq.singleton_satisfiedBy (a : Word) (i : Instr) (s : MachineState) :
+theorem CodeReq.singleton_satisfiedBy {a : Word} {i : Instr} {s : MachineState} :
     (CodeReq.singleton a i).SatisfiedBy s ↔ s.code a = some i := by
   constructor
   · intro h; exact h a i (by simp [CodeReq.singleton])
@@ -2605,7 +2605,7 @@ theorem CodeReq.singleton_satisfiedBy (a : Word) (i : Instr) (s : MachineState) 
 /-- An instrAt fact gives CodeReq.singleton satisfaction. -/
 theorem instrAt_singleton_satisfiedBy (a : Word) (i : Instr) (s : MachineState)
     (h : (instrAt a i).holdsFor s) : (CodeReq.singleton a i).SatisfiedBy s :=
-  (CodeReq.singleton_satisfiedBy a i s).mpr ((holdsFor_instrAt a i s).mp h)
+  CodeReq.singleton_satisfiedBy.mpr (holdsFor_instrAt.mp h)
 
 /-- Step preserves code (single step). -/
 theorem step_code_preserved (s s' : MachineState) (h : step s = some s') :
@@ -2733,13 +2733,13 @@ macro_rules
     | exact (inferInstance : Assertion.PCFree _).proof
     | repeat (first
       | apply pcFree_sepConj
-      | exact pcFree_instrAt _ _
-      | exact pcFree_regIs _ _
-      | exact pcFree_memIs _ _
-      | exact pcFree_regOwn _
-      | exact pcFree_memOwn _
+      | exact pcFree_instrAt
+      | exact pcFree_regIs
+      | exact pcFree_memIs
+      | exact pcFree_regOwn
+      | exact pcFree_memOwn
       | exact pcFree_emp
-      | exact pcFree_pure _
+      | exact pcFree_pure
       | exact pcFree_programAt _))
 
 -- ============================================================================
