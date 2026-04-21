@@ -338,7 +338,7 @@ theorem isCallTrialN4_toNat_lt (a3 b2 b3 : Word)
       ((b3 <<< ((clzResult b3).1.toNat % 64)) |||
         (b2 >>> ((signExtend12 (0 : BitVec 12) - (clzResult b3).1).toNat % 64))).toNat := by
   unfold isCallTrialN4 at h
-  exact (EvmWord.ult_iff _ _).mp h
+  exact (EvmWord.ult_iff).mp h
 
 /-- Antishift arithmetic: under `1 ≤ shift.toNat ≤ 63`, the algorithm's
     `antiShift = signExtend12 0 - shift` satisfies `antiShift.toNat % 64 =
@@ -820,7 +820,7 @@ theorem div128Quot_phase1b_check_implies_q1c_pos
   have hq1c_eq : q1c = 0 := BitVec.eq_of_toNat_eq (by simp [hq1c_zero])
   rw [hq1c_eq] at h_check
   have h_lt : rhatUn1.toNat < ((0 : Word) * dLo).toNat :=
-    (EvmWord.ult_iff _ _).mp h_check
+    (EvmWord.ult_iff).mp h_check
   have hmul_zero : ((0 : Word) * dLo).toNat = 0 := by
     rw [BitVec.toNat_mul]; simp
   rw [hmul_zero] at h_lt
