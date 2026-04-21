@@ -27,7 +27,7 @@ theorem iszero_or_reduce_correct (a : EvmWord) :
     have hor := ult_one_eq_zero.mp h
     have h12 := bv_or_eq_zero (show (a.getLimb 0 ||| a.getLimb 1) ||| (a.getLimb 2 ||| a.getLimb 3) = 0 by
       rw [BitVec.or_assoc] at hor; exact hor)
-    exact (eq_zero_iff_limbs a).mpr
+    exact eq_zero_iff_limbs.mpr
       ⟨(bv_or_eq_zero h12.1).1, (bv_or_eq_zero h12.1).2,
        (bv_or_eq_zero h12.2).1, (bv_or_eq_zero h12.2).2⟩
   · intro h; subst h; exact ult_one_eq_zero.mpr rfl

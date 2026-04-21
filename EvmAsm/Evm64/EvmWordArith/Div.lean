@@ -96,7 +96,7 @@ theorem eq_zero_iff_limbs_or (b : EvmWord) :
     set b2 := b.getLimb 2 with hb2_def
     set b3 := b.getLimb 3 with hb3_def
     have ⟨h0, h1, h2, h3⟩ := limbs_or_eq_zero_imp b0 b1 b2 b3 h
-    exact (eq_zero_iff_limbs b).mpr ⟨hb0_def ▸ h0, hb1_def ▸ h1, hb2_def ▸ h2, hb3_def ▸ h3⟩
+    exact eq_zero_iff_limbs.mpr ⟨hb0_def ▸ h0, hb1_def ▸ h1, hb2_def ▸ h2, hb3_def ▸ h3⟩
 
 -- ============================================================================
 -- Division algebra: Euclidean property and uniqueness
