@@ -244,7 +244,7 @@ theorem mulsub_4limb_euclidean_div (qNat : Nat)
     rw [ha, hb, hq, hr]; linarith
   have h_lt : r.toNat < b.toNat := by rw [hr, hb]; exact h_rem
   have h_bnz : b ≠ 0 := fromLimbs_ne_zero_of_or hbnz
-  exact div_from_mulsub a b q r h_bnz h_eq h_lt
+  exact div_from_mulsub h_bnz h_eq h_lt
 
 end EvmWord
 

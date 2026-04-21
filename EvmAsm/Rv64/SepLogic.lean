@@ -966,7 +966,7 @@ theorem sepConj_pure_left (P : Prop) (Q : Assertion) :
     exact ⟨PartialState.empty, h, PartialState.Disjoint_empty_left,
            PartialState.union_empty_left, ⟨rfl, hp⟩, hq⟩
 
-theorem sepConj_pure_right (P : Assertion) (Q : Prop) :
+theorem sepConj_pure_right {P : Assertion} {Q : Prop} :
     ∀ h, (P ** ⌜Q⌝) h ↔ P h ∧ Q := by
   intro h
   rw [sepConj_comm]
@@ -1284,13 +1284,13 @@ theorem sepConj_mono {P P' Q Q' : Assertion} (hp : ∀ h, P h → P' h) (hq : �
 theorem sepConj_strip_pure_end2 {A B : Assertion} {P : Prop} :
     ∀ h, (A ** B ** ⌜P⌝) h → (A ** B) h :=
   fun h hp => sepConj_mono_right
-    (fun h' hp' => ((sepConj_pure_right _ _ h').1 hp').1) h hp
+    (fun h' hp' => ((sepConj_pure_right h').1 hp').1) h hp
 
 /-- Strip a pure fact at depth 3: A ** B ** C ** ⌜P⌝ → A ** B ** C -/
 theorem sepConj_strip_pure_end3 {A B C : Assertion} {P : Prop} :
     ∀ h, (A ** B ** C ** ⌜P⌝) h → (A ** B ** C) h :=
   fun h hp => sepConj_mono_right (sepConj_mono_right
-    (fun h' hp' => ((sepConj_pure_right _ _ h').1 hp').1)) h hp
+    (fun h' hp' => ((sepConj_pure_right h').1 hp').1)) h hp
 
 /-- Strip a pure fact at depth 3 (middle position): A ** B ** C ** ⌜P⌝ ** D → A ** B ** C ** D -/
 theorem sepConj_strip_pure_depth3 {A B C D : Assertion} {P : Prop} :
@@ -1304,7 +1304,7 @@ theorem sepConj_extract_pure_end3 {A B C : Assertion} {P : Prop} :
   fun h hp => by
     obtain ⟨_, _, _, _, _, h2⟩ := hp
     obtain ⟨_, _, _, _, _, h3⟩ := h2
-    exact ((sepConj_pure_right _ _ _).1 h3).2
+    exact ((sepConj_pure_right _).1 h3).2
 
 /-- Push the outer atom of a 4-chain left-associated `(3-chain) ** D`
     into the right-associated 4-chain — the inverse of the tree shape
@@ -1501,7 +1501,7 @@ theorem holdsFor_setReg {P : Assertion} {r : Reg} {v : Word} {s : MachineState}
   obtain ⟨h, hcompat, hp⟩ := hP
   exact ⟨h, PartialState.CompatibleWith_setReg hcompat (hP_no_r h hp), hp⟩
 
-theorem holdsFor_pcFree_setPC {P : Assertion} (hP : P.pcFree) (s : MachineState) (v : Word) :
+theorem holdsFor_pcFree_setPC {P : Assertion} (hP : P.pcFree) {s : MachineState} {v : Word} :
     P.holdsFor s → P.holdsFor (s.setPC v) := by
   intro ⟨h, hcompat, hp⟩
   have hpc_none := hP h hp
@@ -2562,7 +2562,7 @@ theorem CodeReq.mono_sub_unionAll (sub_cr : CodeReq) (crs : List CodeReq)
             have := h_disj (j + 1) (by omega)
             simp only [List.get] at this; exact this))
 
-theorem CodeReq.union_satisfiedBy (cr1 cr2 : CodeReq) (s : MachineState)
+theorem CodeReq.union_satisfiedBy {cr1 cr2 : CodeReq} {s : MachineState}
     (hd : cr1.Disjoint cr2) :
     (cr1.union cr2).SatisfiedBy s ↔ cr1.SatisfiedBy s ∧ cr2.SatisfiedBy s := by
   simp only [CodeReq.SatisfiedBy, CodeReq.union]
@@ -2588,7 +2588,7 @@ theorem CodeReq.empty_satisfiedBy (s : MachineState) : CodeReq.empty.SatisfiedBy
   fun _ _ h => by simp [CodeReq.empty] at h
 
 /-- A singleton CodeReq is satisfied iff the state has the instruction at that address. -/
-theorem CodeReq.singleton_satisfiedBy (a : Word) (i : Instr) (s : MachineState) :
+theorem CodeReq.singleton_satisfiedBy {a : Word} {i : Instr} {s : MachineState} :
     (CodeReq.singleton a i).SatisfiedBy s ↔ s.code a = some i := by
   constructor
   · intro h; exact h a i (by simp [CodeReq.singleton])
@@ -2605,7 +2605,7 @@ theorem CodeReq.singleton_satisfiedBy (a : Word) (i : Instr) (s : MachineState) 
 /-- An instrAt fact gives CodeReq.singleton satisfaction. -/
 theorem instrAt_singleton_satisfiedBy (a : Word) (i : Instr) (s : MachineState)
     (h : (instrAt a i).holdsFor s) : (CodeReq.singleton a i).SatisfiedBy s :=
-  (CodeReq.singleton_satisfiedBy a i s).mpr (holdsFor_instrAt.mp h)
+  CodeReq.singleton_satisfiedBy.mpr (holdsFor_instrAt.mp h)
 
 /-- Step preserves code (single step). -/
 theorem step_code_preserved (s s' : MachineState) (h : step s = some s') :

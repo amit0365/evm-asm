@@ -239,7 +239,7 @@ theorem ld_spec_same (rd : Reg) (v_addr memVal : Word) (offset : BitVec 12) (bas
       ((rd ↦ᵣ memVal) ** ((v_addr + signExtend12 offset) ↦ₘ memVal)) := by
   intro R hR s hcr hPR hpc; subst hpc
   have hfetch : s.code s.pc = some (.LD rd rd offset) :=
-    (CodeReq.singleton_satisfiedBy s.pc (.LD rd rd offset) s).mp hcr
+    CodeReq.singleton_satisfiedBy.mp hcr
   have hrd : s.getReg rd = v_addr :=
     holdsFor_regIs.mp (holdsFor_sepConj_elim_left (holdsFor_sepConj_elim_left hPR))
   have hmem_piece := holdsFor_sepConj_elim_right (holdsFor_sepConj_elim_left hPR)
@@ -248,7 +248,7 @@ theorem ld_spec_same (rd : Reg) (v_addr memVal : Word) (offset : BitVec 12) (bas
   have hvalid : isValidDwordAccess (v_addr + signExtend12 offset) = true :=
     holdsFor_memIs_isValidDwordAccess hmem_piece
   have hstep' : step s = some (execInstrBr s (.LD rd rd offset)) :=
-    step_ld s hfetch (hrd ▸ hvalid)
+    step_ld hfetch (hrd ▸ hvalid)
   have hexec' : execInstrBr s (.LD rd rd offset) = (s.setReg rd memVal).setPC (s.pc + 4) := by
     simp only [execInstrBr, hrd, hmem]
   refine ⟨1, (s.setReg rd memVal).setPC (s.pc + 4), ?_, rfl, ?_⟩
@@ -260,7 +260,7 @@ theorem ld_spec_same (rd : Reg) (v_addr memVal : Word) (offset : BitVec 12) (bas
     have h2 := holdsFor_sepConj_regIs_setReg (v' := memVal) hrd_ne_x0 h1
     -- Reassociate: rd' ** (mem ** R) → (rd' ** mem) ** R
     have h3 := holdsFor_sepConj_assoc.mpr h2
-    exact holdsFor_pcFree_setPC (pcFree_sepConj (by pcFree) hR) _ _ h3
+    exact holdsFor_pcFree_setPC (pcFree_sepConj (by pcFree) hR) h3
 
 /-- SD rs2, offset(rs1): mem[rs1 + sext(offset)] := rs2 (registers distinct) -/
 theorem sd_spec (rs1 rs2 : Reg) (v_addr v_data memOld : Word) (offset : BitVec 12) (base : Word) :
@@ -276,14 +276,14 @@ theorem sd_spec_same (rs : Reg) (v : Word) (memOld : Word) (offset : BitVec 12) 
       ((rs ↦ᵣ v) ** ((v + signExtend12 offset) ↦ₘ v)) := by
   intro R hR s hcr hPR hpc; subst hpc
   have hfetch : s.code s.pc = some (.SD rs rs offset) :=
-    (CodeReq.singleton_satisfiedBy s.pc (.SD rs rs offset) s).mp hcr
+    CodeReq.singleton_satisfiedBy.mp hcr
   have hrs : s.getReg rs = v :=
     holdsFor_regIs.mp (holdsFor_sepConj_elim_left (holdsFor_sepConj_elim_left hPR))
   have hvalid : isValidDwordAccess (v + signExtend12 offset) = true :=
     holdsFor_memIs_isValidDwordAccess (holdsFor_sepConj_elim_right
       (holdsFor_sepConj_elim_left hPR))
   have hstep' : step s = some (execInstrBr s (.SD rs rs offset)) :=
-    step_sd s hfetch (hrs ▸ hvalid)
+    step_sd hfetch (hrs ▸ hvalid)
   have hexec' : execInstrBr s (.SD rs rs offset) =
       (s.setMem (v + signExtend12 offset) v).setPC (s.pc + 4) := by
     simp only [execInstrBr, hrs]
@@ -293,7 +293,7 @@ theorem sd_spec_same (rs : Reg) (v : Word) (memOld : Word) (offset : BitVec 12) 
   · have h1 := holdsFor_sepConj_pull_second.mp hPR
     have h2 := holdsFor_sepConj_memIs_setMem (v' := v) h1
     have h3 := holdsFor_sepConj_pull_second.mpr h2
-    exact holdsFor_pcFree_setPC (pcFree_sepConj (by pcFree) hR) _ _ h3
+    exact holdsFor_pcFree_setPC (pcFree_sepConj (by pcFree) hR) h3
 
 -- ============================================================================
 -- Branch Instructions (use cpsBranch for two exits)
@@ -315,7 +315,7 @@ theorem beq_spec_same (rs : Reg) (offset : BitVec 13) (v : Word) (base : Word) :
       (base + 4) (rs ↦ᵣ v) := by
   intro R hR s hcr hPR hpc; subst hpc
   have hfetch : s.code s.pc = some (.BEQ rs rs offset) :=
-    (CodeReq.singleton_satisfiedBy s.pc (.BEQ rs rs offset) s).mp hcr
+    CodeReq.singleton_satisfiedBy.mp hcr
   have hrs : s.getReg rs = v :=
     holdsFor_regIs.mp (holdsFor_sepConj_elim_left hPR)
   have hstep' : step s = some (execInstrBr s (.BEQ rs rs offset)) :=
@@ -325,7 +325,7 @@ theorem beq_spec_same (rs : Reg) (offset : BitVec 13) (v : Word) (base : Word) :
   refine ⟨1, s.setPC (s.pc + signExtend13 offset), ?_, Or.inl ⟨rfl, ?_⟩⟩
   · show (step s).bind (stepN 0) = some _
     rw [hstep', hexec']; rfl
-  · exact holdsFor_pcFree_setPC (pcFree_sepConj (by pcFree) hR) _ _ hPR
+  · exact holdsFor_pcFree_setPC (pcFree_sepConj (by pcFree) hR) hPR
 
 /-- BNE rs1, rs2, offset: branch if rs1 ≠ rs2 (registers distinct) -/
 theorem bne_spec (rs1 rs2 : Reg) (offset : BitVec 13) (v1 v2 : Word) (base : Word) :
@@ -343,7 +343,7 @@ theorem bne_spec_same (rs : Reg) (offset : BitVec 13) (v : Word) (base : Word) :
       (base + 4) (rs ↦ᵣ v) := by
   intro R hR s hcr hPR hpc; subst hpc
   have hfetch : s.code s.pc = some (.BNE rs rs offset) :=
-    (CodeReq.singleton_satisfiedBy s.pc (.BNE rs rs offset) s).mp hcr
+    CodeReq.singleton_satisfiedBy.mp hcr
   have hrs : s.getReg rs = v :=
     holdsFor_regIs.mp (holdsFor_sepConj_elim_left hPR)
   have hstep' : step s = some (execInstrBr s (.BNE rs rs offset)) :=
@@ -353,7 +353,7 @@ theorem bne_spec_same (rs : Reg) (offset : BitVec 13) (v : Word) (base : Word) :
   refine ⟨1, s.setPC (s.pc + 4), ?_, Or.inr ⟨rfl, ?_⟩⟩
   · show (step s).bind (stepN 0) = some _
     rw [hstep', hexec']; rfl
-  · exact holdsFor_pcFree_setPC (pcFree_sepConj (by pcFree) hR) _ _ hPR
+  · exact holdsFor_pcFree_setPC (pcFree_sepConj (by pcFree) hR) hPR
 
 -- ============================================================================
 -- Branch Instructions: BGEU
@@ -395,7 +395,7 @@ theorem jalr_spec_same (rd : Reg) (v : Word) (offset : BitVec 12) (base : Word)
       (rd ↦ᵣ (base + 4)) := by
   intro R hR s hcr hPR hpc; subst hpc
   have hfetch : s.code s.pc = some (.JALR rd rd offset) :=
-    (CodeReq.singleton_satisfiedBy s.pc (.JALR rd rd offset) s).mp hcr
+    CodeReq.singleton_satisfiedBy.mp hcr
   have hrd : s.getReg rd = v :=
     holdsFor_regIs.mp (holdsFor_sepConj_elim_left hPR)
   have hstep' : step s = some (execInstrBr s (.JALR rd rd offset)) :=
@@ -407,7 +407,7 @@ theorem jalr_spec_same (rd : Reg) (v : Word) (offset : BitVec 12) (base : Word)
   · show (step s).bind (stepN 0) = some _
     rw [hstep', hexec']; rfl
   · have h1 := holdsFor_sepConj_regIs_setReg (v' := s.pc + 4) hrd_ne_x0 hPR
-    exact holdsFor_pcFree_setPC (pcFree_sepConj (by pcFree) hR) _ _ h1
+    exact holdsFor_pcFree_setPC (pcFree_sepConj (by pcFree) hR) h1
 
 -- ============================================================================
 -- Pseudo Instructions
