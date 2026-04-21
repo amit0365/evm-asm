@@ -1229,4 +1229,41 @@ theorem div128Quot_q1_prime_le_pow32_plus_one (uHi dHi dLo rhatUn1 : Word)
   have h_q1'_le_q1c : q1'.toNat ≤ q1c.toNat := div128Quot_q1_prime_le_q1c q1c dLo rhatUn1
   omega
 
+/-- **KB-3f: No-wraparound for `q1' * dLo`.** Under the call-trial
+    precondition, the Word-level product equals the Nat-level product:
+
+    ```
+    (q1' * dLo).toNat = q1'.toNat * dLo.toNat
+    ```
+
+    Proof: from KB-3e, `q1'.toNat ≤ 2^32 + 1`; `dLo.toNat < 2^32`.  Hence
+    `q1'.toNat * dLo.toNat ≤ (2^32 + 1) * (2^32 - 1) = 2^64 - 1 < 2^64`.
+    Word multiplication therefore doesn't wrap, and `BitVec.toNat_mul`
+    gives the stated equality.
+
+    This is the key no-wraparound fact for subsequent Phase 2 analysis
+    (bounding `un21`, relating it to abstract dividend quantities). -/
+theorem div128Quot_q1_prime_dLo_no_wrap (uHi dHi dLo rhatUn1 : Word)
+    (hdHi_ge : dHi.toNat ≥ 2^31)
+    (hdLo_lt : dLo.toNat < 2^32)
+    (huHi_lt_vTop : uHi.toNat < dHi.toNat * 2^32 + dLo.toNat) :
+    let q1 := rv64_divu uHi dHi
+    let hi1 := q1 >>> (32 : BitVec 6).toNat
+    let q1c := if hi1 = 0 then q1 else q1 + signExtend12 4095
+    let q1' := if BitVec.ult rhatUn1 (q1c * dLo) then q1c + signExtend12 4095
+               else q1c
+    (q1' * dLo).toNat = q1'.toNat * dLo.toNat := by
+  intro q1 hi1 q1c q1'
+  have h_q1'_le : q1'.toNat ≤ 2^32 + 1 :=
+    div128Quot_q1_prime_le_pow32_plus_one uHi dHi dLo rhatUn1
+      hdHi_ge hdLo_lt huHi_lt_vTop
+  -- q1'.toNat * dLo.toNat ≤ (2^32 + 1) * (2^32 - 1) = 2^64 - 1.
+  have h_mul_lt : q1'.toNat * dLo.toNat < 2^64 := by
+    have : q1'.toNat * dLo.toNat ≤ (2^32 + 1) * (2^32 - 1) := by
+      have hdLo_le : dLo.toNat ≤ 2^32 - 1 := by omega
+      exact Nat.mul_le_mul h_q1'_le hdLo_le
+    have h_eq : (2^32 + 1) * (2^32 - 1) = 2^64 - 1 := by decide
+    omega
+  rw [BitVec.toNat_mul, Nat.mod_eq_of_lt h_mul_lt]
+
 end EvmAsm.Evm64
