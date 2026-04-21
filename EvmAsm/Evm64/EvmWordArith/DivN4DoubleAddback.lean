@@ -177,7 +177,7 @@ theorem n4_max_double_addback_correct {a0 a1 a2 a3 b0 b1 b2 b3 : Word}
     rw [hq_hat_toNat]; decide
   -- Apply combined Euclidean lemma: val256(a) = (q-2)*val256(b) + val256(ab'_lem).
   have hcombined := mulsub_double_addback_val256_combined
-    (signExtend12 4095) b0 b1 b2 b3 a0 a1 a2 a3 hbnz hq_over hc3_one hcarry1_zero hq_ge_2
+    (signExtend12 4095) hbnz hq_over hc3_one hcarry1_zero hq_ge_2
   simp only [] at hcombined
   -- Bridge from lemma's ab' to algorithm's ab': both second addbacks compute
   -- from the same low-4 ab limbs (low 4 are uTop-independent), and second
