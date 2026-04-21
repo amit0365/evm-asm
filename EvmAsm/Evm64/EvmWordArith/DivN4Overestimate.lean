@@ -423,7 +423,7 @@ theorem addbackN4_second_carry_one (q v0 v1 v2 v3 u0 u1 u2 u3 : Word)
 
 /-- Combined Euclidean equation for the double-addback case:
     val256(u) = (q.toNat - 2) * val256(v) + val256(ab'_result). -/
-theorem mulsub_double_addback_val256_combined (q v0 v1 v2 v3 u0 u1 u2 u3 : Word)
+theorem mulsub_double_addback_val256_combined (q : Word) {v0 v1 v2 v3 u0 u1 u2 u3 : Word}
     (hbnz : v0 ||| v1 ||| v2 ||| v3 ≠ 0)
     (hq_over : q.toNat ≤ val256 u0 u1 u2 u3 / val256 v0 v1 v2 v3 + 2)
     (hc3_one : (mulsubN4 q v0 v1 v2 v3 u0 u1 u2 u3).2.2.2.2 = 1)
