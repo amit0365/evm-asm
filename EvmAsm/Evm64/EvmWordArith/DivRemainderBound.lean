@@ -185,7 +185,7 @@ theorem norm_euclidean_correct {aVal bVal qNat r_norm : Nat} (s : Nat)
     qNat = aVal / bVal ∧ r_norm / 2^s = aVal % bVal := by
   -- Convert to the form expected by norm_euclidean_bridge
   have heq' : aVal * 2^s = bVal * 2^s * qNat + r_norm := by linarith
-  exact norm_euclidean_bridge aVal bVal qNat r_norm s heq' hlt
+  exact norm_euclidean_bridge heq' hlt
 
 end EvmWord
 
