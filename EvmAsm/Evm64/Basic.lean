@@ -465,7 +465,7 @@ theorem eq_iff_limbs (a b : EvmWord) :
       _ = fromLimbs b.getLimb := by congr 1; funext i; exact h i
       _ = b := fromLimbs_getLimb b
 
-theorem eq_zero_iff_limbs (a : EvmWord) :
+theorem eq_zero_iff_limbs {a : EvmWord} :
     a = 0 ↔ a.getLimb 0 = 0 ∧ a.getLimb 1 = 0 ∧ a.getLimb 2 = 0 ∧ a.getLimb 3 = 0 := by
   constructor
   · intro h; subst h
