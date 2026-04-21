@@ -46,6 +46,9 @@
     vTop >>> 32` satisfies `dHi ≥ 2^31` (first Piece B building block).
   - `div128Quot_q1_lt_pow33` — under `dHi ≥ 2^31`, the first-round trial
     quotient `q1 = rv64_divu uHi dHi` is strictly less than `2^33`.
+  - `div128Quot_first_round_euclidean` — for nonzero `dHi`, the Word-level
+    Euclidean equation `q1.toNat * dHi.toNat + rhat.toNat = uHi.toNat` holds
+    where `rhat = uHi - q1 * dHi` (BitVec sub).
 -/
 
 import EvmAsm.Evm64.EvmWordArith.DivN4Overestimate
@@ -542,5 +545,33 @@ theorem div128Quot_q1_lt_pow33 (uHi dHi : Word)
   have hq_lower : q1 * 2^31 ≤ q1 * dHi.toNat := Nat.mul_le_mul_left q1 hdHi_ge
   have hq_lt_mul : q1 * 2^31 < 2^33 * 2^31 := by omega
   exact Nat.lt_of_mul_lt_mul_right hq_lt_mul
+
+/-- **Third Piece B building block — first-round Euclidean equation.**
+
+    For nonzero `dHi`, the algorithm's first-round invariant
+    `q1.toNat * dHi.toNat + rhat.toNat = uHi.toNat` holds at the Word level,
+    where `q1 = rv64_divu uHi dHi` and `rhat = uHi - q1 * dHi` (BitVec sub).
+
+    The key facts:
+    - `q1.toNat = uHi.toNat / dHi.toNat` (`rv64_divu_toNat`).
+    - `q1.toNat * dHi.toNat ≤ uHi.toNat < 2^64` ensures `q1 * dHi` doesn't
+      wrap as a Word multiplication.
+    - The same bound makes the BitVec subtraction `uHi - q1 * dHi` reduce to
+      `uHi.toNat - q1.toNat * dHi.toNat` at the Nat level. -/
+theorem div128Quot_first_round_euclidean (uHi dHi : Word) (hdHi_ne : dHi ≠ 0) :
+    (rv64_divu uHi dHi).toNat * dHi.toNat +
+      (uHi - rv64_divu uHi dHi * dHi).toNat = uHi.toNat := by
+  set q1 := rv64_divu uHi dHi with hq1_def
+  have hq1_eq : q1.toNat = uHi.toNat / dHi.toNat := rv64_divu_toNat uHi dHi hdHi_ne
+  have h_q1_mul_le : q1.toNat * dHi.toNat ≤ uHi.toNat := by
+    rw [hq1_eq]; exact Nat.div_mul_le_self _ _
+  have huHi_lt := uHi.isLt
+  have h_q1_mul_lt : q1.toNat * dHi.toNat < 2^64 := by omega
+  have hmul_toNat : (q1 * dHi).toNat = q1.toNat * dHi.toNat := by
+    rw [BitVec.toNat_mul]; exact Nat.mod_eq_of_lt h_q1_mul_lt
+  have hrhat_toNat : (uHi - q1 * dHi).toNat = uHi.toNat - q1.toNat * dHi.toNat := by
+    rw [BitVec.toNat_sub, hmul_toNat]
+    omega
+  omega
 
 end EvmAsm.Evm64
