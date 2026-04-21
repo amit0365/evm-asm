@@ -531,7 +531,7 @@ private theorem shr_bridge_merge (value : EvmWord) (s0 : Word)
   have hbs_lt : bs.toNat < 64 := by omega
   have hL_div : s0.toNat / 64 = L := by
     rw [← hL, bv6_toNat_6]; simp [BitVec.toNat_ushiftRight]; omega
-  rw [getLimb_ushiftRight value s0.toNat i, hL_div,
+  rw [getLimb_ushiftRight, hL_div,
       getLimbN_lt value (i.val + L) hiL,
       getLimbN_lt value (i.val + L + 1) hiL1]
   by_cases hmod0 : s0.toNat % 64 = 0
@@ -565,7 +565,7 @@ private theorem shr_bridge_last (value : EvmWord) (s0 : Word)
     exact Nat.and_two_pow_sub_one_eq_mod s0.toNat 6
   have hL_div : s0.toNat / 64 = L := by
     rw [← hL, bv6_toNat_6]; simp [BitVec.toNat_ushiftRight]; omega
-  rw [getLimb_ushiftRight value s0.toNat i, hL_div, hiL,
+  rw [getLimb_ushiftRight, hL_div, hiL,
       getLimbN_lt value 3 (by omega), getLimbN_ge value 4 (by omega)]
   simp [show bs.toNat % 64 = s0.toNat % 64 from by omega]
 
@@ -580,7 +580,7 @@ private theorem shr_bridge_zero (value : EvmWord) (s0 : Word)
   rw [hresult]
   have hL_div : s0.toNat / 64 = L := by
     rw [← hL, bv6_toNat_6]; simp [BitVec.toNat_ushiftRight]; omega
-  rw [getLimb_ushiftRight value s0.toNat i, hL_div,
+  rw [getLimb_ushiftRight, hL_div,
       getLimbN_ge value (i.val + L) (by omega),
       getLimbN_ge value (i.val + L + 1) (by omega)]
   simp

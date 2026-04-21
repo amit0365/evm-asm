@@ -400,7 +400,7 @@ theorem getLimb_ushiftRight_zero (v : EvmWord) (i : Fin 4) :
 
     The mask `if bs = 0 then 0 else allOnes 64` ensures the `bs = 0` case reduces to
     just the logical shift with no spurious high bits from the left-shift. -/
-theorem getLimb_ushiftRight (v : EvmWord) (n : Nat) (i : Fin 4) :
+theorem getLimb_ushiftRight {v : EvmWord} {n : Nat} {i : Fin 4} :
     getLimb (v >>> n) i =
     (getLimbN v (i.val + n / 64) >>> (n % 64)) |||
     ((getLimbN v (i.val + n / 64 + 1) <<< (64 - n % 64)) &&&
