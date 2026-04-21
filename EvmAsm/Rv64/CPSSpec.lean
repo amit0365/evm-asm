@@ -1045,10 +1045,10 @@ theorem cpsBranch_seq_cpsTriple_with_perm_same_cr (entry mid target exit_f : Wor
     h2 ht1
 
 /-- Compose a cpsBranch with a cpsNBranch on the not-taken path, same CodeReq. -/
-theorem cpsBranch_cons_cpsNBranch_same_cr (entry : Word) (cr : CodeReq)
-    (P : Assertion) (exit_t : Word) (Q_t : Assertion)
-    (exit_f : Word) (Q_f : Assertion)
-    (exits : List (Word × Assertion))
+theorem cpsBranch_cons_cpsNBranch_same_cr {entry : Word} {cr : CodeReq}
+    {P : Assertion} {exit_t : Word} {Q_t : Assertion}
+    {exit_f : Word} {Q_f : Assertion}
+    {exits : List (Word × Assertion)}
     (hbr : cpsBranch entry cr P exit_t Q_t exit_f Q_f)
     (h_rest : cpsNBranch exit_f cr Q_f exits) :
     cpsNBranch entry cr P ((exit_t, Q_t) :: exits) := by
@@ -1062,10 +1062,10 @@ theorem cpsBranch_cons_cpsNBranch_same_cr (entry : Word) (cr : CodeReq)
            ex, List.Mem.tail _ hmem, hpc2, hER⟩
 
 /-- Compose a cpsBranch with a cpsNBranch, with permutation on the not-taken path, same CodeReq. -/
-theorem cpsBranch_cons_cpsNBranch_with_perm_same_cr (entry : Word) (cr : CodeReq)
-    (P : Assertion) (exit_t : Word) (Q_t : Assertion)
-    (exit_f : Word) (Q_f Q_f' : Assertion)
-    (exits : List (Word × Assertion))
+theorem cpsBranch_cons_cpsNBranch_with_perm_same_cr {entry : Word} {cr : CodeReq}
+    {P : Assertion} {exit_t : Word} {Q_t : Assertion}
+    {exit_f : Word} {Q_f Q_f' : Assertion}
+    {exits : List (Word × Assertion)}
     (hperm : ∀ h, Q_f h → Q_f' h)
     (hbr : cpsBranch entry cr P exit_t Q_t exit_f Q_f)
     (h_rest : cpsNBranch exit_f cr Q_f' exits) :
