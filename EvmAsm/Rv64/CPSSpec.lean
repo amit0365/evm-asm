@@ -491,9 +491,9 @@ theorem cpsNBranch_to_cpsBranch {entry : Word} {cr : CodeReq}
 /-- N-branch merge: if every exit leads to the same continuation,
     compose into a single cpsTriple. This is the main structural rule.
     Uses the same cr for all parts (simpler; use cpsTriple_extend_code to adapt). -/
-theorem cpsNBranch_merge (entry exit_ : Word) (cr : CodeReq)
-    (P R : Assertion)
-    (exits : List (Word × Assertion))
+theorem cpsNBranch_merge {entry exit_ : Word} {cr : CodeReq}
+    {P R : Assertion}
+    {exits : List (Word × Assertion)}
     (hbr : cpsNBranch entry cr P exits)
     (hall : ∀ exit ∈ exits, cpsTriple exit.1 exit_ cr exit.2 R) :
     cpsTriple entry exit_ cr P R := by
@@ -748,11 +748,11 @@ theorem cpsTriple_seq_cpsBranch_with_perm {entry mid : Word} {cr1 cr2 : CodeReq}
 
 /-- Compose a cpsBranch with a cpsNBranch on the not-taken (false) path.
     The taken path becomes a new exit prepended to the cpsNBranch exits. -/
-theorem cpsBranch_cons_cpsNBranch (entry : Word) (cr1 cr2 : CodeReq)
+theorem cpsBranch_cons_cpsNBranch {entry : Word} {cr1 cr2 : CodeReq}
     (hd : cr1.Disjoint cr2)
-    (P : Assertion) (exit_t : Word) (Q_t : Assertion)
-    (exit_f : Word) (Q_f : Assertion)
-    (exits : List (Word × Assertion))
+    {P : Assertion} {exit_t : Word} {Q_t : Assertion}
+    {exit_f : Word} {Q_f : Assertion}
+    {exits : List (Word × Assertion)}
     (hbr : cpsBranch entry cr1 P exit_t Q_t exit_f Q_f)
     (h_rest : cpsNBranch exit_f cr2 Q_f exits) :
     cpsNBranch entry (cr1.union cr2) P ((exit_t, Q_t) :: exits) := by
@@ -768,11 +768,11 @@ theorem cpsBranch_cons_cpsNBranch (entry : Word) (cr1 cr2 : CodeReq)
            ex, List.Mem.tail _ hmem, hpc2, hER⟩
 
 /-- Compose a cpsBranch with a cpsNBranch, with permutation on the not-taken path. -/
-theorem cpsBranch_cons_cpsNBranch_with_perm (entry : Word) (cr1 cr2 : CodeReq)
+theorem cpsBranch_cons_cpsNBranch_with_perm {entry : Word} {cr1 cr2 : CodeReq}
     (hd : cr1.Disjoint cr2)
-    (P : Assertion) (exit_t : Word) (Q_t : Assertion)
-    (exit_f : Word) (Q_f Q_f' : Assertion)
-    (exits : List (Word × Assertion))
+    {P : Assertion} {exit_t : Word} {Q_t : Assertion}
+    {exit_f : Word} {Q_f Q_f' : Assertion}
+    {exits : List (Word × Assertion)}
     (hperm : ∀ h, Q_f h → Q_f' h)
     (hbr : cpsBranch entry cr1 P exit_t Q_t exit_f Q_f)
     (h_rest : cpsNBranch exit_f cr2 Q_f' exits) :
@@ -794,9 +794,9 @@ theorem cpsBranch_cons_cpsNBranch_with_perm (entry : Word) (cr1 cr2 : CodeReq)
 /-- Compose two sequential cpsBranch specs where the first's not-taken path leads
     to the second's entry, and both taken paths go to the same target.
     The two taken postconditions are merged into a common one via weakening functions. -/
-theorem cpsBranch_seq_cpsBranch (entry mid target exit_f : Word) (cr1 cr2 : CodeReq)
+theorem cpsBranch_seq_cpsBranch {entry mid target exit_f : Word} {cr1 cr2 : CodeReq}
     (hd : cr1.Disjoint cr2)
-    (P Q_t1 Q_f1 Q_t2 Q_f2 Q_t : Assertion)
+    {P Q_t1 Q_f1 Q_t2 Q_f2 Q_t : Assertion}
     (h1 : cpsBranch entry cr1 P target Q_t1 mid Q_f1)
     (h2 : cpsBranch mid cr2 Q_f1 target Q_t2 exit_f Q_f2)
     (ht1 : ∀ h, Q_t1 h → Q_t h)
@@ -836,7 +836,7 @@ theorem cpsBranch_seq_cpsBranch_with_perm
     (ht1 : ∀ h, Q_t1 h → Q_t h)
     (ht2 : ∀ h, Q_t2 h → Q_t h) :
     cpsBranch entry (cr1.union cr2) P target Q_t exit_f Q_f2 :=
-  cpsBranch_seq_cpsBranch entry mid target exit_f cr1 cr2 hd P Q_t1 R Q_t2 Q_f2 Q_t
+  cpsBranch_seq_cpsBranch hd
     (cpsBranch_weaken (fun _ hp => hp) (fun _ hp => hp) hperm h1)
     h2 ht1 ht2
 
@@ -974,8 +974,8 @@ theorem cpsTriple_loop_with_perm
 -- ============================================================================
 
 /-- Like cpsBranch_seq_cpsBranch but with same CodeReq (no disjointness needed). -/
-theorem cpsBranch_seq_cpsBranch_same_cr (entry mid target exit_f : Word) (cr : CodeReq)
-    (P Q_t1 Q_f1 Q_t2 Q_f2 Q_t : Assertion)
+theorem cpsBranch_seq_cpsBranch_same_cr {entry mid target exit_f : Word} {cr : CodeReq}
+    {P Q_t1 Q_f1 Q_t2 Q_f2 Q_t : Assertion}
     (h1 : cpsBranch entry cr P target Q_t1 mid Q_f1)
     (h2 : cpsBranch mid cr Q_f1 target Q_t2 exit_f Q_f2)
     (ht1 : ∀ h, Q_t1 h → Q_t h)
@@ -1008,14 +1008,14 @@ theorem cpsBranch_seq_cpsBranch_with_perm_same_cr
     (ht1 : ∀ h, Q_t1 h → Q_t h)
     (ht2 : ∀ h, Q_t2 h → Q_t h) :
     cpsBranch entry cr P target Q_t exit_f Q_f2 :=
-  cpsBranch_seq_cpsBranch_same_cr entry mid target exit_f cr P Q_t1 R Q_t2 Q_f2 Q_t
+  cpsBranch_seq_cpsBranch_same_cr
     (cpsBranch_weaken (fun _ hp => hp) (fun _ hp => hp) hperm h1)
     h2 ht1 ht2
 
 /-- Compose a cpsBranch (ntaken exit) with a cpsTriple, same CodeReq.
     The taken exit is passed through with a postcondition weakening. -/
-theorem cpsBranch_seq_cpsTriple_same_cr (entry mid target exit_f : Word) (cr : CodeReq)
-    (P Q_t1 Q_f1 Q_f2 Q_t : Assertion)
+theorem cpsBranch_seq_cpsTriple_same_cr {entry mid target exit_f : Word} {cr : CodeReq}
+    {P Q_t1 Q_f1 Q_f2 Q_t : Assertion}
     (h1 : cpsBranch entry cr P target Q_t1 mid Q_f1)
     (h2 : cpsTriple mid exit_f cr Q_f1 Q_f2)
     (ht1 : ∀ h, Q_t1 h → Q_t h) :
@@ -1033,22 +1033,22 @@ theorem cpsBranch_seq_cpsTriple_same_cr (entry mid target exit_f : Word) (cr : C
 
 /-- Like cpsBranch_seq_cpsTriple_same_cr but with a permutation between Q_f1 and the
     cpsTriple precondition. -/
-theorem cpsBranch_seq_cpsTriple_with_perm_same_cr (entry mid target exit_f : Word) (cr : CodeReq)
-    (P Q_t1 Q_f1 R Q_f2 Q_t : Assertion)
+theorem cpsBranch_seq_cpsTriple_with_perm_same_cr {entry mid target exit_f : Word} {cr : CodeReq}
+    {P Q_t1 Q_f1 R Q_f2 Q_t : Assertion}
     (h1 : cpsBranch entry cr P target Q_t1 mid Q_f1)
     (hperm : ∀ h, Q_f1 h → R h)
     (h2 : cpsTriple mid exit_f cr R Q_f2)
     (ht1 : ∀ h, Q_t1 h → Q_t h) :
     cpsBranch entry cr P target Q_t exit_f Q_f2 :=
-  cpsBranch_seq_cpsTriple_same_cr entry mid target exit_f cr P Q_t1 R Q_f2 Q_t
+  cpsBranch_seq_cpsTriple_same_cr
     (cpsBranch_weaken (fun _ hp => hp) (fun _ hp => hp) hperm h1)
     h2 ht1
 
 /-- Compose a cpsBranch with a cpsNBranch on the not-taken path, same CodeReq. -/
-theorem cpsBranch_cons_cpsNBranch_same_cr (entry : Word) (cr : CodeReq)
-    (P : Assertion) (exit_t : Word) (Q_t : Assertion)
-    (exit_f : Word) (Q_f : Assertion)
-    (exits : List (Word × Assertion))
+theorem cpsBranch_cons_cpsNBranch_same_cr {entry : Word} {cr : CodeReq}
+    {P : Assertion} {exit_t : Word} {Q_t : Assertion}
+    {exit_f : Word} {Q_f : Assertion}
+    {exits : List (Word × Assertion)}
     (hbr : cpsBranch entry cr P exit_t Q_t exit_f Q_f)
     (h_rest : cpsNBranch exit_f cr Q_f exits) :
     cpsNBranch entry cr P ((exit_t, Q_t) :: exits) := by
@@ -1062,10 +1062,10 @@ theorem cpsBranch_cons_cpsNBranch_same_cr (entry : Word) (cr : CodeReq)
            ex, List.Mem.tail _ hmem, hpc2, hER⟩
 
 /-- Compose a cpsBranch with a cpsNBranch, with permutation on the not-taken path, same CodeReq. -/
-theorem cpsBranch_cons_cpsNBranch_with_perm_same_cr (entry : Word) (cr : CodeReq)
-    (P : Assertion) (exit_t : Word) (Q_t : Assertion)
-    (exit_f : Word) (Q_f Q_f' : Assertion)
-    (exits : List (Word × Assertion))
+theorem cpsBranch_cons_cpsNBranch_with_perm_same_cr {entry : Word} {cr : CodeReq}
+    {P : Assertion} {exit_t : Word} {Q_t : Assertion}
+    {exit_f : Word} {Q_f Q_f' : Assertion}
+    {exits : List (Word × Assertion)}
     (hperm : ∀ h, Q_f h → Q_f' h)
     (hbr : cpsBranch entry cr P exit_t Q_t exit_f Q_f)
     (h_rest : cpsNBranch exit_f cr Q_f' exits) :
