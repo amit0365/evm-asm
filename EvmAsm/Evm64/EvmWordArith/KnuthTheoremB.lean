@@ -348,7 +348,7 @@ theorem isCallTrialN4_toNat_lt (a3 b2 b3 : Word)
     direct `64 - s` form — a prerequisite for lifting abstract Knuth B to Word-level
     normalized limb values. Same proof pattern as in `u_top_lt_pow63_of_shift_nz`
     (MaxTrialVacuity.lean), extracted as a reusable lemma. -/
-theorem antiShift_toNat_mod_eq (shift : Word)
+theorem antiShift_toNat_mod_eq {shift : Word}
     (h1 : 1 ≤ shift.toNat) (h63 : shift.toNat ≤ 63) :
     (signExtend12 (0 : BitVec 12) - shift).toNat % 64 = 64 - shift.toNat := by
   have h0 : (signExtend12 (0 : BitVec 12) : Word) = 0 := by decide
@@ -443,7 +443,7 @@ theorem b3_prime_val256_eq_scaled
     · exact h
   have hsmod : (clzResult b3).1.toNat % 64 = (clzResult b3).1.toNat :=
     Nat.mod_eq_of_lt (by omega)
-  rw [hsmod, antiShift_toNat_mod_eq _ h_shift_pos h_shift_le]
+  rw [hsmod, antiShift_toNat_mod_eq h_shift_pos h_shift_le]
   have hb3_bound := clzResult_fst_top_bound b3
   exact val256_normalize h_shift_pos (by omega) b0 b1 b2 b3 hb3_bound
 
@@ -475,7 +475,7 @@ theorem u_val256_eq_scaled_with_overflow
     · exact h
   have hsmod : (clzResult b3).1.toNat % 64 = (clzResult b3).1.toNat :=
     Nat.mod_eq_of_lt (by omega)
-  rw [hsmod, antiShift_toNat_mod_eq _ h_shift_pos h_shift_le]
+  rw [hsmod, antiShift_toNat_mod_eq h_shift_pos h_shift_le]
   exact val256_normalize_general h_shift_pos (by omega) a0 a1 a2 a3
 
 /-- **Knuth's Theorem B at the Word level — full CLZ-driven corollary.**
