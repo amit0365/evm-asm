@@ -2603,23 +2603,23 @@ theorem CodeReq.singleton_satisfiedBy {a : Word} {i : Instr} {s : MachineState} 
       exact heq ▸ hcr ▸ h
 
 /-- An instrAt fact gives CodeReq.singleton satisfaction. -/
-theorem instrAt_singleton_satisfiedBy (a : Word) (i : Instr) (s : MachineState)
+theorem instrAt_singleton_satisfiedBy {a : Word} {i : Instr} {s : MachineState}
     (h : (instrAt a i).holdsFor s) : (CodeReq.singleton a i).SatisfiedBy s :=
   CodeReq.singleton_satisfiedBy.mpr (holdsFor_instrAt.mp h)
 
 /-- Step preserves code (single step). -/
-theorem step_code_preserved (s s' : MachineState) (h : step s = some s') :
+theorem step_code_preserved {s s' : MachineState} (h : step s = some s') :
     s'.code = s.code := code_step h
 
 /-- stepN preserves code (multiple steps). -/
-theorem stepN_code_preserved (k : Nat) (s s' : MachineState) (h : stepN k s = some s') :
+theorem stepN_code_preserved {k : Nat} {s s' : MachineState} (h : stepN k s = some s') :
     s'.code = s.code := code_stepN h
 
 /-- CodeReq.SatisfiedBy is preserved by stepN. -/
-theorem CodeReq.SatisfiedBy_preserved (cr : CodeReq) (k : Nat) (s s' : MachineState)
+theorem CodeReq.SatisfiedBy_preserved {cr : CodeReq} {k : Nat} {s s' : MachineState}
     (h : stepN k s = some s') (hcr : cr.SatisfiedBy s) : cr.SatisfiedBy s' := by
   intro a i hcri
-  have hcode : s'.code = s.code := stepN_code_preserved k s s' h
+  have hcode : s'.code = s.code := stepN_code_preserved h
   rw [hcode]
   exact hcr a i hcri
 

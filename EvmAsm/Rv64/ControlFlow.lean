@@ -448,7 +448,7 @@ theorem if_eq_spec (rs1 rs2 : Reg) (v1 v2 : Word)
       pcFree_sepConj pcFree_instrAt (pcFree_sepConj pcFree_instrAt (pcFree_sepConj hQ hR))
     have hjal_cr : (CodeReq.singleton (s.pc + 4 + BitVec.ofNat 64 (4 * then_body.length))
         (Instr.JAL Reg.x0 (BitVec.ofNat 21 (4 * else_body.length + 4)))).SatisfiedBy s2 :=
-      instrAt_singleton_satisfiedBy _ _ _ (holdsFor_sepConj_elim_left hQR2')
+      instrAt_singleton_satisfiedBy (holdsFor_sepConj_elim_left hQR2')
     -- Convert hQR2' for jal_x0_spec_gen (empAssertion pre/post; frame is jal ** bne ** Q ** R)
     have hQR2_emp : (empAssertion **
         (((s.pc + 4 + BitVec.ofNat 64 (4 * then_body.length)) ↦ᵢ Instr.JAL Reg.x0 (BitVec.ofNat 21 (4 * else_body.length + 4))) **
