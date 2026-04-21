@@ -416,15 +416,12 @@ theorem byte_phase_c_spec (v5 v10 : Word) (base : Word)
     intro R hR s _hcr hPR hpc
     exact ⟨0, s, rfl, (e3, _), List.Mem.head _, he3 ▸ hpc, hPR⟩
   -- Chain cs2_final + ft → exits [e2, e3]
-  have n3 := cpsBranch_cons_cpsNBranch_same_cr (base + 12) cr
-    _ e2 _ (base + 20) _ _ cs2_final ft
+  have n3 := cpsBranch_cons_cpsNBranch_same_cr cs2_final ft
   -- Chain cs1_final + n3 → exits [e1, e2, e3]
-  have n2 := cpsBranch_cons_cpsNBranch_with_perm_same_cr (base + 4) cr
-    _ e1 _ (base + 12) _ _ _
+  have n2 := cpsBranch_cons_cpsNBranch_with_perm_same_cr
     (fun h hp => by xperm_hyp hp) cs1_final n3
   -- Chain beq0f + n2 → exits [e0, e1, e2, e3]
-  have n1 := cpsBranch_cons_cpsNBranch_with_perm_same_cr base cr
-    _ e0 _ (base + 4) _ _ _
+  have n1 := cpsBranch_cons_cpsNBranch_with_perm_same_cr
     (fun h hp => by xperm_hyp hp) beq0f n2
   exact n1
 
