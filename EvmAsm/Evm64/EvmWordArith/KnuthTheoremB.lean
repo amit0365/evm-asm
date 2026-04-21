@@ -56,6 +56,8 @@
     correction (#834) branches into a single first-round invariant via
     case-split on `hi1`. The Euclidean equation holds for the algorithm's
     actual `q1c` and `rhatc` regardless of which branch is taken.
+  - `div128Quot_q1c_lt_pow33` — `q1c < 2^33` after Phase 1a correction,
+    regardless of branch (Phase 1b prerequisite).
 -/
 
 import EvmAsm.Evm64.EvmWordArith.DivN4Overestimate
@@ -693,5 +695,50 @@ theorem div128Quot_first_round_post
   · -- Correction branch: q1c = q1 + (-1), rhatc = rhat + dHi
     simp only [q1c, rhatc, h_hi1, ↓reduceIte]
     exact div128Quot_first_round_correction uHi dHi hdHi_ne hdHi_lt h_hi1
+
+/-- **Phase 1b prerequisite — `q1c.toNat < 2^33` regardless of branch.**
+
+    After Phase 1a's hi1-correction, the post-correction quotient `q1c`
+    is bounded by `2^33`, regardless of whether the correction branch was
+    taken. This is the bound the second correction (Phase 1b — Knuth's
+    multiplication check) needs as input.
+
+    - No-correction case (`hi1 = 0`): `q1c = q1 < 2^32 < 2^33`
+      (from `hi1 = 0` ⟹ `q1 / 2^32 = 0` ⟹ `q1 < 2^32`).
+    - Correction case (`hi1 ≠ 0`): `q1c = q1 - 1 < q1 ≤ 2^33 - 1`
+      (using `div128Quot_q1_lt_pow33`).
+
+    Both bounds give `q1c < 2^33`. -/
+theorem div128Quot_q1c_lt_pow33 (uHi dHi : Word) (hdHi_ge : dHi.toNat ≥ 2^31) :
+    let q1 := rv64_divu uHi dHi
+    let hi1 := q1 >>> (32 : BitVec 6).toNat
+    let q1c := if hi1 = 0 then q1 else q1 + signExtend12 4095
+    q1c.toNat < 2^33 := by
+  intro q1 hi1 q1c
+  have hq1_lt : q1.toNat < 2^33 := div128Quot_q1_lt_pow33 uHi dHi hdHi_ge
+  by_cases h_hi1 : hi1 = 0
+  · -- q1c = q1 < 2^33
+    simp only [q1c, h_hi1, ↓reduceIte]
+    exact hq1_lt
+  · -- q1c = q1 + (-1). q1 ≥ 1, so q1c.toNat = q1.toNat - 1 < q1.toNat < 2^33.
+    simp only [q1c, h_hi1, ↓reduceIte]
+    have h_se_neg1 : (signExtend12 (4095 : BitVec 12) : Word).toNat = 2^64 - 1 := by decide
+    -- q1.toNat ≥ 2^32 (from hi1 ≠ 0)
+    have hq1_ge : q1.toNat ≥ 2^32 := by
+      by_contra h
+      push Not at h
+      apply h_hi1
+      apply BitVec.eq_of_toNat_eq
+      have h32 : (32 : BitVec 6).toNat = 32 := by decide
+      rw [BitVec.toNat_ushiftRight, h32, Nat.shiftRight_eq_div_pow]
+      show q1.toNat / 2^32 = (0 : Word).toNat
+      rw [Nat.div_eq_of_lt h]
+      rfl
+    rw [BitVec.toNat_add, h_se_neg1]
+    have h_eq : q1.toNat + (2^64 - 1) = (q1.toNat - 1) + 2^64 := by omega
+    rw [h_eq, Nat.add_mod_right]
+    have hq1_lt_word : q1.toNat - 1 < 2^64 := by have := q1.isLt; omega
+    rw [Nat.mod_eq_of_lt hq1_lt_word]
+    omega
 
 end EvmAsm.Evm64
