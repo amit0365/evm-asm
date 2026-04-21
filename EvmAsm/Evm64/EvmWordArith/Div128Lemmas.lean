@@ -321,7 +321,7 @@ theorem trial_quotient_ge_256 (u0 u1 u2 u3 v0 v1 v2 : Word) (hv2 : v2 ≠ 0) :
   exact trial_quotient_ge_general (val128 u3 u2) (val128 u1 u0)
     v2.toNat (val128 v1 v0) (2 ^ 128)
     (Nat.pos_of_ne_zero (by intro h; apply hv2; exact BitVec.eq_of_toNat_eq h))
-    (val128_bound u1 u0)
+    val128_bound
 
 -- ============================================================================
 -- val256 bound with zero top limb
