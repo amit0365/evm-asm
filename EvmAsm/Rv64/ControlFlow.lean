@@ -475,8 +475,8 @@ theorem if_eq_spec (rs1 rs2 : Reg) (v1 v2 : Word)
       show (step s).bind (stepN 0) = some _
       rw [hstep', hexec']; rfl
     exact ⟨1 + (k2 + k3), s3,
-      stepN_add_eq 1 (k2 + k3) s _ s3 hstep1
-        (stepN_add_eq k2 k3 _ s2 s3 hstep2 hstep3),
+      stepN_add_eq hstep1
+        (stepN_add_eq hstep2 hstep3),
       hpc3, hQR3'⟩
   · -- BNE taken: v1 /= v2, PC -> elseEntry
     have hexec' : execInstrBr s (Instr.BNE rs1 rs2 (BitVec.ofNat 13 (4 * (then_body.length + 1) + 4))) =
@@ -520,7 +520,7 @@ theorem if_eq_spec (rs1 rs2 : Reg) (v1 v2 : Word)
       show (step s).bind (stepN 0) = some _
       rw [hstep', hexec']; rfl
     exact ⟨1 + k2, s2,
-      stepN_add_eq 1 k2 s _ s2 hstep1 hstep2,
+      stepN_add_eq hstep1 hstep2,
       hpc2, hQR2'⟩
 
 -- ============================================================================
