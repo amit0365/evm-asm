@@ -29,10 +29,10 @@ def mod (a b : EvmWord) : EvmWord :=
 -- Zero divisor lemmas
 -- ============================================================================
 
-theorem div_zero_right (a : EvmWord) : div a 0 = 0 := by
+theorem div_zero_right {a : EvmWord} : div a 0 = 0 := by
   simp [div]
 
-theorem mod_zero_right (a : EvmWord) : mod a 0 = 0 := by
+theorem mod_zero_right {a : EvmWord} : mod a 0 = 0 := by
   simp [mod]
 
 private theorem getLimb_zero (i : Fin 4) : (0 : EvmWord).getLimb i = 0 := by
