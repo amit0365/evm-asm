@@ -1464,7 +1464,7 @@ theorem holdsFor_sepConj_regIs_setReg {r : Reg} {v v' : Word} {R : Assertion}
             fun w hw => by simp [PartialState.singletonReg] at hw⟩
     simp only [PartialState.singletonReg] at hr'
     split at hr' <;> simp_all
-    exact MachineState.getReg_setReg_eq _ _ _ hr_ne
+    exact MachineState.getReg_setReg_eq hr_ne
   -- h2 compatible with s.setReg r v' (doesn't own r)
   have hc2' : h2.CompatibleWith (s.setReg r v') := PartialState.CompatibleWith_setReg hc2 hr2
   refine ⟨(PartialState.singletonReg r v').union h2, ?_, PartialState.singletonReg r v', h2, hdisj', rfl, rfl, hh2⟩

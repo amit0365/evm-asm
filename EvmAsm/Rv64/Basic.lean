@@ -534,7 +534,7 @@ theorem getReg_setReg_ne (s : MachineState) (r r' : Reg) (v : Word)
     (h : r ≠ r') : (s.setReg r v).getReg r' = s.getReg r' := by
   cases r <;> cases r' <;> first | exact absurd rfl h | rfl
 
-theorem getReg_setReg_eq (s : MachineState) (r : Reg) (v : Word)
+theorem getReg_setReg_eq {s : MachineState} {r : Reg} {v : Word}
     (h : r ≠ .x0) : (s.setReg r v).getReg r = v := by
   cases r <;> first | exact absurd rfl h | rfl
 
