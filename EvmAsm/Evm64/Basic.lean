@@ -94,7 +94,7 @@ private theorem getLimb_fromLimbs_3 (limbs : Fin 4 → Word) :
   bv_decide
 
 /-- Round-trip: getLimb ∘ fromLimbs = id. -/
-theorem getLimb_fromLimbs (limbs : Fin 4 → Word) (i : Fin 4) :
+theorem getLimb_fromLimbs {limbs : Fin 4 → Word} {i : Fin 4} :
     (EvmWord.fromLimbs limbs).getLimb i = limbs i := by
   rcases i with ⟨i, hi⟩
   have : i = 0 ∨ i = 1 ∨ i = 2 ∨ i = 3 := by omega
@@ -174,16 +174,16 @@ theorem getLimbN_ge (v : EvmWord) (k : Nat) (h : k ≥ 4) :
 
 /-- Convert getLimb (Fin 4) to getLimbN (Nat). Use this simp lemma to normalize
     all getLimb calls to getLimbN for consistent Expr.hash in xperm. -/
-theorem getLimb_eq_getLimbN (v : EvmWord) (i : Fin 4) :
+theorem getLimb_eq_getLimbN {v : EvmWord} {i : Fin 4} :
     v.getLimb i = v.getLimbN i.val := by
   simp [getLimbN, i.isLt]
 
 /-- Convert `getLimb (k : Fin 4)` to `getLimbN k` for concrete indices.
     Use `simp only [getLimb_as_getLimbN]` to batch-convert bridge lemma hypotheses. -/
-theorem getLimb_as_getLimbN_0 (v : EvmWord) : v.getLimb 0 = v.getLimbN 0 := by simp [getLimbN]
-theorem getLimb_as_getLimbN_1 (v : EvmWord) : v.getLimb 1 = v.getLimbN 1 := by simp [getLimbN]
-theorem getLimb_as_getLimbN_2 (v : EvmWord) : v.getLimb 2 = v.getLimbN 2 := by simp [getLimbN]
-theorem getLimb_as_getLimbN_3 (v : EvmWord) : v.getLimb 3 = v.getLimbN 3 := by simp [getLimbN]
+theorem getLimb_as_getLimbN_0 {v : EvmWord} : v.getLimb 0 = v.getLimbN 0 := by simp [getLimbN]
+theorem getLimb_as_getLimbN_1 {v : EvmWord} : v.getLimb 1 = v.getLimbN 1 := by simp [getLimbN]
+theorem getLimb_as_getLimbN_2 {v : EvmWord} : v.getLimb 2 = v.getLimbN 2 := by simp [getLimbN]
+theorem getLimb_as_getLimbN_3 {v : EvmWord} : v.getLimb 3 = v.getLimbN 3 := by simp [getLimbN]
 
 -- getLimbN versions of operation lemmas (for xperm AC fast path consistency)
 theorem getLimbN_and {x y : EvmWord} {k : Nat} :
