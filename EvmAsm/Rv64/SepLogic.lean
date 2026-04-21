@@ -1913,7 +1913,7 @@ theorem progIndexed_append (base : Word) (p1 p2 : List Instr) :
     omega
 
 /-- programAt splits on append. -/
-theorem programAt_append (l1 l2 : List (Word × Instr)) :
+theorem programAt_append {l1 l2 : List (Word × Instr)} :
     programAt (l1 ++ l2) = (programAt l1 ** programAt l2) := by
   induction l1 with
   | nil =>
@@ -1925,7 +1925,7 @@ theorem programAt_append (l1 l2 : List (Word × Instr)) :
     funext h; exact propext ⟨(sepConj_assoc h).mpr, (sepConj_assoc h).mp⟩
 
 /-- progAt splits on program append. -/
-theorem progAt_append (base : Word) (p1 p2 : List Instr) :
+theorem progAt_append {base : Word} {p1 p2 : List Instr} :
     progAt base (p1 ++ p2) = (progAt base p1 ** progAt (base + BitVec.ofNat 64 (4 * p1.length)) p2) := by
   simp only [progAt, progIndexed_append, programAt_append]
 
