@@ -233,9 +233,9 @@ theorem denorm_limbN_eq_mod_max_skip
     lemma with `a.getLimbN k` / `b.getLimbN k` inputs, then folds the
     resulting `fromLimbs` lets back to `a` / `b` via
     `EvmWord.fromLimbs_match_getLimbN_id`. -/
-theorem denorm_limbN_eq_mod_max_skip_getLimbN (a b : EvmWord)
+theorem denorm_limbN_eq_mod_max_skip_getLimbN {a b : EvmWord}
     (hb3nz : b.getLimbN 3 ≠ 0)
-    (s : Nat) (hs0 : 0 < s) (hs : s < 64)
+    {s : Nat} (hs0 : 0 < s) (hs : s < 64)
     (hb3_bound : (b.getLimbN 3).toNat < 2 ^ (64 - s))
     (hc3_un_zero : (mulsubN4 (signExtend12 4095)
         (b.getLimbN 0) (b.getLimbN 1) (b.getLimbN 2) (b.getLimbN 3)
@@ -321,7 +321,7 @@ theorem output_slot_to_evmWordIs_mod_n4_max_skip_denorm
      ((sp + 56) ↦ₘ (msN.2.2.2.1 >>> s))) =
     evmWordIs (sp + 32) (EvmWord.mod a b) := by
   obtain ⟨h0, h1, h2, h3⟩ :=
-    denorm_limbN_eq_mod_max_skip_getLimbN a b hb3nz s hs0 hs hb3_bound
+    denorm_limbN_eq_mod_max_skip_getLimbN hb3nz hs0 hs hb3_bound
       hc3_un_zero hc3_n_le_u_top
   intro _
   rw [evmWordIs_sp32_limbs_eq sp (EvmWord.mod a b) _ _ _ _ h0 h1 h2 h3]
