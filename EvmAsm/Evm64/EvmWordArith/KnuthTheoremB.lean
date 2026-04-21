@@ -52,6 +52,10 @@
   - `div128Quot_first_round_correction` — under `hi1 ≠ 0` and `dHi < 2^32`, the
     corrected `q1c = q1 - 1`, `rhatc = rhat + dHi` preserve the Euclidean
     equation: `q1c.toNat * dHi.toNat + rhatc.toNat = uHi.toNat`.
+  - `div128Quot_first_round_post` — combines no-correction (#830) and
+    correction (#834) branches into a single first-round invariant via
+    case-split on `hi1`. The Euclidean equation holds for the algorithm's
+    actual `q1c` and `rhatc` regardless of which branch is taken.
 -/
 
 import EvmAsm.Evm64.EvmWordArith.DivN4Overestimate
@@ -658,5 +662,36 @@ theorem div128Quot_first_round_correction (uHi dHi : Word)
       rw [h_eq]
     omega
   rw [key]; exact h_eucl
+
+/-- **Combined first-round invariant.** Whichever branch the algorithm
+    takes (`hi1 = 0` or `hi1 ≠ 0`), the post-correction `q1c, rhatc` pair
+    satisfies the Word-level Euclidean equation:
+
+    ```
+      q1c.toNat * dHi.toNat + rhatc.toNat = uHi.toNat
+    ```
+
+    Proof is a case-split on `hi1 = 0` dispatching to
+    `div128Quot_first_round_euclidean` or `div128Quot_first_round_correction`.
+
+    Together with the algorithm's choice
+    `q1c := if hi1 = 0 then q1 else q1 + (-1)` and similarly for `rhatc`,
+    this is the input to the analogous second-round analysis (yet to come). -/
+theorem div128Quot_first_round_post
+    (uHi dHi : Word) (hdHi_ne : dHi ≠ 0) (hdHi_lt : dHi.toNat < 2^32) :
+    let q1 := rv64_divu uHi dHi
+    let rhat := uHi - q1 * dHi
+    let hi1 := q1 >>> (32 : BitVec 6).toNat
+    let q1c := if hi1 = 0 then q1 else q1 + signExtend12 4095
+    let rhatc := if hi1 = 0 then rhat else rhat + dHi
+    q1c.toNat * dHi.toNat + rhatc.toNat = uHi.toNat := by
+  intro q1 rhat hi1 q1c rhatc
+  by_cases h_hi1 : hi1 = 0
+  · -- No-correction branch: q1c = q1, rhatc = rhat
+    simp only [q1c, rhatc, h_hi1, ↓reduceIte]
+    exact div128Quot_first_round_euclidean uHi dHi hdHi_ne
+  · -- Correction branch: q1c = q1 + (-1), rhatc = rhat + dHi
+    simp only [q1c, rhatc, h_hi1, ↓reduceIte]
+    exact div128Quot_first_round_correction uHi dHi hdHi_ne hdHi_lt h_hi1
 
 end EvmAsm.Evm64
