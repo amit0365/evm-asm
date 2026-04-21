@@ -1281,25 +1281,25 @@ theorem sepConj_mono {P P' Q Q' : Assertion} (hp : ∀ h, P h → P' h) (hq : �
 -- ============================================================================
 
 /-- Strip a pure fact at depth 2: A ** B ** ⌜P⌝ → A ** B -/
-theorem sepConj_strip_pure_end2 (A B : Assertion) (P : Prop) :
+theorem sepConj_strip_pure_end2 {A B : Assertion} {P : Prop} :
     ∀ h, (A ** B ** ⌜P⌝) h → (A ** B) h :=
   fun h hp => sepConj_mono_right
     (fun h' hp' => ((sepConj_pure_right _ _ h').1 hp').1) h hp
 
 /-- Strip a pure fact at depth 3: A ** B ** C ** ⌜P⌝ → A ** B ** C -/
-theorem sepConj_strip_pure_end3 (A B C : Assertion) (P : Prop) :
+theorem sepConj_strip_pure_end3 {A B C : Assertion} {P : Prop} :
     ∀ h, (A ** B ** C ** ⌜P⌝) h → (A ** B ** C) h :=
   fun h hp => sepConj_mono_right (sepConj_mono_right
     (fun h' hp' => ((sepConj_pure_right _ _ h').1 hp').1)) h hp
 
 /-- Strip a pure fact at depth 3 (middle position): A ** B ** C ** ⌜P⌝ ** D → A ** B ** C ** D -/
-theorem sepConj_strip_pure_depth3 (A B C D : Assertion) (P : Prop) :
+theorem sepConj_strip_pure_depth3 {A B C D : Assertion} {P : Prop} :
     ∀ h, (A ** B ** C ** ⌜P⌝ ** D) h → (A ** B ** C ** D) h :=
   fun h hp => sepConj_mono_right (sepConj_mono_right (sepConj_mono_right
     (fun hd hpd => ((sepConj_pure_left P D hd).1 hpd).2))) h hp
 
 /-- Extract the pure fact at depth 3: A ** B ** C ** ⌜P⌝ → P -/
-theorem sepConj_extract_pure_end3 (A B C : Assertion) (P : Prop) :
+theorem sepConj_extract_pure_end3 {A B C : Assertion} {P : Prop} :
     ∀ h, (A ** B ** C ** ⌜P⌝) h → P :=
   fun h hp => by
     obtain ⟨_, _, _, _, _, h2⟩ := hp
@@ -1314,7 +1314,7 @@ theorem sepConj_extract_pure_end3 (A B C : Assertion) (P : Prop) :
 
     Useful to reconcile `cpsBranch_frameR` output with a theorem
     statement written in right-associated form. -/
-theorem sepConj_chain_push_outer (A B C D : Assertion) :
+theorem sepConj_chain_push_outer {A B C D : Assertion} :
     ∀ h, (A ** B ** C ** D) h → ((A ** B ** C) ** D) h := by
   intro h hp
   refine (sepConj_assoc _ _ _ _).mpr ?_
@@ -1329,7 +1329,7 @@ theorem sepConj_chain_push_outer (A B C D : Assertion) :
     The outer left-associated shape is what `cpsBranch_frameR` produces
     when framed with `⌜Q⌝`; the right-associated output is what downstream
     consumers with a single accumulated pure fact expect. -/
-theorem sepConj_merge_pure_and_end3 (A B C : Assertion) (P Q : Prop) :
+theorem sepConj_merge_pure_and_end3 {A B C : Assertion} {P Q : Prop} :
     ∀ h, ((A ** B ** C ** ⌜P⌝) ** ⌜Q⌝) h → (A ** B ** C ** ⌜Q ∧ P⌝) h := by
   intro h hp
   obtain ⟨hL, hR, _hdLR, huLR, hL_prop, ⟨eR, hQ⟩⟩ := hp
