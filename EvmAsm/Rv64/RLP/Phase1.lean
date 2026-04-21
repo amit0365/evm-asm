@@ -154,8 +154,8 @@ theorem rlp_phase1_step_spec_plain (v5 v10 : Word)
       (base + 8) ((.x5 ↦ᵣ v5) ** (.x0 ↦ᵣ (0 : Word)) ** (.x10 ↦ᵣ kVal)) :=
   cpsBranch_weaken
     (fun _ hp => hp)
-    (sepConj_strip_pure_end3 _ _ _ _)
-    (sepConj_strip_pure_end3 _ _ _ _)
+    sepConj_strip_pure_end3
+    sepConj_strip_pure_end3
     (rlp_phase1_step_spec v5 v10 k offset base target htarget)
 
 -- ============================================================================
@@ -454,14 +454,14 @@ theorem rlp_phase1_classifier_spec_pure (v5 v10 : Word) (base : Word)
   have n3 := cpsBranch_cons_cpsNBranch_with_perm (base + 16) cr3
     (cr4.union CodeReq.empty) hd3_rest
     _ e3 _ (base + 24) _ _ _
-    (sepConj_strip_pure_end3 _ _ _ _) cs3 n4
+    sepConj_strip_pure_end3 cs3 n4
   -- Chain step 2 + n3.
   have hd2_rest : cr2.Disjoint (cr3.union (cr4.union CodeReq.empty)) := by
     rw [hunion_empty]; exact CodeReq.Disjoint.union_right hd23 hd24
   have n2 := cpsBranch_cons_cpsNBranch_with_perm (base + 8) cr2
     (cr3.union (cr4.union CodeReq.empty)) hd2_rest
     _ e2 _ (base + 16) _ _ _
-    (sepConj_strip_pure_end3 _ _ _ _) cs2 n3
+    sepConj_strip_pure_end3 cs2 n3
   -- Chain step 1 + n2.
   have hd1_rest : cr1.Disjoint (cr2.union (cr3.union (cr4.union CodeReq.empty))) := by
     rw [hunion_empty]
@@ -469,7 +469,7 @@ theorem rlp_phase1_classifier_spec_pure (v5 v10 : Word) (base : Word)
   have n1 := cpsBranch_cons_cpsNBranch_with_perm base cr1
     (cr2.union (cr3.union (cr4.union CodeReq.empty))) hd1_rest
     _ e1 _ (base + 8) _ _ _
-    (sepConj_strip_pure_end3 _ _ _ _) cs1 n2
+    sepConj_strip_pure_end3 cs1 n2
   -- Collapse the trailing `empty` and match the goal's classifier_code.
   have hcr_eq : cr1.union (cr2.union (cr3.union (cr4.union CodeReq.empty))) =
       rlp_phase1_classifier_code off1 off2 off3 off4 base := by
