@@ -287,6 +287,21 @@ def divN4MaxSkipStackPost (sp : Word) (a b : EvmWord) : Assertion :=
   evmWordIs sp a ** evmWordIs (sp + 32) (EvmWord.div a b) **
   divScratchOwn sp
 
+/-- Call-trial counterpart to `divN4MaxSkipStackPost`. Identical content
+    except for the scratch ownership: uses `divScratchOwnCall` (19 cells)
+    instead of `divScratchOwn` (15 cells), reflecting the 4 extra scratch
+    slots used by the `div128` subroutine call path.
+
+    Paired with `divN4StackPreCall` for the forthcoming
+    `evm_div_n4_call_skip_stack_spec`. -/
+@[irreducible]
+def divN4CallSkipStackPost (sp : Word) (a b : EvmWord) : Assertion :=
+  (.x12 ↦ᵣ (sp + 32)) ** regOwn .x1 ** regOwn .x2 **
+  regOwn .x5 ** regOwn .x6 ** regOwn .x7 **
+  regOwn .x10 ** regOwn .x11 ** (.x0 ↦ᵣ (0 : Word)) **
+  evmWordIs sp a ** evmWordIs (sp + 32) (EvmWord.div a b) **
+  divScratchOwnCall sp
+
 /-- Stack-level precondition shape for the n=4 DIV path. Bundles the 9
     registers (including the pre-execution values of `x1, x2, x6, x7, x11`
     that the algorithm overwrites), the `evmWordIs sp a` / `evmWordIs (sp+32) b`
@@ -559,6 +574,27 @@ instance (sp : Word) (a b : EvmWord) :
     Assertion.PCFree (divN4MaxSkipStackPost sp a b) :=
   ⟨pcFree_divN4MaxSkipStackPost sp a b⟩
 
+/-- Named unfold for `divN4CallSkipStackPost`. Mirror of
+    `divN4MaxSkipStackPost_unfold` but with `divScratchOwnCall`. -/
+theorem divN4CallSkipStackPost_unfold (sp : Word) (a b : EvmWord) :
+    divN4CallSkipStackPost sp a b =
+    ((.x12 ↦ᵣ (sp + 32)) ** regOwn .x1 ** regOwn .x2 **
+     regOwn .x5 ** regOwn .x6 ** regOwn .x7 **
+     regOwn .x10 ** regOwn .x11 ** (.x0 ↦ᵣ (0 : Word)) **
+     evmWordIs sp a ** evmWordIs (sp + 32) (EvmWord.div a b) **
+     divScratchOwnCall sp) := by
+  delta divN4CallSkipStackPost; rfl
+
+theorem pcFree_divN4CallSkipStackPost (sp : Word) (a b : EvmWord) :
+    (divN4CallSkipStackPost sp a b).pcFree := by
+  rw [divN4CallSkipStackPost_unfold, divScratchOwnCall_unfold,
+      divScratchOwn_unfold]
+  pcFree
+
+instance (sp : Word) (a b : EvmWord) :
+    Assertion.PCFree (divN4CallSkipStackPost sp a b) :=
+  ⟨pcFree_divN4CallSkipStackPost sp a b⟩
+
 /-- Weakening bridge from a concrete post state (specific register values +
     concrete scratch cells via `divScratchValues`) to `divN4MaxSkipStackPost`.
     Parallels the `mul_stack_weaken` helper in `Multiply/Spec.lean`. Weakens
@@ -602,6 +638,38 @@ def modN4MaxSkipStackPost (sp : Word) (a b : EvmWord) : Assertion :=
   regOwn .x10 ** regOwn .x11 ** (.x0 ↦ᵣ (0 : Word)) **
   evmWordIs sp a ** evmWordIs (sp + 32) (EvmWord.mod a b) **
   divScratchOwn sp
+
+/-- Call-trial counterpart to `modN4MaxSkipStackPost`. Identical content
+    except for the scratch ownership: uses `divScratchOwnCall` (19 cells).
+    Paired with `modN4StackPreCall` for the forthcoming
+    `evm_mod_n4_call_skip_stack_spec`. -/
+@[irreducible]
+def modN4CallSkipStackPost (sp : Word) (a b : EvmWord) : Assertion :=
+  (.x12 ↦ᵣ (sp + 32)) ** regOwn .x1 ** regOwn .x2 **
+  regOwn .x5 ** regOwn .x6 ** regOwn .x7 **
+  regOwn .x10 ** regOwn .x11 ** (.x0 ↦ᵣ (0 : Word)) **
+  evmWordIs sp a ** evmWordIs (sp + 32) (EvmWord.mod a b) **
+  divScratchOwnCall sp
+
+/-- Named unfold for `modN4CallSkipStackPost`. -/
+theorem modN4CallSkipStackPost_unfold (sp : Word) (a b : EvmWord) :
+    modN4CallSkipStackPost sp a b =
+    ((.x12 ↦ᵣ (sp + 32)) ** regOwn .x1 ** regOwn .x2 **
+     regOwn .x5 ** regOwn .x6 ** regOwn .x7 **
+     regOwn .x10 ** regOwn .x11 ** (.x0 ↦ᵣ (0 : Word)) **
+     evmWordIs sp a ** evmWordIs (sp + 32) (EvmWord.mod a b) **
+     divScratchOwnCall sp) := by
+  delta modN4CallSkipStackPost; rfl
+
+theorem pcFree_modN4CallSkipStackPost (sp : Word) (a b : EvmWord) :
+    (modN4CallSkipStackPost sp a b).pcFree := by
+  rw [modN4CallSkipStackPost_unfold, divScratchOwnCall_unfold,
+      divScratchOwn_unfold]
+  pcFree
+
+instance (sp : Word) (a b : EvmWord) :
+    Assertion.PCFree (modN4CallSkipStackPost sp a b) :=
+  ⟨pcFree_modN4CallSkipStackPost sp a b⟩
 
 /-- Named unfold for `modN4MaxSkipStackPost`. -/
 theorem modN4MaxSkipStackPost_unfold (sp : Word) (a b : EvmWord) :
