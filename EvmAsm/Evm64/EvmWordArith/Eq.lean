@@ -16,7 +16,7 @@ namespace EvmWord
 -- EQ correctness
 -- ============================================================================
 
-theorem eq_xor_or_reduce_correct (a b : EvmWord) :
+theorem eq_xor_or_reduce_correct {a b : EvmWord} :
     let acc0 := a.getLimb 0 ^^^ b.getLimb 0
     let acc1 := acc0 ||| (a.getLimb 1 ^^^ b.getLimb 1)
     let acc2 := acc1 ||| (a.getLimb 2 ^^^ b.getLimb 2)
