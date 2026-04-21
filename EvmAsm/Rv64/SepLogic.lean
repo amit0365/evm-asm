@@ -604,7 +604,7 @@ instance : Assertion.PCFree (memOwn a)               := ⟨pcFree_memOwn⟩
 -- Algebraic properties
 -- ============================================================================
 
-theorem sepConj_comm (P Q : Assertion) :
+theorem sepConj_comm {P Q : Assertion} :
     ∀ h, (P ** Q) h ↔ (Q ** P) h := by
   intro h
   constructor
@@ -842,7 +842,7 @@ private theorem disjoint_union_left_of_disjoint_union_right
       · exact Or.inr h3none
     · exact Or.inr h3none
 
-theorem sepConj_assoc (P Q R : Assertion) :
+theorem sepConj_assoc {P Q R : Assertion} :
     ∀ h, ((P ** Q) ** R) h ↔ (P ** (Q ** R)) h := by
   intro h
   constructor
@@ -866,18 +866,18 @@ theorem holdsFor_sepConj_comm {P Q : Assertion} {s : MachineState} :
     (P ** Q).holdsFor s ↔ (Q ** P).holdsFor s := by
   constructor
   · intro ⟨h, hcompat, hP⟩
-    exact ⟨h, hcompat, (sepConj_comm P Q h).mp hP⟩
+    exact ⟨h, hcompat, (sepConj_comm h).mp hP⟩
   · intro ⟨h, hcompat, hP⟩
-    exact ⟨h, hcompat, (sepConj_comm Q P h).mp hP⟩
+    exact ⟨h, hcompat, (sepConj_comm h).mp hP⟩
 
 /-- Associativity of separating conjunction at the holdsFor level. -/
 theorem holdsFor_sepConj_assoc {P Q R : Assertion} {s : MachineState} :
     ((P ** Q) ** R).holdsFor s ↔ (P ** (Q ** R)).holdsFor s := by
   constructor
   · intro ⟨h, hcompat, hP⟩
-    exact ⟨h, hcompat, (sepConj_assoc P Q R h).mp hP⟩
+    exact ⟨h, hcompat, (sepConj_assoc h).mp hP⟩
   · intro ⟨h, hcompat, hP⟩
-    exact ⟨h, hcompat, (sepConj_assoc P Q R h).mpr hP⟩
+    exact ⟨h, hcompat, (sepConj_assoc h).mpr hP⟩
 
 /-- Swap the two inner assertions: ((P ** Q) ** R) ↔ ((Q ** P) ** R). -/
 theorem holdsFor_sepConj_swap_inner {P Q R : Assertion} {s : MachineState} :
@@ -885,11 +885,11 @@ theorem holdsFor_sepConj_swap_inner {P Q R : Assertion} {s : MachineState} :
   constructor <;> intro ⟨h, hcompat, hP⟩
   · -- Forward: ((P ** Q) ** R) → ((Q ** P) ** R)
     obtain ⟨h12, h3, hd12_3, hunion12_3, hPQ, hR⟩ := hP
-    have hQP := (sepConj_comm P Q h12).mp hPQ
+    have hQP := (sepConj_comm h12).mp hPQ
     exact ⟨h, hcompat, h12, h3, hd12_3, hunion12_3, hQP, hR⟩
   · -- Backward: ((Q ** P) ** R) → ((P ** Q) ** R)
     obtain ⟨h12, h3, hd12_3, hunion12_3, hQP, hR⟩ := hP
-    have hPQ := (sepConj_comm Q P h12).mp hQP
+    have hPQ := (sepConj_comm h12).mp hQP
     exact ⟨h, hcompat, h12, h3, hd12_3, hunion12_3, hPQ, hR⟩
 
 /-- Pull the second inner assertion out: ((P ** Q) ** R) ↔ (Q ** (P ** R)). -/
@@ -898,27 +898,27 @@ theorem holdsFor_sepConj_pull_second {P Q R : Assertion} {s : MachineState} :
   constructor <;> intro ⟨h, hcompat, hP⟩
   · -- Forward: ((P ** Q) ** R) → (Q ** (P ** R))
     -- Step 1: Apply assoc to get (P ** (Q ** R))
-    have h1 := (sepConj_assoc P Q R h).mp hP
+    have h1 := (sepConj_assoc h).mp hP
     -- Step 2: Apply comm to get ((Q ** R) ** P)
-    have h2 := (sepConj_comm P (Q ** R) h).mp h1
+    have h2 := (sepConj_comm h).mp h1
     -- Step 3: Apply assoc to get (Q ** (R ** P))
-    have h3 := (sepConj_assoc Q R P h).mp h2
+    have h3 := (sepConj_assoc h).mp h2
     -- Step 4: Apply comm on inner to get (Q ** (P ** R))
     obtain ⟨h_Q, h_RP, hd, hunion, hQ, hRP⟩ := h3
-    have hPR := (sepConj_comm R P h_RP).mp hRP
+    have hPR := (sepConj_comm h_RP).mp hRP
     exact ⟨h, hcompat, h_Q, h_RP, hd, hunion, hQ, hPR⟩
   · -- Backward: (Q ** (P ** R)) → ((P ** Q) ** R)
     -- Reverse the steps
     obtain ⟨h_Q, h_PR, hd, hunion, hQ, hPR⟩ := hP
     -- Step 1: Apply comm on inner to get (Q ** (R ** P))
-    have hRP := (sepConj_comm P R h_PR).mp hPR
+    have hRP := (sepConj_comm h_PR).mp hPR
     have h3 : (Q ** (R ** P)) h := ⟨h_Q, h_PR, hd, hunion, hQ, hRP⟩
     -- Step 2: Apply assoc backwards to get ((Q ** R) ** P)
-    have h2 := (sepConj_assoc Q R P h).mpr h3
+    have h2 := (sepConj_assoc h).mpr h3
     -- Step 3: Apply comm to get (P ** (Q ** R))
-    have h1 := (sepConj_comm ((Q ** R)) P h).mp h2
+    have h1 := (sepConj_comm h).mp h2
     -- Step 4: Apply assoc backwards to get ((P ** Q) ** R)
-    have hP' := (sepConj_assoc P Q R h).mpr h1
+    have hP' := (sepConj_assoc h).mpr h1
     exact ⟨h, hcompat, hP'⟩
 
 /-- Pull the first inner assertion out: ((P ** Q) ** R) ↔ (P ** (Q ** R)).
@@ -1317,10 +1317,10 @@ theorem sepConj_extract_pure_end3 {A B C : Assertion} {P : Prop} :
 theorem sepConj_chain_push_outer {A B C D : Assertion} :
     ∀ h, (A ** B ** C ** D) h → ((A ** B ** C) ** D) h := by
   intro h hp
-  refine (sepConj_assoc _ _ _ _).mpr ?_
+  refine (sepConj_assoc _).mpr ?_
   refine sepConj_mono_right ?_ _ hp
   intro h' hp'
-  exact (sepConj_assoc _ _ _ _).mpr hp'
+  exact (sepConj_assoc _).mpr hp'
 
 /-- Merge a trailing framed pure fact into the existing pure fact at depth 3,
     swapping the order:
@@ -1922,7 +1922,7 @@ theorem programAt_append (l1 l2 : List (Word × Instr)) :
   | cons p rest ih =>
     simp only [List.cons_append, programAt]
     rw [ih]
-    funext h; exact propext ⟨(sepConj_assoc _ _ _ h).mpr, (sepConj_assoc _ _ _ h).mp⟩
+    funext h; exact propext ⟨(sepConj_assoc h).mpr, (sepConj_assoc h).mp⟩
 
 /-- progAt splits on program append. -/
 theorem progAt_append (base : Word) (p1 p2 : List Instr) :
@@ -2658,10 +2658,10 @@ theorem addr_add_zero_bv (a : Word) : a + (0 : Word) = a := by bv_omega
 -- ============================================================================
 
 theorem sepConj_comm' (P Q : Assertion) : (P ** Q) = (Q ** P) :=
-  funext fun h => propext (sepConj_comm P Q h)
+  funext fun h => propext (sepConj_comm h)
 
 theorem sepConj_assoc' (P Q R : Assertion) : ((P ** Q) ** R) = (P ** (Q ** R)) :=
-  funext fun h => propext (sepConj_assoc P Q R h)
+  funext fun h => propext (sepConj_assoc h)
 
 theorem sepConj_left_comm' (P Q R : Assertion) : (P ** (Q ** R)) = (Q ** (P ** R)) := by
   rw [← sepConj_assoc', ← sepConj_assoc', sepConj_comm' P Q]
