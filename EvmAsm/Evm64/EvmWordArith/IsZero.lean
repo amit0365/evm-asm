@@ -16,7 +16,7 @@ namespace EvmWord
 -- ISZERO correctness
 -- ============================================================================
 
-theorem iszero_or_reduce_correct (a : EvmWord) :
+theorem iszero_or_reduce_correct {a : EvmWord} :
     (if BitVec.ult (a.getLimb 0 ||| a.getLimb 1 ||| a.getLimb 2 ||| a.getLimb 3) 1
      then (1 : Word) else 0) =
     (if a = 0 then (1 : Word) else 0) := by
