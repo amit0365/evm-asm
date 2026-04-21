@@ -127,7 +127,7 @@ theorem partial_product_decompose (q vi : Word) :
 /-- A 128-bit value represented as hi * 2^64 + lo. -/
 def val128 (hi lo : Word) : Nat := hi.toNat * 2 ^ 64 + lo.toNat
 
-theorem val128_bound (hi lo : Word) : val128 hi lo < 2 ^ 128 := by
+theorem val128_bound {hi lo : Word} : val128 hi lo < 2 ^ 128 := by
   unfold val128; have hhi := hi.isLt; have hlo := lo.isLt; nlinarith
 
 /-- If the high half is less than d, the 128-bit value is less than d * 2^64. -/
