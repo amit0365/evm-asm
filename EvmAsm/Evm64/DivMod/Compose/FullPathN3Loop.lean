@@ -1,4 +1,3 @@
--- file-size-exception: tracked by issue #312 (Compose subtree split). Each loop-iteration lift composes with the pre-loop in one place; grandfathered pending split into per-iteration files.
 /-
   EvmAsm.Evm64.DivMod.Compose.FullPathN3Loop
 
