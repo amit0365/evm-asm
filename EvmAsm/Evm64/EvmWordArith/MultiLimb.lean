@@ -143,7 +143,7 @@ theorem val128_lt_of_hi_lt (hi lo : Word) (d : Nat) (hhi : hi.toNat < d) :
 def val256 (l0 l1 l2 l3 : Word) : Nat :=
   l0.toNat + l1.toNat * 2 ^ 64 + l2.toNat * 2 ^ 128 + l3.toNat * 2 ^ 192
 
-theorem val256_eq_fromLimbs_toNat (l0 l1 l2 l3 : Word) :
+theorem val256_eq_fromLimbs_toNat {l0 l1 l2 l3 : Word} :
     val256 l0 l1 l2 l3 = (fromLimbs (fun i : Fin 4 =>
       match i with | 0 => l0 | 1 => l1 | 2 => l2 | 3 => l3)).toNat := by
   unfold val256; rw [fromLimbs_toNat]

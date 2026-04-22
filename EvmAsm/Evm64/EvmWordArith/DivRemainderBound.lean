@@ -155,10 +155,10 @@ theorem val256_euclidean_to_div_mod
       match i with | 0 => r0 | 1 => r1 | 2 => r2 | 3 => r3
     q = EvmWord.div a b ∧ r = EvmWord.mod a b := by
   intro a b q r
-  have ha : a.toNat = val256 a0 a1 a2 a3 := (val256_eq_fromLimbs_toNat a0 a1 a2 a3).symm
-  have hb : b.toNat = val256 b0 b1 b2 b3 := (val256_eq_fromLimbs_toNat b0 b1 b2 b3).symm
-  have hq : q.toNat = val256 q0 q1 q2 q3 := (val256_eq_fromLimbs_toNat q0 q1 q2 q3).symm
-  have hr : r.toNat = val256 r0 r1 r2 r3 := (val256_eq_fromLimbs_toNat r0 r1 r2 r3).symm
+  have ha : a.toNat = val256 a0 a1 a2 a3 := val256_eq_fromLimbs_toNat.symm
+  have hb : b.toNat = val256 b0 b1 b2 b3 := val256_eq_fromLimbs_toNat.symm
+  have hq : q.toNat = val256 q0 q1 q2 q3 := val256_eq_fromLimbs_toNat.symm
+  have hr : r.toNat = val256 r0 r1 r2 r3 := val256_eq_fromLimbs_toNat.symm
   have hbnz' : b ≠ 0 := fromLimbs_ne_zero_of_or hbnz
   have h_nat_eq : a.toNat = b.toNat * q.toNat + r.toNat := by
     rw [ha, hb, hq, hr]; nlinarith [Nat.mul_comm (val256 q0 q1 q2 q3) (val256 b0 b1 b2 b3)]
