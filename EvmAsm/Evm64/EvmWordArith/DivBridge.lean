@@ -82,7 +82,7 @@ theorem fromLimbs_single_toNat {q : Word} :
 theorem val256_fromLimbs (l0 l1 l2 l3 : Word) :
     val256 l0 l1 l2 l3 =
     (fromLimbs fun i : Fin 4 => match i with | 0 => l0 | 1 => l1 | 2 => l2 | 3 => l3).toNat :=
-  val256_eq_fromLimbs_toNat l0 l1 l2 l3
+  val256_eq_fromLimbs_toNat
 
 /-- Connecting val256 to EvmWord operations via toNat. -/
 theorem val256_mul_single (q v0 v1 v2 v3 : Word) :
