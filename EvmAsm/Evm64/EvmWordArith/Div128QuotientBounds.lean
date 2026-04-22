@@ -58,13 +58,13 @@ open EvmAsm.Rv64
 theorem div128Quot_phase1a_quotient_bound (uHi dHi : Word)
     (hdHi_ne : dHi ≠ 0) (hdHi_lt : dHi.toNat < 2^32) :
     let q1 := rv64_divu uHi dHi
-    let rhat := uHi - q1 * dHi
     let hi1 := q1 >>> (32 : BitVec 6).toNat
     let q1c := if hi1 = 0 then q1 else q1 + signExtend12 4095
-    let rhatc := if hi1 = 0 then rhat else rhat + dHi
     q1c.toNat ≤ uHi.toNat / dHi.toNat ∧
     uHi.toNat / dHi.toNat ≤ q1c.toNat + 1 := by
-  intro q1 rhat hi1 q1c rhatc
+  intro q1 hi1 q1c
+  let rhat := uHi - q1 * dHi
+  let rhatc := if hi1 = 0 then rhat else rhat + dHi
   -- These match our local let-chain by zeta, so omega below sees matching atoms.
   have h_eucl : q1c.toNat * dHi.toNat + rhatc.toNat = uHi.toNat :=
     div128Quot_first_round_post uHi dHi hdHi_ne hdHi_lt
@@ -148,9 +148,9 @@ theorem div128Quot_phase1b_no_underflow (uHi dHi : Word)
     (h_rhatc_lt : rhatc.toNat < 2 * dHi.toNat) :
     let q1' := if BitVec.ult rhatUn1 (q1c * dLo) then q1c + signExtend12 4095
                else q1c
-    let rhat' := if BitVec.ult rhatUn1 (q1c * dLo) then rhatc + dHi else rhatc
     q1'.toNat * dHi.toNat ≤ uHi.toNat := by
-  intro q1' rhat'
+  intro q1'
+  let rhat' := if BitVec.ult rhatUn1 (q1c * dLo) then rhatc + dHi else rhatc
   -- Extract Phase 1b Euclidean at the right types (matching our local lets).
   have h_eucl : q1'.toNat * dHi.toNat + rhat'.toNat = uHi.toNat :=
     div128Quot_phase1b_post uHi dHi q1c rhatc dLo rhatUn1 hdHi_lt h_post h_rhatc_lt
