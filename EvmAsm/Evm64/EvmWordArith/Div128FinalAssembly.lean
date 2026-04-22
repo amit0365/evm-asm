@@ -288,7 +288,7 @@ theorem div128Quot_vTop_decomp (vTop : Word) :
   omega
 
 /-- Utility: multiplying a Nat by `2^32` decomposes via Nat.div_add_mod. -/
-theorem Nat_mul_pow32_split (x : Nat) :
+theorem Nat_mul_pow32_split {x : Nat} :
     x * 2^32 = (x / 2^32) * 2^64 + (x % 2^32) * 2^32 := by
   have hdiv : x = (x / 2^32) * 2^32 + x % 2^32 := by
     have := Nat.div_add_mod x (2^32); linarith
@@ -355,7 +355,7 @@ theorem div128Quot_un21_abstract_dividend
   -- Sub-lemma 1: rhat' * 2^32 decomposes.
   have h_rhat_split : rhat'.toNat * 2^32 =
       (rhat'.toNat / 2^32) * 2^64 + (rhat'.toNat % 2^32) * 2^32 :=
-    Nat_mul_pow32_split rhat'.toNat
+    Nat_mul_pow32_split
   -- Sub-lemma 2: rhat' = uHi - q1' * dHi at Nat (from h_eucl).
   have h_rhat_eq : rhat'.toNat = uHi.toNat - q1'.toNat * dHi.toNat := by omega
   -- Sub-lemma 3: q1' * vTop expanded.
@@ -440,7 +440,7 @@ theorem div128Quot_un21_additive_identity
   rw [← h_dHi_eq, ← h_dLo_eq] at h_vtop
   have h_rhat_split : rhat'.toNat * 2^32 =
       (rhat'.toNat / 2^32) * 2^64 + (rhat'.toNat % 2^32) * 2^32 :=
-    Nat_mul_pow32_split rhat'.toNat
+    Nat_mul_pow32_split
   have h_rhat_eq : rhat'.toNat = uHi.toNat - q1'.toNat * dHi.toNat := by omega
   have h_rhat_mul : rhat'.toNat * 2^32 =
       uHi.toNat * 2^32 - q1'.toNat * dHi.toNat * 2^32 := by
