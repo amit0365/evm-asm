@@ -24,7 +24,7 @@ namespace EvmAsm.Rv64.SailEquiv
 -- ============================================================================
 
 /-- to_bits_truncate on a non-negative integer = BitVec.ofNat. -/
-theorem to_bits_truncate_natCast (n : Nat) :
+theorem to_bits_truncate_natCast {n : Nat} :
     to_bits_truncate (l := 64) (↑n : Int) = BitVec.ofNat 64 n := by
   simp [to_bits_truncate, get_slice_int]; apply BitVec.eq_of_toNat_eq; simp
 
