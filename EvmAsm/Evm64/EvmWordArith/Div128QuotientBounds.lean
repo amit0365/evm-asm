@@ -410,6 +410,108 @@ theorem div128Quot_q1_prime_le_pow32 (uHi dHi dLo rhatUn1 : Word)
     div128Quot_q1_prime_le_q1c q1c dLo rhatUn1
   omega
 
+/-- **KB-3e''': Strict q1' bound `< 2^32` under hcall (Knuth tightening
+    closed).** Closes the last gap in the Phase 1 tightening chain:
+
+    ```
+    q1'.toNat < 2^32
+    ```
+
+    Case analysis on `q1c.toNat`:
+    - **q1c < 2^32**: Phase 1b monotonicity (KB-3d2) gives `q1' ≤ q1c < 2^32`.
+    - **q1c = 2^32**: The Euclidean equation `q1c * dHi + rhatc = uHi` combined
+      with `uHi < dHi * 2^32 + dLo` forces `rhatc < dLo < 2^32`. Then
+      `rhatUn1.toNat = rhatc.toNat * 2^32 + div_un1.toNat` (halfword_combine)
+      and `(q1c * dLo).toNat = 2^32 * dLo.toNat` (no wrap). The Phase 1b
+      check `rhatUn1 < q1c * dLo` fires (since
+      `rhatc * 2^32 + div_un1 < dLo * 2^32 = q1c * dLo`), making
+      `q1' = q1c - 1 = 2^32 - 1 < 2^32`.
+
+    This is Knuth's multiplication-check correctness for Phase 1b at the
+    Word level — the last piece needed to get `q1' < 2^32` so that
+    `halfword_combine` (not just `halfword_combine_mod`) applies to the
+    `cu_rhat_un1` construction.
+
+    Precondition `hdHi_lt : dHi.toNat < 2^32` added (needed for
+    `div128Quot_first_round_post`); automatically satisfied when
+    `dHi = vTop >>> 32` (the algorithm's actual instantiation). -/
+theorem div128Quot_q1_prime_lt_pow32 (uHi dHi dLo uLo : Word)
+    (hdHi_ge : dHi.toNat ≥ 2^31)
+    (hdHi_lt : dHi.toNat < 2^32)
+    (hdLo_lt : dLo.toNat < 2^32)
+    (huHi_lt_vTop : uHi.toNat < dHi.toNat * 2^32 + dLo.toNat) :
+    let q1 := rv64_divu uHi dHi
+    let rhat := uHi - q1 * dHi
+    let hi1 := q1 >>> (32 : BitVec 6).toNat
+    let q1c := if hi1 = 0 then q1 else q1 + signExtend12 4095
+    let rhatc := if hi1 = 0 then rhat else rhat + dHi
+    let div_un1 := uLo >>> (32 : BitVec 6).toNat
+    let rhatUn1 := (rhatc <<< (32 : BitVec 6).toNat) ||| div_un1
+    let q1' := if BitVec.ult rhatUn1 (q1c * dLo) then q1c + signExtend12 4095
+               else q1c
+    q1'.toNat < 2^32 := by
+  intro q1 rhat hi1 q1c rhatc div_un1 rhatUn1 q1'
+  have h_q1c_le : q1c.toNat ≤ 2^32 :=
+    div128Quot_q1c_le_pow32 uHi dHi dLo hdHi_ge hdLo_lt huHi_lt_vTop
+  by_cases h_eq : q1c.toNat = 2^32
+  · -- q1c = 2^32: Phase 1b check fires.
+    have hdHi_ne : dHi ≠ 0 := by
+      intro heq; rw [heq] at hdHi_ge; simp at hdHi_ge
+    have h_post : q1c.toNat * dHi.toNat + rhatc.toNat = uHi.toNat :=
+      div128Quot_first_round_post uHi dHi hdHi_ne hdHi_lt
+    have h_rhatc_lt_dLo : rhatc.toNat < dLo.toNat := by
+      rw [h_eq] at h_post
+      omega
+    have h_rhatc_lt_pow32 : rhatc.toNat < 2^32 := by omega
+    have h_div_un1_lt : div_un1.toNat < 2^32 := by
+      show (uLo >>> (32 : BitVec 6).toNat).toNat < 2^32
+      rw [BitVec.toNat_ushiftRight]
+      have h32 : (32 : BitVec 6).toNat = 32 := by decide
+      rw [h32, Nat.shiftRight_eq_div_pow]
+      have h_ulo_isLt : uLo.toNat < 2^64 := uLo.isLt
+      have h_eq : (2^64 : Nat) = 2^32 * 2^32 := by decide
+      exact Nat.div_lt_of_lt_mul (by omega)
+    -- rhatUn1.toNat = rhatc.toNat * 2^32 + div_un1.toNat.
+    have h_rhatUn1_eq : rhatUn1.toNat =
+        rhatc.toNat * 2^32 + div_un1.toNat := by
+      show ((rhatc <<< (32 : BitVec 6).toNat) ||| div_un1).toNat = _
+      have h32 : (32 : BitVec 6).toNat = 32 := by decide
+      rw [h32]
+      exact EvmWord.halfword_combine rhatc div_un1 h_rhatc_lt_pow32 h_div_un1_lt
+    -- (q1c * dLo).toNat = q1c.toNat * dLo.toNat (no wrap: 2^32 * dLo < 2^64).
+    have h_qDlo_eq : (q1c * dLo).toNat = q1c.toNat * dLo.toNat := by
+      rw [BitVec.toNat_mul]
+      apply Nat.mod_eq_of_lt
+      rw [h_eq]
+      calc 2^32 * dLo.toNat < 2^32 * 2^32 := by
+              apply Nat.mul_lt_mul_left (by decide : 0 < 2^32) |>.mpr hdLo_lt
+        _ = 2^64 := by decide
+    -- Phase 1b check fires.
+    have h_ult : rhatUn1.toNat < (q1c * dLo).toNat := by
+      rw [h_rhatUn1_eq, h_qDlo_eq, h_eq]
+      calc rhatc.toNat * 2^32 + div_un1.toNat
+          < rhatc.toNat * 2^32 + 2^32 := by omega
+        _ = (rhatc.toNat + 1) * 2^32 := by ring
+        _ ≤ dLo.toNat * 2^32 := Nat.mul_le_mul_right _ (by omega)
+        _ = 2^32 * dLo.toNat := by ring
+    have h_check : BitVec.ult rhatUn1 (q1c * dLo) := by
+      show decide (rhatUn1.toNat < (q1c * dLo).toNat) = true
+      exact decide_eq_true h_ult
+    show (if BitVec.ult rhatUn1 (q1c * dLo) then q1c + signExtend12 4095
+          else q1c).toNat < 2^32
+    rw [if_pos h_check]
+    have h_se_neg1 : (signExtend12 (4095 : BitVec 12) : Word).toNat = 2^64 - 1 := by decide
+    rw [BitVec.toNat_add, h_se_neg1]
+    have h_q1c_lt_word : q1c.toNat - 1 < 2^64 := by have := q1c.isLt; omega
+    rw [show q1c.toNat + (2^64 - 1) = (q1c.toNat - 1) + 2^64 from by omega,
+        Nat.add_mod_right, Nat.mod_eq_of_lt h_q1c_lt_word]
+    omega
+  · -- q1c < 2^32 case: q1' ≤ q1c < 2^32.
+    have h_q1c_lt : q1c.toNat < 2^32 := by omega
+    have h_q1'_le_q1c : q1'.toNat ≤ q1c.toNat :=
+      div128Quot_q1_prime_le_q1c q1c dLo rhatUn1
+    omega
+
 /-- **KB-3f: No-wraparound for `q1' * dLo`.** Under the call-trial
     precondition, the Word-level product equals the Nat-level product:
 
