@@ -185,7 +185,7 @@ theorem evmWordIs_congr_addr {a b : Word} (v : EvmWord) (ha : a = b) :
     `evmStackIs` at the same sp agrees. Useful when `List.map` / spec-side
     computation produces a list that matches another up to propositional
     equality but not definitionally. -/
-theorem evmStackIs_congr (sp : Word) {xs ys : List EvmWord} (hxy : xs = ys) :
+theorem evmStackIs_congr {sp : Word} {xs ys : List EvmWord} (hxy : xs = ys) :
     evmStackIs sp xs = evmStackIs sp ys :=
   congrArg (evmStackIs sp) hxy
 
