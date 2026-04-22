@@ -304,7 +304,7 @@ theorem ProgramAt.fetch {code : CodeMem} {base : Word} {prog : List Instr}
   rw [← haddr, ← hinstr]; exact h i hi
 
 /-- loadProgram produces a ProgramAt. -/
-theorem loadProgram_programAt (base : Word) (prog : List Instr)
+theorem loadProgram_programAt {base : Word} {prog : List Instr}
     (hlen : 4 * prog.length < 2^64) :
     ProgramAt (loadProgram base prog) base prog := by
   intro i hi
