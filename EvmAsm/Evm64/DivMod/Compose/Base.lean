@@ -432,8 +432,8 @@ theorem divScratchValues_implies_divScratchOwn
         shiftMem nMem jMem h → divScratchOwn sp h := by
   unfold divScratchValues divScratchOwn
   -- Weaken each of the 15 memIs cells to memOwn, left to right.
-  iterate 14 apply sepConj_mono (memIs_implies_memOwn _ _)
-  exact memIs_implies_memOwn _ _
+  iterate 14 apply sepConj_mono (memIs_implies_memOwn)
+  exact memIs_implies_memOwn
 
 /-- Call-path weakening: the 19-cell `divScratchValuesCall` implies the
     value-agnostic `divScratchOwnCall`. Used by the forthcoming
@@ -451,8 +451,8 @@ theorem divScratchValuesCall_implies_divScratchOwnCall
   apply sepConj_mono (divScratchValues_implies_divScratchOwn
     sp q0 q1 q2 q3 u0 u1 u2 u3 u4 u5 u6 u7 shiftMem nMem jMem)
   -- Tail: 4 memIs → memOwn, same pattern as the 15-cell weakener.
-  iterate 3 apply sepConj_mono (memIs_implies_memOwn _ _)
-  exact memIs_implies_memOwn _ _
+  iterate 3 apply sepConj_mono (memIs_implies_memOwn)
+  exact memIs_implies_memOwn
 
 /-- Postcondition for the shift≠0 path from entry to loop setup.
     Encapsulates the shift/antiShift computation, normalized b'[0..3],

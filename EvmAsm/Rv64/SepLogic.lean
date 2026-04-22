@@ -468,7 +468,7 @@ theorem holdsFor_memOwn {a : Word} {s : MachineState} :
 theorem regIs_implies_regOwn (r : Reg) (v : Word) :
     ∀ h, regIs r v h → regOwn r h := fun _ hp => ⟨v, hp⟩
 
-theorem memIs_implies_memOwn (a : Word) (v : Word) :
+theorem memIs_implies_memOwn {a : Word} {v : Word} :
     ∀ h, memIs a v h → memOwn a h := fun _ hp => ⟨v, hp⟩
 
 -- ============================================================================
