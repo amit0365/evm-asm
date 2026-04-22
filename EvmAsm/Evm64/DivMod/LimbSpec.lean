@@ -1,4 +1,3 @@
--- file-size-exception: tracked by issue #312 (split per-limb / mulsub / addback / phase / branch / div128 into a LimbSpec/ subdirectory). Grandfathered pending split.
 /-
   EvmAsm.Evm64.DivModSpec
 
