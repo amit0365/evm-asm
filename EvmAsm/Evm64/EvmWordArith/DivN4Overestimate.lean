@@ -28,7 +28,7 @@ open EvmAsm.Rv64.AddrNorm (word_toNat_0 word_toNat_1)
 theorem val256_div_lt_pow64 (a0 a1 a2 a3 b0 b1 b2 b3 : Word) (hb3nz : b3 ≠ 0) :
     val256 a0 a1 a2 a3 / val256 b0 b1 b2 b3 ≤ 2^64 - 1 := by
   have hb_ge := val256_ge_pow192_of_limb3 b0 b1 b2 b3 hb3nz
-  have ha_lt := val256_bound a0 a1 a2 a3
+  have := val256_bound a0 a1 a2 a3
   -- val256(a) < 2^256 = 2^64 * 2^192 ≤ 2^64 * val256(b)
   -- So val256(a) / val256(b) < 2^64
   have hb_pos : 0 < val256 b0 b1 b2 b3 := by omega
@@ -262,7 +262,7 @@ theorem mulsubN4_c3_eq_zero_or_one {q v0 v1 v2 v3 u0 u1 u2 u3 : Word}
     (hq_over : q.toNat ≤ val256 u0 u1 u2 u3 / val256 v0 v1 v2 v3 + 1) :
     (mulsubN4 q v0 v1 v2 v3 u0 u1 u2 u3).2.2.2.2 = 0 ∨
     (mulsubN4 q v0 v1 v2 v3 u0 u1 u2 u3).2.2.2.2 = 1 := by
-  have hle := mulsubN4_c3_le_one hbnz hq_over
+  have := mulsubN4_c3_le_one hbnz hq_over
   rcases Nat.eq_zero_or_pos (mulsubN4 q v0 v1 v2 v3 u0 u1 u2 u3).2.2.2.2.toNat with h | h
   · left; bv_omega
   · right; bv_omega

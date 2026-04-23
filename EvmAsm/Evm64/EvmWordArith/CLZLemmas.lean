@@ -332,7 +332,7 @@ theorem clzResult_fst_eq_zero_iff {val : Word} :
     (clzResult val).1 = 0 ↔ val >>> (63 : Nat) ≠ 0 := by
   constructor
   · intro h
-    have hge := clz_zero_imp_msb h
+    have := clz_zero_imp_msb h
     intro heq
     have : (val >>> (63 : Nat)).toNat = 0 := by rw [heq]; rfl
     rw [BitVec.toNat_ushiftRight, Nat.shiftRight_eq_div_pow] at this

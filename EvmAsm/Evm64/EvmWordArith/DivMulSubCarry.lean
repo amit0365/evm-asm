@@ -33,7 +33,7 @@ namespace EvmWord
 private theorem prodLo_le_one_of_mulhu_max {q v_i : Word}
     (h : (rv64_mulhu q v_i).toNat = 2^64 - 2) :
     (q * v_i).toNat ≤ 1 := by
-  have hprod := partial_product_decompose q v_i
+  have := partial_product_decompose q v_i
   have hmax : q.toNat * v_i.toNat ≤ (2^64 - 1) * (2^64 - 1) :=
     Nat.mul_le_mul (by omega : q.toNat ≤ 2^64 - 1) (by omega : v_i.toNat ≤ 2^64 - 1)
   -- q * v_i = (2^64 - 2) * 2^64 + (q * v_i).toNat
@@ -62,7 +62,7 @@ theorem mulsub_limb_carry_strict_lt {q v_i u_i carryIn : Word} :
     let borrowSub := if BitVec.ult u_i fullSub then (1 : Word) else 0
     borrowAdd.toNat + prodHi.toNat + borrowSub.toNat < 2^64 := by
   intro prodLo prodHi fullSub borrowAdd borrowSub
-  have h_ph := mulhu_toNat_le q v_i
+  have := mulhu_toNat_le q v_i
   -- Work with Nat-level values: ba_n, bs_n ∈ {0, 1}
   set ba_n := if fullSub.toNat < carryIn.toNat then 1 else 0 with h_ba_def
   set bs_n := if u_i.toNat < fullSub.toNat then 1 else 0 with h_bs_def
