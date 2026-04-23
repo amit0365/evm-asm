@@ -1132,26 +1132,283 @@ theorem val256_ms_un_eq_val256_mod_of_overestimate
       (val256 a0 a1 a2 a3 / val256 b0 b1 b2 b3) * val256 b0 b1 b2 b3 := Nat.mul_comm _ _
   omega
 
-/-- **Call+skip n=4 MOD denorm adapter (SORRY).** Stack-level adapter folding
+/-- **Generic `uTop = c3_n` invariant under the overestimate + skip-borrow bounds.**
+
+    Parameterized analog of `EvmWord.u_top_eq_c3_n_max_skip` (ModBridgeUtop.lean:159).
+    Takes the T3-shape bound `qHat * val256(b) ≤ val256(a)` (for c3_un = 0),
+    the overestimate `val256(a)/val256(b) ≤ qHat.toNat` (for val256(ms_un) <
+    val256(b)), and the skip-borrow-derived `c3_n ≤ a3 >>> (64 - s)`
+    (= u_top in max-skip / = u4 in call-skip — same thing since
+    `antiShift = 64 - s` for `0 < s < 64`).
+
+    Delegates to the already-parameterized `u_top_eq_c3_nat_form`
+    (ModBridgeUtop.lean:112), so the whole proof is short. Usable for
+    both max-skip (with qHat = signExtend12 4095 + appropriate bounds)
+    and call-skip (with qHat = div128Quot u4 u3 b3' + T3 + hsem). -/
+theorem u_top_eq_c3_n_of_overestimate
+    {a0 a1 a2 a3 b0 b1 b2 b3 qHat : Word}
+    (hbnz : b0 ||| b1 ||| b2 ||| b3 ≠ 0)
+    {s : Nat} (hs0 : 0 < s) (hs : s < 64)
+    (hb3_bound : b3.toNat < 2 ^ (64 - s))
+    (hqHat_mul_le : qHat.toNat * val256 b0 b1 b2 b3 ≤ val256 a0 a1 a2 a3)
+    (hqHat_ge : val256 a0 a1 a2 a3 / val256 b0 b1 b2 b3 ≤ qHat.toNat)
+    (hc3_n_le_u_top :
+        (mulsubN4 qHat
+          (b0 <<< s)
+          ((b1 <<< s) ||| (b0 >>> (64 - s)))
+          ((b2 <<< s) ||| (b1 >>> (64 - s)))
+          ((b3 <<< s) ||| (b2 >>> (64 - s)))
+          (a0 <<< s)
+          ((a1 <<< s) ||| (a0 >>> (64 - s)))
+          ((a2 <<< s) ||| (a1 >>> (64 - s)))
+          ((a3 <<< s) ||| (a2 >>> (64 - s)))).2.2.2.2.toNat ≤
+        (a3 >>> (64 - s)).toNat) :
+    (a3 >>> (64 - s)).toNat =
+    (mulsubN4 qHat
+      (b0 <<< s)
+      ((b1 <<< s) ||| (b0 >>> (64 - s)))
+      ((b2 <<< s) ||| (b1 >>> (64 - s)))
+      ((b3 <<< s) ||| (b2 >>> (64 - s)))
+      (a0 <<< s)
+      ((a1 <<< s) ||| (a0 >>> (64 - s)))
+      ((a2 <<< s) ||| (a1 >>> (64 - s)))
+      ((a3 <<< s) ||| (a2 >>> (64 - s)))).2.2.2.2.toNat := by
+  have hc3_un_zero : (mulsubN4 qHat b0 b1 b2 b3 a0 a1 a2 a3).2.2.2.2 = 0 :=
+    c3_un_zero_of_qHat_mul_le hqHat_mul_le
+  have h_un_raw := mulsubN4_val256_eq qHat b0 b1 b2 b3 a0 a1 a2 a3
+  simp only [] at h_un_raw
+  rw [hc3_un_zero, show (0 : Word).toNat = 0 from rfl,
+      Nat.zero_mul, Nat.add_zero] at h_un_raw
+  have h_n_raw := mulsubN4_val256_eq qHat
+    (b0 <<< s)
+    ((b1 <<< s) ||| (b0 >>> (64 - s)))
+    ((b2 <<< s) ||| (b1 >>> (64 - s)))
+    ((b3 <<< s) ||| (b2 >>> (64 - s)))
+    (a0 <<< s)
+    ((a1 <<< s) ||| (a0 >>> (64 - s)))
+    ((a2 <<< s) ||| (a1 >>> (64 - s)))
+    ((a3 <<< s) ||| (a2 >>> (64 - s)))
+  simp only [] at h_n_raw
+  have h_norm_u := EvmWord.val256_normalize_general hs0 hs a0 a1 a2 a3
+  have h_norm_b := EvmWord.val256_normalize hs0 hs b0 b1 b2 b3 hb3_bound
+  have h_ms_un_eq_mod :=
+    val256_ms_un_eq_val256_mod_of_overestimate hbnz hqHat_ge hc3_un_zero
+  simp only [] at h_ms_un_eq_mod
+  have h_ms_un_lt_b : val256 (mulsubN4 qHat b0 b1 b2 b3 a0 a1 a2 a3).1
+                             (mulsubN4 qHat b0 b1 b2 b3 a0 a1 a2 a3).2.1
+                             (mulsubN4 qHat b0 b1 b2 b3 a0 a1 a2 a3).2.2.1
+                             (mulsubN4 qHat b0 b1 b2 b3 a0 a1 a2 a3).2.2.2.1 <
+                     val256 b0 b1 b2 b3 := by
+    rw [h_ms_un_eq_mod]
+    exact Nat.mod_lt _ (EvmWord.val256_pos_of_or_ne_zero hbnz)
+  have h_b_lt_pow := EvmWord.val256_lt_of_b3_bound b0 b1 b2 b3 (by omega) hb3_bound
+  have hs_pos : 0 < 2 ^ s := by positivity
+  exact EvmWord.u_top_eq_c3_nat_form (Q := qHat.toNat) s
+    h_un_raw h_norm_u h_norm_b h_n_raw h_ms_un_lt_b h_b_lt_pow (by omega) hs_pos
+    hc3_n_le_u_top
+
+/-- **Generic: `val256(denormalized) = val256(a) % val256(b)` under the
+    overestimate + skip-borrow bounds.**
+
+    Parameterized analog of `EvmWord.val256_denorm_eq_val256_mod_max_skip`
+    (ModBridgeAssemble.lean:39). Takes the T3 bound, the overestimate, and
+    the skip-borrow c3_n bound, and concludes that the denormalized 4-limb
+    value equals `val256(a) mod val256(b)`. Usable for both max-skip and
+    call-skip paths. -/
+theorem val256_denorm_eq_val256_mod_of_overestimate
+    {a0 a1 a2 a3 b0 b1 b2 b3 qHat : Word}
+    (hbnz : b0 ||| b1 ||| b2 ||| b3 ≠ 0)
+    {s : Nat} (hs0 : 0 < s) (hs : s < 64)
+    (hb3_bound : b3.toNat < 2 ^ (64 - s))
+    (hqHat_mul_le : qHat.toNat * val256 b0 b1 b2 b3 ≤ val256 a0 a1 a2 a3)
+    (hqHat_ge : val256 a0 a1 a2 a3 / val256 b0 b1 b2 b3 ≤ qHat.toNat)
+    (hc3_n_le_u_top :
+        (mulsubN4 qHat
+          (b0 <<< s)
+          ((b1 <<< s) ||| (b0 >>> (64 - s)))
+          ((b2 <<< s) ||| (b1 >>> (64 - s)))
+          ((b3 <<< s) ||| (b2 >>> (64 - s)))
+          (a0 <<< s)
+          ((a1 <<< s) ||| (a0 >>> (64 - s)))
+          ((a2 <<< s) ||| (a1 >>> (64 - s)))
+          ((a3 <<< s) ||| (a2 >>> (64 - s)))).2.2.2.2.toNat ≤
+        (a3 >>> (64 - s)).toNat) :
+    let b0' := b0 <<< s
+    let b1' := (b1 <<< s) ||| (b0 >>> (64 - s))
+    let b2' := (b2 <<< s) ||| (b1 >>> (64 - s))
+    let b3' := (b3 <<< s) ||| (b2 >>> (64 - s))
+    let u0 := a0 <<< s
+    let u1 := (a1 <<< s) ||| (a0 >>> (64 - s))
+    let u2 := (a2 <<< s) ||| (a1 >>> (64 - s))
+    let u3 := (a3 <<< s) ||| (a2 >>> (64 - s))
+    let msN := mulsubN4 qHat b0' b1' b2' b3' u0 u1 u2 u3
+    val256 ((msN.1 >>> s) ||| (msN.2.1 <<< (64 - s)))
+           ((msN.2.1 >>> s) ||| (msN.2.2.1 <<< (64 - s)))
+           ((msN.2.2.1 >>> s) ||| (msN.2.2.2.1 <<< (64 - s)))
+           (msN.2.2.2.1 >>> s) =
+    val256 a0 a1 a2 a3 % val256 b0 b1 b2 b3 := by
+  intro b0' b1' b2' b3' u0 u1 u2 u3 msN
+  have hc3_un_zero : (mulsubN4 qHat b0 b1 b2 b3 a0 a1 a2 a3).2.2.2.2 = 0 :=
+    c3_un_zero_of_qHat_mul_le hqHat_mul_le
+  have h_denorm := EvmWord.val256_denormalize hs0 hs msN.1 msN.2.1 msN.2.2.1 msN.2.2.2.1
+  have h_utop_eq := u_top_eq_c3_n_of_overestimate hbnz hs0 hs hb3_bound
+    hqHat_mul_le hqHat_ge hc3_n_le_u_top
+  have h_un_raw := mulsubN4_val256_eq qHat b0 b1 b2 b3 a0 a1 a2 a3
+  simp only [] at h_un_raw
+  rw [hc3_un_zero, show (0 : Word).toNat = 0 from rfl,
+      Nat.zero_mul, Nat.add_zero] at h_un_raw
+  have h_n_raw := mulsubN4_val256_eq qHat b0' b1' b2' b3' u0 u1 u2 u3
+  simp only [] at h_n_raw
+  have h_norm_u := EvmWord.val256_normalize_general hs0 hs a0 a1 a2 a3
+  have h_norm_b := EvmWord.val256_normalize hs0 hs b0 b1 b2 b3 hb3_bound
+  rw [h_norm_b] at h_n_raw
+  have h_ms_n_scaled :
+      val256 msN.1 msN.2.1 msN.2.2.1 msN.2.2.2.1 =
+      val256 (mulsubN4 qHat b0 b1 b2 b3 a0 a1 a2 a3).1
+             (mulsubN4 qHat b0 b1 b2 b3 a0 a1 a2 a3).2.1
+             (mulsubN4 qHat b0 b1 b2 b3 a0 a1 a2 a3).2.2.1
+             (mulsubN4 qHat b0 b1 b2 b3 a0 a1 a2 a3).2.2.2.1 * 2^s := by
+    set Vu : Nat := val256 u0 u1 u2 u3
+    set Vms_n : Nat := val256 msN.1 msN.2.1 msN.2.2.1 msN.2.2.2.1
+    set Vms_un : Nat := val256 (mulsubN4 qHat b0 b1 b2 b3 a0 a1 a2 a3).1
+         (mulsubN4 qHat b0 b1 b2 b3 a0 a1 a2 a3).2.1
+         (mulsubN4 qHat b0 b1 b2 b3 a0 a1 a2 a3).2.2.1
+         (mulsubN4 qHat b0 b1 b2 b3 a0 a1 a2 a3).2.2.2.1
+    set Va : Nat := val256 a0 a1 a2 a3
+    set Vb : Nat := val256 b0 b1 b2 b3
+    set Q : Nat := qHat.toNat
+    have hqa : Q * (Vb * 2 ^ s) = Q * Vb * 2 ^ s := by ring
+    rw [h_utop_eq] at h_norm_u
+    have h_scaled : Va * 2 ^ s = Vms_n + Q * Vb * 2 ^ s := by linarith
+    have h_un_scaled : Va * 2 ^ s = (Vms_un + Q * Vb) * 2 ^ s := by
+      rw [h_un_raw]
+    linarith [h_scaled, h_un_scaled,
+      (show (Vms_un + Q * Vb) * 2 ^ s = Vms_un * 2^s + Q * Vb * 2^s from by ring)]
+  have h_ms_un_eq_mod :=
+    val256_ms_un_eq_val256_mod_of_overestimate hbnz hqHat_ge hc3_un_zero
+  simp only [] at h_ms_un_eq_mod
+  rw [h_denorm, h_ms_n_scaled, Nat.mul_div_cancel _ (by positivity : 0 < 2^s)]
+  exact h_ms_un_eq_mod
+
+/-- **Generic per-limb denorm→mod bridge (Word-inputs form).**
+
+    Parameterized analog of `denorm_limbN_eq_mod_max_skip`
+    (ModBridgeAssemble.lean:184). -/
+theorem denorm_limbN_eq_mod_of_overestimate
+    (a0 a1 a2 a3 b0 b1 b2 b3 qHat : Word)
+    (hbnz : b0 ||| b1 ||| b2 ||| b3 ≠ 0)
+    (s : Nat) (hs0 : 0 < s) (hs : s < 64)
+    (hb3_bound : b3.toNat < 2 ^ (64 - s))
+    (hqHat_mul_le : qHat.toNat * val256 b0 b1 b2 b3 ≤ val256 a0 a1 a2 a3)
+    (hqHat_ge : val256 a0 a1 a2 a3 / val256 b0 b1 b2 b3 ≤ qHat.toNat)
+    (hc3_n_le_u_top :
+        (mulsubN4 qHat
+          (b0 <<< s)
+          ((b1 <<< s) ||| (b0 >>> (64 - s)))
+          ((b2 <<< s) ||| (b1 >>> (64 - s)))
+          ((b3 <<< s) ||| (b2 >>> (64 - s)))
+          (a0 <<< s)
+          ((a1 <<< s) ||| (a0 >>> (64 - s)))
+          ((a2 <<< s) ||| (a1 >>> (64 - s)))
+          ((a3 <<< s) ||| (a2 >>> (64 - s)))).2.2.2.2.toNat ≤
+        (a3 >>> (64 - s)).toNat) :
+    let b0' := b0 <<< s
+    let b1' := (b1 <<< s) ||| (b0 >>> (64 - s))
+    let b2' := (b2 <<< s) ||| (b1 >>> (64 - s))
+    let b3' := (b3 <<< s) ||| (b2 >>> (64 - s))
+    let u0 := a0 <<< s
+    let u1 := (a1 <<< s) ||| (a0 >>> (64 - s))
+    let u2 := (a2 <<< s) ||| (a1 >>> (64 - s))
+    let u3 := (a3 <<< s) ||| (a2 >>> (64 - s))
+    let msN := mulsubN4 qHat b0' b1' b2' b3' u0 u1 u2 u3
+    let a := EvmWord.fromLimbs fun i : Fin 4 =>
+      match i with | 0 => a0 | 1 => a1 | 2 => a2 | 3 => a3
+    let b := EvmWord.fromLimbs fun i : Fin 4 =>
+      match i with | 0 => b0 | 1 => b1 | 2 => b2 | 3 => b3
+    (EvmWord.mod a b).getLimbN 0 = ((msN.1 >>> s) ||| (msN.2.1 <<< (64 - s))) ∧
+    (EvmWord.mod a b).getLimbN 1 = ((msN.2.1 >>> s) ||| (msN.2.2.1 <<< (64 - s))) ∧
+    (EvmWord.mod a b).getLimbN 2 = ((msN.2.2.1 >>> s) ||| (msN.2.2.2.1 <<< (64 - s))) ∧
+    (EvmWord.mod a b).getLimbN 3 = (msN.2.2.2.1 >>> s) := by
+  intro b0' b1' b2' b3' u0 u1 u2 u3 msN a_ b_
+  have h_val_eq := val256_denorm_eq_val256_mod_of_overestimate (qHat := qHat)
+    hbnz hs0 hs hb3_bound hqHat_mul_le hqHat_ge hc3_n_le_u_top
+  simp only [] at h_val_eq
+  have hr : EvmWord.fromLimbs (fun i : Fin 4 =>
+      match i with
+      | 0 => (msN.1 >>> s) ||| (msN.2.1 <<< (64 - s))
+      | 1 => (msN.2.1 >>> s) ||| (msN.2.2.1 <<< (64 - s))
+      | 2 => (msN.2.2.1 >>> s) ||| (msN.2.2.2.1 <<< (64 - s))
+      | 3 => msN.2.2.2.1 >>> s) = EvmWord.mod a_ b_ :=
+    EvmWord.mod_of_val256_eq_mod hbnz h_val_eq
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · rw [← hr]; exact EvmWord.getLimbN_fromLimbs_0
+  · rw [← hr]; exact EvmWord.getLimbN_fromLimbs_1
+  · rw [← hr]; exact EvmWord.getLimbN_fromLimbs_2
+  · rw [← hr]; exact EvmWord.getLimbN_fromLimbs_3
+
+/-- **Generic per-limb denorm→mod bridge at EvmWord level.**
+
+    EvmWord wrapper over `denorm_limbN_eq_mod_of_overestimate`, taking
+    `a b : EvmWord` rather than 8 Word arguments. Parameterized analog
+    of `denorm_limbN_eq_mod_max_skip_getLimbN` (ModBridgeAssemble.lean:233). -/
+theorem denorm_limbN_eq_mod_of_overestimate_getLimbN
+    {a b : EvmWord} {qHat : Word}
+    {s : Nat} (hs0 : 0 < s) (hs : s < 64)
+    (hb3_bound : (b.getLimbN 3).toNat < 2 ^ (64 - s))
+    (hqHat_mul_le : qHat.toNat * val256 (b.getLimbN 0) (b.getLimbN 1)
+        (b.getLimbN 2) (b.getLimbN 3) ≤
+        val256 (a.getLimbN 0) (a.getLimbN 1) (a.getLimbN 2) (a.getLimbN 3))
+    (hqHat_ge : val256 (a.getLimbN 0) (a.getLimbN 1) (a.getLimbN 2) (a.getLimbN 3) /
+        val256 (b.getLimbN 0) (b.getLimbN 1) (b.getLimbN 2) (b.getLimbN 3) ≤
+        qHat.toNat)
+    (hb3nz : b.getLimbN 3 ≠ 0)
+    (hc3_n_le_u_top :
+        (mulsubN4 qHat
+          (b.getLimbN 0 <<< s)
+          ((b.getLimbN 1 <<< s) ||| (b.getLimbN 0 >>> (64 - s)))
+          ((b.getLimbN 2 <<< s) ||| (b.getLimbN 1 >>> (64 - s)))
+          ((b.getLimbN 3 <<< s) ||| (b.getLimbN 2 >>> (64 - s)))
+          (a.getLimbN 0 <<< s)
+          ((a.getLimbN 1 <<< s) ||| (a.getLimbN 0 >>> (64 - s)))
+          ((a.getLimbN 2 <<< s) ||| (a.getLimbN 1 >>> (64 - s)))
+          ((a.getLimbN 3 <<< s) ||| (a.getLimbN 2 >>> (64 - s)))).2.2.2.2.toNat ≤
+        (a.getLimbN 3 >>> (64 - s)).toNat) :
+    let msN := mulsubN4 qHat
+        (b.getLimbN 0 <<< s)
+        ((b.getLimbN 1 <<< s) ||| (b.getLimbN 0 >>> (64 - s)))
+        ((b.getLimbN 2 <<< s) ||| (b.getLimbN 1 >>> (64 - s)))
+        ((b.getLimbN 3 <<< s) ||| (b.getLimbN 2 >>> (64 - s)))
+        (a.getLimbN 0 <<< s)
+        ((a.getLimbN 1 <<< s) ||| (a.getLimbN 0 >>> (64 - s)))
+        ((a.getLimbN 2 <<< s) ||| (a.getLimbN 1 >>> (64 - s)))
+        ((a.getLimbN 3 <<< s) ||| (a.getLimbN 2 >>> (64 - s)))
+    (EvmWord.mod a b).getLimbN 0 = ((msN.1 >>> s) ||| (msN.2.1 <<< (64 - s))) ∧
+    (EvmWord.mod a b).getLimbN 1 = ((msN.2.1 >>> s) ||| (msN.2.2.1 <<< (64 - s))) ∧
+    (EvmWord.mod a b).getLimbN 2 = ((msN.2.2.1 >>> s) ||| (msN.2.2.2.1 <<< (64 - s))) ∧
+    (EvmWord.mod a b).getLimbN 3 = (msN.2.2.2.1 >>> s) := by
+  intro msN
+  have hbnz' : b.getLimbN 0 ||| b.getLimbN 1 ||| b.getLimbN 2 ||| b.getLimbN 3 ≠ 0 := by
+    intro h; exact hb3nz (BitVec.or_eq_zero_iff.mp h).2
+  have hraw := denorm_limbN_eq_mod_of_overestimate
+    (a.getLimbN 0) (a.getLimbN 1) (a.getLimbN 2) (a.getLimbN 3)
+    (b.getLimbN 0) (b.getLimbN 1) (b.getLimbN 2) (b.getLimbN 3)
+    qHat hbnz' s hs0 hs hb3_bound hqHat_mul_le hqHat_ge hc3_n_le_u_top
+  simp only [show (EvmWord.fromLimbs fun i : Fin 4 => match i with
+                   | 0 => a.getLimbN 0 | 1 => a.getLimbN 1
+                   | 2 => a.getLimbN 2 | 3 => a.getLimbN 3) = a
+               from EvmWord.fromLimbs_match_getLimbN_id a,
+             show (EvmWord.fromLimbs fun i : Fin 4 => match i with
+                   | 0 => b.getLimbN 0 | 1 => b.getLimbN 1
+                   | 2 => b.getLimbN 2 | 3 => b.getLimbN 3) = b
+               from EvmWord.fromLimbs_match_getLimbN_id b] at hraw
+  exact hraw
+
+/-- **Call+skip n=4 MOD denorm adapter.** Stack-level adapter folding
     the four denormalized remainder slots at `sp+32..sp+56` into
     `evmWordIs (sp+32) (EvmWord.mod a b)`. Mirror of
     `EvmWord.output_slot_to_evmWordIs_mod_n4_max_skip_denorm` for the
     call-trial path, where `qHat = div128Quot u4 u3 b3'` rather than
-    the max trial `signExtend12 4095`.
-
-    The math proof requires a call-skip analog of
-    `val256_denorm_eq_val256_mod_max_skip` (ModBridgeAssemble.lean:39).
-    Key pieces reusable from max-skip:
-    - `val256_denormalize` (Lemma A) — generic denormalization, qHat-free.
-    - `val256_normalize_general`, `val256_normalize` — generic, qHat-free.
-    - `mulsubN4_val256_eq` — Euclidean equation for any qHat.
-
-    Call-skip-specific replacement for max-skip's `u_top_eq_c3_n_max_skip`:
-    use `n4CallSkipSemanticHolds + T3` (or `c3_le_u4_of_skip_borrow_call`
-    from Div128CallSkipClose.lean:344) to derive `c3 ≤ u4` and c3_un = 0.
-
-    **TODO (#66 follow-up):** prove this adapter, then eliminate the
-    `sorry` in `evm_mod_n4_call_skip_stack_spec` below. -/
+    the max trial `signExtend12 4095`. -/
 theorem output_slot_to_evmWordIs_mod_n4_call_skip_denorm
     (sp : Word) (a b : EvmWord)
     (hbnz : b ≠ 0)
