@@ -44,13 +44,13 @@ theorem quotient_le_of_euclidean {a b q r : Nat} (hb : 0 < b)
     gives `q = a/b`. Then `r = a - (a/b)*b = a mod b < b`. -/
 theorem remainder_lt_of_ge_floor {a b q r : Nat} (hb : 0 < b)
     (heq : a = q * b + r) (hge : a / b ≤ q) : q = a / b ∧ r < b := by
-  have hle := quotient_le_of_euclidean hb heq
+  have := quotient_le_of_euclidean hb heq
   have hqeq : q = a / b := by omega
   subst hqeq
   constructor
   · rfl
-  · have h1 := Nat.div_add_mod a b
-    have h2 := Nat.mod_lt a hb
+  · have := Nat.div_add_mod a b
+    have := Nat.mod_lt a hb
     nlinarith [Nat.mul_comm b (a / b)]
 
 -- ============================================================================
@@ -104,7 +104,7 @@ theorem mulsub_addback_correct {uVal vVal qNat rAbVal : Nat}
     (h_combined : uVal = rAbVal + (qNat - 1) * vVal)
     (hge : uVal / vVal + 1 ≤ qNat) :
     qNat - 1 = uVal / vVal ∧ rAbVal < vVal := by
-  have hge0 := Nat.zero_le (uVal / vVal)
+  have := Nat.zero_le (uVal / vVal)
   have hq1 : qNat ≥ 1 := by omega
   have heq : uVal = (qNat - 1) * vVal + rAbVal := by omega
   have hge' : uVal / vVal ≤ qNat - 1 := by omega
