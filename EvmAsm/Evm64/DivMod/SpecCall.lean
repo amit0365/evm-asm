@@ -943,9 +943,7 @@ theorem n4CallSkipSemanticHolds_def {a b : EvmWord} :
        upper 3 limbs are 0. The low limb equals `qHat` by Word-equality of toNat. -/
 theorem n4_call_skip_div_mod_getLimbN (a b : EvmWord)
     (hbnz : b ≠ 0)
-    (hb3nz : b.getLimbN 3 ≠ 0)
     (hshift_nz : (clzResult (b.getLimbN 3)).1 ≠ 0)
-    (hbltu : isCallTrialN4Evm a b)
     (hborrow : isSkipBorrowN4CallEvm a b)
     (hsem : n4CallSkipSemanticHolds a b) :
     let shift := (clzResult (b.getLimbN 3)).1.toNat % 64
@@ -959,9 +957,52 @@ theorem n4_call_skip_div_mod_getLimbN (a b : EvmWord)
     (EvmWord.div a b).getLimbN 1 = 0 ∧
     (EvmWord.div a b).getLimbN 2 = 0 ∧
     (EvmWord.div a b).getLimbN 3 = 0 := by
-  -- TODO(#66): fill in the 4-step proof via T3 + hsem + tight-equality +
-  -- limb decomposition of a Word-bounded EvmWord.
-  sorry
+  intro shift antiShift b3' u4 u3 qHat
+  rw [isSkipBorrowN4CallEvm_def] at hborrow
+  rw [n4CallSkipSemanticHolds_def] at hsem
+  have hT3 := div128Quot_call_skip_mul_val256_b_le_val256_a
+      (a.getLimbN 0) (a.getLimbN 1) (a.getLimbN 2) (a.getLimbN 3)
+      (b.getLimbN 0) (b.getLimbN 1) (b.getLimbN 2) (b.getLimbN 3)
+      hshift_nz hborrow
+  change qHat.toNat * val256 (b.getLimbN 0) (b.getLimbN 1) (b.getLimbN 2) (b.getLimbN 3) ≤
+         val256 (a.getLimbN 0) (a.getLimbN 1) (a.getLimbN 2) (a.getLimbN 3) at hT3
+  change val256 (a.getLimbN 0) (a.getLimbN 1) (a.getLimbN 2) (a.getLimbN 3) /
+         val256 (b.getLimbN 0) (b.getLimbN 1) (b.getLimbN 2) (b.getLimbN 3) ≤
+         qHat.toNat at hsem
+  have ha_val : val256 (a.getLimbN 0) (a.getLimbN 1) (a.getLimbN 2) (a.getLimbN 3)
+      = a.toNat := by
+    simp only [← EvmWord.getLimb_as_getLimbN_0, ← EvmWord.getLimb_as_getLimbN_1,
+               ← EvmWord.getLimb_as_getLimbN_2, ← EvmWord.getLimb_as_getLimbN_3]
+    exact EvmWord.val256_eq_toNat a
+  have hb_val : val256 (b.getLimbN 0) (b.getLimbN 1) (b.getLimbN 2) (b.getLimbN 3)
+      = b.toNat := by
+    simp only [← EvmWord.getLimb_as_getLimbN_0, ← EvmWord.getLimb_as_getLimbN_1,
+               ← EvmWord.getLimb_as_getLimbN_2, ← EvmWord.getLimb_as_getLimbN_3]
+    exact EvmWord.val256_eq_toNat b
+  have hb_pos : 0 < b.toNat := by
+    rcases Nat.eq_zero_or_pos b.toNat with h | h
+    · exfalso; apply hbnz; exact BitVec.eq_of_toNat_eq (by simp [h])
+    · exact h
+  rw [ha_val, hb_val] at hT3 hsem
+  have hq_eq : qHat.toNat = a.toNat / b.toNat := by
+    have hle : qHat.toNat ≤ a.toNat / b.toNat :=
+      (Nat.le_div_iff_mul_le hb_pos).mpr hT3
+    omega
+  have hdiv_toNat : (EvmWord.div a b).toNat = a.toNat / b.toNat := by
+    unfold EvmWord.div
+    rw [if_neg hbnz]
+    exact BitVec.toNat_udiv
+  set q_target : EvmWord := EvmWord.fromLimbs fun i : Fin 4 =>
+    match i with | 0 => qHat | 1 => 0 | 2 => 0 | 3 => 0 with hq_target
+  have hq_target_toNat : q_target.toNat = qHat.toNat := by
+    simp [q_target, EvmWord.fromLimbs_toNat]
+  have hq_eq_div : q_target = EvmWord.div a b :=
+    BitVec.eq_of_toNat_eq (by omega)
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · rw [← hq_eq_div]; exact EvmWord.getLimbN_fromLimbs_0
+  · rw [← hq_eq_div]; exact EvmWord.getLimbN_fromLimbs_1
+  · rw [← hq_eq_div]; exact EvmWord.getLimbN_fromLimbs_2
+  · rw [← hq_eq_div]; exact EvmWord.getLimbN_fromLimbs_3
 
 /-- **EVM-stack-level DIV spec on the n=4 call+skip sub-path.**
 
@@ -999,7 +1040,7 @@ theorem evm_div_n4_call_skip_stack_spec (sp base : Word)
   -- Extract the qHat = (EvmWord.div a b).getLimbN 0 etc. from the semantic
   -- hypothesis + T3 via the bridge theorem.
   obtain ⟨hdiv0, hdiv1, hdiv2, hdiv3⟩ :=
-    n4_call_skip_div_mod_getLimbN a b hbnz hb3nz hshift_nz hbltu hborrow hsem
+    n4_call_skip_div_mod_getLimbN a b hbnz hshift_nz hborrow hsem
   -- Post reshape: analogous to max-skip's flattening via
   -- `fullDivN4MaxSkipPost_unfold + denormDivPost_unfold + xperm_hyp`.
   -- Call-skip version will need a `fullDivN4CallSkipPost_unfold` helper
