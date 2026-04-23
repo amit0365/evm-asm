@@ -1097,6 +1097,41 @@ theorem c3_un_zero_of_qHat_mul_le
   have h_pow : (2:Nat)^256 > 0 := by positivity
   omega
 
+/-- **Generic: `val256(ms_un) = val256(a) % val256(b)` under c3_un=0 + overestimate.**
+
+    Takes the overestimate bound `val256(a)/val256(b) ≤ qHat.toNat` (supplied
+    by `n4CallSkipSemanticHolds` for call-skip, or `max_trial_overestimate_n4`
+    for max-skip) plus `c3_un = 0`, and concludes that the 4 un-normalized
+    mulsub output limbs at the val256 level equal `val256(a) mod val256(b)`.
+
+    Parameterizes `EvmWord.val256_ms_un_eq_val256_mod_max_skip`
+    (Val256ModBridge.lean:30) over the trial quotient `qHat`. Proof is the
+    same shape: Euclidean equation + `remainder_lt_of_ge_floor`. -/
+theorem val256_ms_un_eq_val256_mod_of_overestimate
+    {a0 a1 a2 a3 b0 b1 b2 b3 qHat : Word}
+    (hbnz : b0 ||| b1 ||| b2 ||| b3 ≠ 0)
+    (hqHat_ge : val256 a0 a1 a2 a3 / val256 b0 b1 b2 b3 ≤ qHat.toNat)
+    (hc3_zero : (mulsubN4 qHat b0 b1 b2 b3 a0 a1 a2 a3).2.2.2.2 = 0) :
+    let ms := mulsubN4 qHat b0 b1 b2 b3 a0 a1 a2 a3
+    val256 ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 =
+    val256 a0 a1 a2 a3 % val256 b0 b1 b2 b3 := by
+  intro ms
+  have hmulsub_raw := mulsubN4_val256_eq qHat b0 b1 b2 b3 a0 a1 a2 a3
+  simp only [] at hmulsub_raw
+  rw [show ms.2.2.2.2 = (0 : Word) from hc3_zero] at hmulsub_raw
+  rw [show (0 : Word).toNat = 0 from rfl, Nat.zero_mul, Nat.add_zero]
+    at hmulsub_raw
+  have hmulsub : val256 a0 a1 a2 a3 =
+      qHat.toNat * val256 b0 b1 b2 b3 +
+      val256 ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 := by linarith
+  have hv := EvmWord.val256_pos_of_or_ne_zero hbnz
+  have ⟨hq, _hr_lt⟩ := EvmWord.remainder_lt_of_ge_floor hv hmulsub hqHat_ge
+  rw [hq] at hmulsub
+  have := Nat.div_add_mod (val256 a0 a1 a2 a3) (val256 b0 b1 b2 b3)
+  have : val256 b0 b1 b2 b3 * (val256 a0 a1 a2 a3 / val256 b0 b1 b2 b3) =
+      (val256 a0 a1 a2 a3 / val256 b0 b1 b2 b3) * val256 b0 b1 b2 b3 := Nat.mul_comm _ _
+  omega
+
 /-- **Call+skip n=4 MOD denorm adapter (SORRY).** Stack-level adapter folding
     the four denormalized remainder slots at `sp+32..sp+56` into
     `evmWordIs (sp+32) (EvmWord.mod a b)`. Mirror of
