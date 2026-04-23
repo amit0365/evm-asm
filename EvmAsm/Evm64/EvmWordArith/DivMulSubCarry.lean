@@ -34,7 +34,7 @@ private theorem prodLo_le_one_of_mulhu_max {q v_i : Word}
     (h : (rv64_mulhu q v_i).toNat = 2^64 - 2) :
     (q * v_i).toNat ≤ 1 := by
   have := partial_product_decompose q v_i
-  have hmax : q.toNat * v_i.toNat ≤ (2^64 - 1) * (2^64 - 1) :=
+  have : q.toNat * v_i.toNat ≤ (2^64 - 1) * (2^64 - 1) :=
     Nat.mul_le_mul (by omega : q.toNat ≤ 2^64 - 1) (by omega : v_i.toNat ≤ 2^64 - 1)
   -- q * v_i = (2^64 - 2) * 2^64 + (q * v_i).toNat
   -- q * v_i ≤ (2^64 - 1)^2 = (2^64 - 2) * 2^64 + 1
@@ -75,10 +75,10 @@ theorem mulsub_limb_carry_strict_lt {q v_i u_i carryIn : Word} :
     simp only [h_bs_def]; by_cases h : u_i.toNat < fullSub.toNat <;> simp [BitVec.ult, h]
   rw [h_ba, h_bs]
   -- Bridge let-defs so omega can connect them
-  have h_ph_bridge : prodHi.toNat = (rv64_mulhu q v_i).toNat := rfl
+  have : prodHi.toNat = (rv64_mulhu q v_i).toNat := rfl
   -- Now goal is: ba_n + prodHi.toNat + bs_n < 2^64
-  have h_ba_01 : ba_n ≤ 1 := by simp only [h_ba_def]; split <;> omega
-  have h_bs_01 : bs_n ≤ 1 := by simp only [h_bs_def]; split <;> omega
+  have : ba_n ≤ 1 := by simp only [h_ba_def]; split <;> omega
+  have : bs_n ≤ 1 := by simp only [h_bs_def]; split <;> omega
   -- Easy case: prodHi ≤ 2^64 - 3
   by_cases h_ph_max : (rv64_mulhu q v_i).toNat ≤ 2^64 - 3
   · -- ba_n ≤ 1, bs_n ≤ 1, ph ≤ 2^64 - 3 → sum ≤ 2^64 - 1
@@ -86,7 +86,7 @@ theorem mulsub_limb_carry_strict_lt {q v_i u_i carryIn : Word} :
   -- Hard case: prodHi = 2^64 - 2
   push Not at h_ph_max
   have h_ph_eq : (rv64_mulhu q v_i).toNat = 2^64 - 2 := by omega
-  have h_plo : (q * v_i).toNat ≤ 1 := prodLo_le_one_of_mulhu_max h_ph_eq
+  have : (q * v_i).toNat ≤ 1 := prodLo_le_one_of_mulhu_max h_ph_eq
   -- Suffices: ba_n + bs_n ≤ 1
   suffices ba_n + bs_n ≤ 1 by omega
   have h_fs_val : fullSub.toNat = ((q * v_i).toNat + carryIn.toNat) % 2^64 :=
@@ -101,13 +101,13 @@ theorem mulsub_limb_carry_strict_lt {q v_i u_i carryIn : Word} :
   have h_ov : fullSub.toNat < carryIn.toNat := by
     simp only [h_ba_def] at h_ba_1; split at h_ba_1 <;> [assumption; omega]
   -- overflow: (q * v_i).toNat + carryIn.toNat ≥ 2^64
-  have h_overflow : (q * v_i).toNat + carryIn.toNat ≥ 2^64 := by
+  have : (q * v_i).toNat + carryIn.toNat ≥ 2^64 := by
     by_contra h_no; push Not at h_no
     rw [h_fs_val, Nat.mod_eq_of_lt h_no] at h_ov; omega
   -- (q * v_i).toNat = 1 and carryIn = 2^64 - 1
-  have h_plo_1 : (q * v_i).toNat = 1 := by omega
+  have : (q * v_i).toNat = 1 := by omega
   -- fullSub = 0
-  have h_fs_0 : fullSub.toNat = 0 := by rw [h_fs_val]; omega
+  have : fullSub.toNat = 0 := by rw [h_fs_val]; omega
   -- bs_n = 0 (nothing is < 0)
   have : bs_n = 0 := by
     simp only [h_bs_def, show ¬(u_i.toNat < fullSub.toNat) from by omega, ite_false]

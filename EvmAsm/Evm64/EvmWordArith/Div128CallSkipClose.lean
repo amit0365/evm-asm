@@ -77,14 +77,14 @@ theorem knuth_compose_qHat_vTop_le_nat_v2
         (rhat' % 2^32) * 2^64 + div_un1 * 2^32 := by ring
     linarith
   -- uHi * 2^64 = q1' * dHi * 2^64 + rhat' * 2^64 (Phase 1b Euclidean ×2^64).
-  have h_uHi_mul : uHi * 2^64 = q1' * dHi * 2^64 + rhat' * 2^64 := by
+  have : uHi * 2^64 = q1' * dHi * 2^64 + rhat' * 2^64 := by
     have h_expand : (q1' * dHi + rhat') * 2^64 =
         q1' * dHi * 2^64 + rhat' * 2^64 := by ring
     have := congr_arg (· * 2^64) h_ph1_eucl
     simp only at this
     linarith
   -- Decompose rhat' * 2^64 = (rhat'/2^32)*2^96 + (rhat' % 2^32)*2^64.
-  have h_rhat_split : rhat' * 2^64 =
+  have : rhat' * 2^64 =
       (rhat' / 2^32) * 2^96 + (rhat' % 2^32) * 2^64 := by
     have h_div_mod : (rhat' / 2^32) * 2^32 + rhat' % 2^32 = rhat' := by
       have := Nat.div_add_mod rhat' (2^32)
@@ -112,7 +112,7 @@ theorem knuth_compose_qHat_vTop_le_nat_v2
     linarith
   -- (3) q0' * dLo ≤ rhat2' * 2^32 + div_un0 (given).
   -- (4) (rhat' / 2^32) * 2^96 ≥ 0 (Nat).
-  have h_high_ge : 0 ≤ (rhat' / 2^32) * 2^96 := Nat.zero_le _
+  have : 0 ≤ (rhat' / 2^32) * 2^96 := Nat.zero_le _
   -- Combine.
   linarith
 
@@ -417,17 +417,17 @@ theorem div128Quot_call_skip_mul_val256_b_le_val256_a
       val256 a0 a1 a2 a3 * 2^(clzResult b3).1.toNat := by
     -- h_mulsub: val256 u0..u3 + ms.2.2.2.2.toNat * 2^256 = val256 un + qHat * val256 v'
     -- So qHat * val256 v' = val256 u + c3 * 2^256 - val256 un.
-    have hv_bound : val256 ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 < 2^256 := h_un_bound
+    have : val256 ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 < 2^256 := h_un_bound
     -- Combine: qHat * val256 v' ≤ val256 u + c3 * 2^256.
-    have h1 : qHat.toNat * val256 b0' b1' b2' b3' ≤
+    have : qHat.toNat * val256 b0' b1' b2' b3' ≤
         val256 u0 u1 u2 u3 + ms.2.2.2.2.toNat * 2^256 := by omega
     -- Use c3 ≤ u4.
-    have h2 : val256 u0 u1 u2 u3 + ms.2.2.2.2.toNat * 2^256 ≤
+    have : val256 u0 u1 u2 u3 + ms.2.2.2.2.toNat * 2^256 ≤
         val256 u0 u1 u2 u3 + u4.toNat * 2^256 := by
       apply Nat.add_le_add_left
       exact Nat.mul_le_mul_right _ h_c3_le
     -- Use h_norm_u.
-    have h3 : val256 u0 u1 u2 u3 + u4.toNat * 2^256 =
+    have : val256 u0 u1 u2 u3 + u4.toNat * 2^256 =
         val256 a0 a1 a2 a3 * 2^(clzResult b3).1.toNat := h_norm_u
     omega
   -- Now use h_norm_v to rewrite val256(v') = val256(b) * 2^shift.
@@ -522,8 +522,8 @@ theorem q_true_full_ge_q_true_1_mul_pow32_nat
     (hvTop_pos : 0 < dHi * 2^32 + dLo) :
     (uHi * 2^32 + div_un1) / (dHi * 2^32 + dLo) * 2^32 ≤
       (uHi * 2^64 + div_un1 * 2^32 + div_un0) / (dHi * 2^32 + dLo) := by
-  set vTop_nat := dHi * 2^32 + dLo with h_vTop_def
-  set q_true_1 := (uHi * 2^32 + div_un1) / vTop_nat with h_q_true_1_def
+  set vTop_nat := dHi * 2^32 + dLo
+  set q_true_1 := (uHi * 2^32 + div_un1) / vTop_nat
   have h_euc : q_true_1 * vTop_nat ≤ uHi * 2^32 + div_un1 :=
     Nat.div_mul_le_self _ _
   have h_le : q_true_1 * 2^32 * vTop_nat ≤
@@ -546,14 +546,14 @@ theorem q_true_full_lt_q_true_1_succ_mul_pow32_nat
     (hdiv_un0_lt : div_un0 < 2^32) :
     (uHi * 2^64 + div_un1 * 2^32 + div_un0) / (dHi * 2^32 + dLo) <
       ((uHi * 2^32 + div_un1) / (dHi * 2^32 + dLo) + 1) * 2^32 := by
-  set vTop_nat := dHi * 2^32 + dLo with h_vTop_def
-  set q_true_1 := (uHi * 2^32 + div_un1) / vTop_nat with h_q_true_1_def
+  set vTop_nat := dHi * 2^32 + dLo
+  set q_true_1 := (uHi * 2^32 + div_un1) / vTop_nat
   have h_lt : uHi * 2^32 + div_un1 < vTop_nat * (q_true_1 + 1) :=
     Nat.lt_mul_div_succ _ hvTop_pos
   have h_num_lt : uHi * 2^64 + div_un1 * 2^32 + div_un0 <
       vTop_nat * (q_true_1 + 1) * 2^32 := by
     have h_plus_one : uHi * 2^32 + div_un1 + 1 ≤ vTop_nat * (q_true_1 + 1) := h_lt
-    have h_mul_1 : (uHi * 2^32 + div_un1 + 1) * 2^32 ≤
+    have : (uHi * 2^32 + div_un1 + 1) * 2^32 ≤
         vTop_nat * (q_true_1 + 1) * 2^32 :=
       Nat.mul_le_mul_right _ h_plus_one
     have h_expand_lhs : (uHi * 2^32 + div_un1 + 1) * 2^32 =

@@ -105,7 +105,7 @@ theorem mulsub_addback_correct {uVal vVal qNat rAbVal : Nat}
     (hge : uVal / vVal + 1 ≤ qNat) :
     qNat - 1 = uVal / vVal ∧ rAbVal < vVal := by
   have := Nat.zero_le (uVal / vVal)
-  have hq1 : qNat ≥ 1 := by omega
+  have : qNat ≥ 1 := by omega
   have heq : uVal = (qNat - 1) * vVal + rAbVal := by omega
   have hge' : uVal / vVal ≤ qNat - 1 := by omega
   exact remainder_lt_of_ge_floor hv heq hge'
