@@ -88,22 +88,22 @@ theorem hq_over_from_second_carry_one (q : Word) {v0 v1 v2 v3 u0 u1 u2 u3 : Word
   --   val256(u) + (2 - q) * val256(v) ≥ 1  (signed arithmetic)
   --   val256(u) ≥ (q - 2) * val256(v)  (Nat subtraction handles q < 2 trivially)
   -- Hence u/v ≥ q - 2, i.e., q ≤ u/v + 2.
-  have hq_v_le_plus : q.toNat * val256 v0 v1 v2 v3 ≤
+  have : q.toNat * val256 v0 v1 v2 v3 ≤
       val256 u0 u1 u2 u3 + 2 * val256 v0 v1 v2 v3 := by nlinarith
   -- (q - 2) * v ≤ u
-  have hqm2_le : (q.toNat - 2) * val256 v0 v1 v2 v3 ≤ val256 u0 u1 u2 u3 := by
+  have : (q.toNat - 2) * val256 v0 v1 v2 v3 ≤ val256 u0 u1 u2 u3 := by
     rcases Nat.lt_or_ge q.toNat 2 with hq_lt | hq_ge
     · -- q < 2: q - 2 = 0, trivial
       have : q.toNat - 2 = 0 := by omega
       rw [this]; simp
     · -- q ≥ 2
-      have hq_split : q.toNat * val256 v0 v1 v2 v3 =
+      have : q.toNat * val256 v0 v1 v2 v3 =
           (q.toNat - 2) * val256 v0 v1 v2 v3 + 2 * val256 v0 v1 v2 v3 := by
         have : q.toNat = (q.toNat - 2) + 2 := by omega
         nlinarith
       linarith
   -- u/v ≥ q - 2
-  have hdiv_ge : val256 u0 u1 u2 u3 / val256 v0 v1 v2 v3 ≥ q.toNat - 2 := by
+  have : val256 u0 u1 u2 u3 / val256 v0 v1 v2 v3 ≥ q.toNat - 2 := by
     exact Nat.le_div_iff_mul_le hv_pos |>.mpr (by linarith [Nat.mul_comm (q.toNat - 2) (val256 v0 v1 v2 v3)])
   omega
 
