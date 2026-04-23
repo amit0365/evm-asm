@@ -520,20 +520,20 @@ theorem div128Quot_phase2b_post (un21 dHi : Word)
     (hdHi_lt : dHi.toNat < 2^32) (q0c rhat2c dLo : Word)
     (h_post : q0c.toNat * dHi.toNat + rhat2c.toNat = un21.toNat)
     (h_rhat2c_lt : rhat2c.toNat < 2 * dHi.toNat) :
-    let rhat2c_hi := rhat2c >>> (32 : BitVec 6).toNat
+    let rhat2cHi := rhat2c >>> (32 : BitVec 6).toNat
     let rhat2Un0 := (rhat2c <<< (32 : BitVec 6).toNat) ||| div_un0
     let q0' := div128Quot_phase2b_q0' q0c rhat2c dLo div_un0
     -- rhat2' mirrors the guard: fires → no check adjustment (rhat2c);
     -- fall-through → the Phase 1b check may have added dHi.
-    let rhat2' := if rhat2c_hi = 0 then
+    let rhat2' := if rhat2cHi = 0 then
                     (if BitVec.ult rhat2Un0 (q0c * dLo) then rhat2c + dHi else rhat2c)
                   else rhat2c
     q0'.toNat * dHi.toNat + rhat2'.toNat = un21.toNat := by
-  intro rhat2c_hi rhat2Un0 q0' rhat2'
+  intro rhat2cHi rhat2Un0 q0' rhat2'
   show (div128Quot_phase2b_q0' q0c rhat2c dLo div_un0).toNat * dHi.toNat +
        rhat2'.toNat = un21.toNat
   unfold div128Quot_phase2b_q0'
-  by_cases h_guard : rhat2c_hi = 0
+  by_cases h_guard : rhat2cHi = 0
   · show (if rhat2c >>> (32 : BitVec 6).toNat = 0 then
             (if BitVec.ult ((rhat2c <<< (32 : BitVec 6).toNat) ||| div_un0)
                 (q0c * dLo) then q0c + signExtend12 4095 else q0c)
@@ -544,7 +544,7 @@ theorem div128Quot_phase2b_post (un21 dHi : Word)
          dHi.toNat + rhat2'.toNat = un21.toNat
     have hrhat2' : rhat2' = (if BitVec.ult rhat2Un0 (q0c * dLo)
                              then rhat2c + dHi else rhat2c) := by
-      show (if rhat2c_hi = 0 then
+      show (if rhat2cHi = 0 then
               (if BitVec.ult rhat2Un0 (q0c * dLo) then rhat2c + dHi else rhat2c)
             else rhat2c) = _
       rw [if_pos h_guard]
@@ -557,7 +557,7 @@ theorem div128Quot_phase2b_post (un21 dHi : Word)
           else q0c).toNat * dHi.toNat + rhat2'.toNat = un21.toNat
     rw [if_neg h_guard]
     have hrhat2' : rhat2' = rhat2c := by
-      show (if rhat2c_hi = 0 then
+      show (if rhat2cHi = 0 then
               (if BitVec.ult rhat2Un0 (q0c * dLo) then rhat2c + dHi else rhat2c)
             else rhat2c) = _
       rw [if_neg h_guard]

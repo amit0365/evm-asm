@@ -524,7 +524,7 @@ theorem div128Quot_q0_prime_plus_2_ge_q_true_0_abstract
     q0'.toNat + 2 ≥ (un21.toNat * 2^32 + div_un0.toNat) /
                      (dHi.toNat * 2^32 + dLo.toNat) := by
   intro q0 rhat2 hi2 q0c rhat2c div_un0 rhat2Un0 q0'
-  -- Case-split on helper's guard: rhat2c_hi = 0.
+  -- Case-split on helper's guard: rhat2cHi = 0.
   -- Guard fires: q0' = q0c, and q0c + 2 ≥ un21/dHi via KB-1 (Phase 1a bound).
   -- Guard doesn't fire: q0' = phase1b's un-guarded q1' at Phase 2, which
   -- satisfies the bound via div128Quot_phase1b_quotient_bound.
@@ -533,10 +533,10 @@ theorem div128Quot_q0_prime_plus_2_ge_q_true_0_abstract
       un21.toNat / dHi.toNat
     unfold div128Quot_phase2b_q0'
     split
-    · -- Guard doesn't fire (rhat2c_hi = 0): helper yields the un-guarded check.
+    · -- Guard doesn't fire (rhat2cHi = 0): helper yields the un-guarded check.
       exact (div128Quot_phase1b_quotient_bound un21 dHi hdHi_ne hdHi_lt dLo
         rhat2Un0).1
-    · -- Guard fires (rhat2c_hi ≠ 0): helper yields q0c. Use KB-1 at Phase 2.
+    · -- Guard fires (rhat2cHi ≠ 0): helper yields q0c. Use KB-1 at Phase 2.
       have h_kb1 := div128Quot_phase1a_quotient_bound un21 dHi hdHi_ne hdHi_lt
       have h_lower_q0c : un21.toNat / dHi.toNat ≤ q0c.toNat + 1 := h_kb1.2
       omega

@@ -84,12 +84,12 @@ theorem div128_spec (sp retAddr d uLo uHi : Word) (base : Word)
     let rhat2c := if hi2 = 0 then rhat2 else rhat2 + dHi
     let q0Dlo := q0c * dLo
     let rhat2Un0 := (rhat2c <<< (32 : BitVec 6).toNat) ||| un0
-    let rhat2c_hi := rhat2c >>> (32 : BitVec 6).toNat
+    let rhat2cHi := rhat2c >>> (32 : BitVec 6).toNat
     let q0' := div128Quot_phase2b_q0' q0c rhat2c dLo un0
     -- Exit values depend on whether the Phase 2b guard fires.
-    let x7_exit := if rhat2c_hi = 0 then q0Dlo else un21
-    let x1_exit := if rhat2c_hi = 0 then rhat2Un0 else rhat2c_hi
-    let x11_exit := if rhat2c_hi = 0 then un0 else rhat2c
+    let x7Exit := if rhat2cHi = 0 then q0Dlo else un21
+    let x1Exit := if rhat2cHi = 0 then rhat2Un0 else rhat2cHi
+    let x11Exit := if rhat2cHi = 0 then un0 else rhat2c
     -- End: combine q1' and q0'
     let q := (q1' <<< (32 : BitVec 6).toNat) ||| q0'
     cpsTriple (base + div128Off) retAddr (sharedDivModCode base)
@@ -104,8 +104,8 @@ theorem div128_spec (sp retAddr d uLo uHi : Word) (base : Word)
        (sp + signExtend12 3944 ↦ₘ un0Mem))
       (-- Postcondition: x11=quotient, all regs/mem updated
        (.x12 ↦ᵣ sp) ** (.x2 ↦ᵣ retAddr) ** (.x10 ↦ᵣ q1') **
-       (.x5 ↦ᵣ q0') ** (.x7 ↦ᵣ x7_exit) **
-       (.x6 ↦ᵣ dHi) ** (.x1 ↦ᵣ x1_exit) ** (.x11 ↦ᵣ q) **
+       (.x5 ↦ᵣ q0') ** (.x7 ↦ᵣ x7Exit) **
+       (.x6 ↦ᵣ dHi) ** (.x1 ↦ᵣ x1Exit) ** (.x11 ↦ᵣ q) **
        (.x0 ↦ᵣ (0 : Word)) **
        (sp + signExtend12 3968 ↦ₘ retAddr) **
        (sp + signExtend12 3960 ↦ₘ d) **
@@ -113,8 +113,8 @@ theorem div128_spec (sp retAddr d uLo uHi : Word) (base : Word)
        (sp + signExtend12 3944 ↦ₘ un0)) := by
   -- Introduce all let bindings
   intro dHi dLo un1 un0 q1 rhat hi1 q1c rhatc qDlo rhatUn1 q1' rhat' cu_rhat_un1
-    cu_q1_dlo un21 q0 rhat2 hi2 q0c rhat2c q0Dlo rhat2Un0 rhat2c_hi q0' x7_exit
-    x1_exit x11_exit q
+    cu_q1_dlo un21 q0 rhat2 hi2 q0c rhat2c q0Dlo rhat2Un0 rhat2cHi q0' x7Exit
+    x1Exit x11Exit q
   -- ================================================================
   -- Block 1: Phase 1 (base+1072 → base+1112)
   -- Saves ret/d, splits d and uLo into halves.
@@ -238,9 +238,9 @@ theorem div128_spec (sp retAddr d uLo uHi : Word) (base : Word)
   -- Block 5: End (base+1260 → retAddr via JALR)
   -- Combine q1'|q0' into q, restore return addr, return.
   -- Params: q1=q1'(x10), q0=q0'(x5), v2Old=retAddr(x2),
-  --         v11Old=x11_exit(x11), retAddr(mem[3968])
+  --         v11Old=x11Exit(x11), retAddr(mem[3968])
   -- ================================================================
-  have hend := divK_div128_end_spec sp q1' q0' retAddr x11_exit retAddr
+  have hend := divK_div128_end_spec sp q1' q0' retAddr x11Exit retAddr
     (base + 1260) halign
   have hende := cpsTriple_extend_code (hmono := by
     exact CodeReq.union_sub (d128_sub 47 _ _ (by decide) (by bv_addr) (by decide))
@@ -250,7 +250,7 @@ theorem div128_spec (sp retAddr d uLo uHi : Word) (base : Word)
     hend
   -- Frame end with x7, x6, x1, x0, mem[3960], mem[3952], mem[3944]
   have hendf := cpsTriple_frameR
-    ((.x7 ↦ᵣ x7_exit) ** (.x6 ↦ᵣ dHi) ** (.x1 ↦ᵣ x1_exit) **
+    ((.x7 ↦ᵣ x7Exit) ** (.x6 ↦ᵣ dHi) ** (.x1 ↦ᵣ x1Exit) **
      (.x0 ↦ᵣ (0 : Word)) **
      (sp + signExtend12 3960 ↦ₘ d) ** (sp + signExtend12 3952 ↦ₘ dLo) **
      (sp + signExtend12 3944 ↦ₘ un0))

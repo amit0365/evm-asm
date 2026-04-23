@@ -68,28 +68,28 @@ def div128Quot_phase2b_q0' (q0c rhat2c dLo div_un0 : Word) : Word :=
     ```
 
     Branches:
-    - **Taken** (rhat2c_hi ≠ 0, guard fires): branches to `(base+4) +
+    - **Taken** (rhat2cHi ≠ 0, guard fires): branches to `(base+4) +
       signExtend13 guard_off`. Mul-check skipped.
-    - **Fall-through** (rhat2c_hi = 0): continues to `base + 8`, Phase 2b
+    - **Fall-through** (rhat2cHi = 0): continues to `base + 8`, Phase 2b
       mul-check runs normally.
 
     Used by `divK_div128_step2_guarded_spec` (future) to compose
     clamp_q0 + guard + prodcheck2 into a 17-instruction step2 block. -/
 theorem divK_div128_phase2b_guard_spec
     (sp rhat2c v1Old : Word) (base : Word) (guard_off : BitVec 13) :
-    let rhat2c_hi := rhat2c >>> (32 : BitVec 6).toNat
+    let rhat2cHi := rhat2c >>> (32 : BitVec 6).toNat
     let cr :=
       CodeReq.union (CodeReq.singleton base (.SRLI .x1 .x11 32))
         (CodeReq.singleton (base + 4) (.BNE .x1 .x0 guard_off))
     cpsBranch base cr
       ((.x12 ↦ᵣ sp) ** (.x11 ↦ᵣ rhat2c) ** (.x1 ↦ᵣ v1Old) ** (.x0 ↦ᵣ 0))
       ((base + 4) + signExtend13 guard_off)
-        ((.x12 ↦ᵣ sp) ** (.x11 ↦ᵣ rhat2c) ** (.x1 ↦ᵣ rhat2c_hi) **
-         (.x0 ↦ᵣ 0) ** ⌜rhat2c_hi ≠ 0⌝)
+        ((.x12 ↦ᵣ sp) ** (.x11 ↦ᵣ rhat2c) ** (.x1 ↦ᵣ rhat2cHi) **
+         (.x0 ↦ᵣ 0) ** ⌜rhat2cHi ≠ 0⌝)
       (base + 8)
-        ((.x12 ↦ᵣ sp) ** (.x11 ↦ᵣ rhat2c) ** (.x1 ↦ᵣ rhat2c_hi) **
-         (.x0 ↦ᵣ 0) ** ⌜rhat2c_hi = 0⌝) := by
-  intro rhat2c_hi cr
+        ((.x12 ↦ᵣ sp) ** (.x11 ↦ᵣ rhat2c) ** (.x1 ↦ᵣ rhat2cHi) **
+         (.x0 ↦ᵣ 0) ** ⌜rhat2cHi = 0⌝) := by
+  intro rhat2cHi cr
   -- Step 1: SRLI .x1 .x11 32  (cpsTriple base → base+4)
   have hsrli_raw := srli_spec_gen .x1 .x11 v1Old rhat2c 32 base (by nofun)
   -- Extend to the full cr (which includes the BNE).
@@ -105,7 +105,7 @@ theorem divK_div128_phase2b_guard_spec
     ((.x12 ↦ᵣ sp) ** (.x0 ↦ᵣ 0))
     (by pcFree) hsrli
   -- Step 2: BNE .x1 .x0 guard_off  (cpsBranch base+4 → ...)
-  have hbne_raw := bne_spec_gen .x1 .x0 guard_off rhat2c_hi (0 : Word) (base + 4)
+  have hbne_raw := bne_spec_gen .x1 .x0 guard_off rhat2cHi (0 : Word) (base + 4)
   have hcr_bne : ∀ a i,
       CodeReq.singleton (base + 4) (.BNE .x1 .x0 guard_off) a = some i → cr a = some i := by
     intro a i h

@@ -609,7 +609,7 @@ theorem div128Quot_q0_prime_lt_pow32 (un21 dHi dLo uLo : Word)
     have h_check : BitVec.ult rhat2Un0 (q0c * dLo) := by
       show decide (rhat2Un0.toNat < (q0c * dLo).toNat) = true
       exact decide_eq_true h_ult
-    -- Guard `rhat2c_hi = 0` holds since rhat2c < 2^32.
+    -- Guard `rhat2cHi = 0` holds since rhat2c < 2^32.
     have h_rhat2c_hi_zero : rhat2c >>> (32 : BitVec 6).toNat = 0 := by
       have h32 : (32 : BitVec 6).toNat = 32 := by decide
       apply BitVec.eq_of_toNat_eq

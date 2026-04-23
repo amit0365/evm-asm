@@ -110,8 +110,8 @@ theorem divK_div128_step2_upto_guard_spec
 
 /-- div128 step 2 thru-guard: init + clamp_q0 + phase2b_guard composition
     for instrs [30]-[38]. Produces a cpsBranch at base+28 that either takes
-    the taken path to base+68 (skipping mul-check when rhat2c_hi ≠ 0) or
-    falls through to base+36 (rhat2c_hi = 0) where mul-check will run. -/
+    the taken path to base+68 (skipping mul-check when rhat2cHi ≠ 0) or
+    falls through to base+36 (rhat2cHi = 0) where mul-check will run. -/
 theorem divK_div128_step2_thru_guard_spec
     (sp un21 dHi v1Old v5Old v11Old dlo un0 : Word) (base : Word) :
     let q0 := rv64_divu un21 dHi
@@ -119,7 +119,7 @@ theorem divK_div128_step2_thru_guard_spec
     let hi := q0 >>> (32 : BitVec 6).toNat
     let q0c := if hi = 0 then q0 else q0 + signExtend12 4095
     let rhat2c := if hi = 0 then rhat2 else rhat2 + dHi
-    let rhat2c_hi := rhat2c >>> (32 : BitVec 6).toNat
+    let rhat2cHi := rhat2c >>> (32 : BitVec 6).toNat
     let cr :=
       CodeReq.union (CodeReq.singleton base (.DIVU .x5 .x7 .x6))
       (CodeReq.union (CodeReq.singleton (base + 4) (.MUL .x1 .x5 .x6))
@@ -137,15 +137,15 @@ theorem divK_div128_step2_thru_guard_spec
        (sp + signExtend12 3952 ↦ₘ dlo) ** (sp + signExtend12 3944 ↦ₘ un0))
       (base + 68)
         ((.x7 ↦ᵣ un21) ** (.x6 ↦ᵣ dHi) ** (.x5 ↦ᵣ q0c) **
-         (.x1 ↦ᵣ rhat2c_hi) ** (.x11 ↦ᵣ rhat2c) **
-         (.x12 ↦ᵣ sp) ** (.x0 ↦ᵣ 0) ** ⌜rhat2c_hi ≠ 0⌝ **
+         (.x1 ↦ᵣ rhat2cHi) ** (.x11 ↦ᵣ rhat2c) **
+         (.x12 ↦ᵣ sp) ** (.x0 ↦ᵣ 0) ** ⌜rhat2cHi ≠ 0⌝ **
          (sp + signExtend12 3952 ↦ₘ dlo) ** (sp + signExtend12 3944 ↦ₘ un0))
       (base + 36)
         ((.x7 ↦ᵣ un21) ** (.x6 ↦ᵣ dHi) ** (.x5 ↦ᵣ q0c) **
-         (.x1 ↦ᵣ rhat2c_hi) ** (.x11 ↦ᵣ rhat2c) **
-         (.x12 ↦ᵣ sp) ** (.x0 ↦ᵣ 0) ** ⌜rhat2c_hi = 0⌝ **
+         (.x1 ↦ᵣ rhat2cHi) ** (.x11 ↦ᵣ rhat2c) **
+         (.x12 ↦ᵣ sp) ** (.x0 ↦ᵣ 0) ** ⌜rhat2cHi = 0⌝ **
          (sp + signExtend12 3952 ↦ₘ dlo) ** (sp + signExtend12 3944 ↦ₘ un0)) := by
-  intro q0 rhat2 hi q0c rhat2c rhat2c_hi cr
+  intro q0 rhat2 hi q0c rhat2c rhat2cHi cr
   have hcr_eq : cr =
       CodeReq.union (CodeReq.singleton base (.DIVU .x5 .x7 .x6))
       (CodeReq.union (CodeReq.singleton (base + 4) (.MUL .x1 .x5 .x6))
@@ -210,8 +210,8 @@ theorem divK_div128_step2_branch_merged_spec
     let rhat2c := if hi = 0 then rhat2 else rhat2 + dHi
     let q0Dlo := q0c * dlo
     let rhat2Un0 := (rhat2c <<< (32 : BitVec 6).toNat) ||| un0
-    let rhat2c_hi := rhat2c >>> (32 : BitVec 6).toNat
-    let q0'_unguarded := if BitVec.ult rhat2Un0 q0Dlo then q0c + signExtend12 4095 else q0c
+    let rhat2cHi := rhat2c >>> (32 : BitVec 6).toNat
+    let q0'Unguarded := if BitVec.ult rhat2Un0 q0Dlo then q0c + signExtend12 4095 else q0c
     let cr :=
       CodeReq.union (CodeReq.singleton base (.DIVU .x5 .x7 .x6))
       (CodeReq.union (CodeReq.singleton (base + 4) (.MUL .x1 .x5 .x6))
@@ -237,15 +237,15 @@ theorem divK_div128_step2_branch_merged_spec
        (sp + signExtend12 3952 ↦ₘ dlo) ** (sp + signExtend12 3944 ↦ₘ un0))
       (base + 68)  -- guard-fires path
         ((.x7 ↦ᵣ un21) ** (.x6 ↦ᵣ dHi) ** (.x5 ↦ᵣ q0c) **
-         (.x1 ↦ᵣ rhat2c_hi) ** (.x11 ↦ᵣ rhat2c) **
-         (.x12 ↦ᵣ sp) ** (.x0 ↦ᵣ 0) ** ⌜rhat2c_hi ≠ 0⌝ **
+         (.x1 ↦ᵣ rhat2cHi) ** (.x11 ↦ᵣ rhat2c) **
+         (.x12 ↦ᵣ sp) ** (.x0 ↦ᵣ 0) ** ⌜rhat2cHi ≠ 0⌝ **
          (sp + signExtend12 3952 ↦ₘ dlo) ** (sp + signExtend12 3944 ↦ₘ un0))
-      (base + 68)  -- guard-doesn't-fire + prodcheck2 (carries ⌜rhat2c_hi = 0⌝)
-        ((.x7 ↦ᵣ q0Dlo) ** (.x6 ↦ᵣ dHi) ** (.x5 ↦ᵣ q0'_unguarded) **
+      (base + 68)  -- guard-doesn't-fire + prodcheck2 (carries ⌜rhat2cHi = 0⌝)
+        ((.x7 ↦ᵣ q0Dlo) ** (.x6 ↦ᵣ dHi) ** (.x5 ↦ᵣ q0'Unguarded) **
          (.x1 ↦ᵣ rhat2Un0) ** (.x11 ↦ᵣ un0) **
-         (.x12 ↦ᵣ sp) ** (.x0 ↦ᵣ 0) ** ⌜rhat2c_hi = 0⌝ **
+         (.x12 ↦ᵣ sp) ** (.x0 ↦ᵣ 0) ** ⌜rhat2cHi = 0⌝ **
          (sp + signExtend12 3952 ↦ₘ dlo) ** (sp + signExtend12 3944 ↦ₘ un0)) := by
-  intro q0 rhat2 hi q0c rhat2c q0Dlo rhat2Un0 rhat2c_hi q0'_unguarded cr
+  intro q0 rhat2 hi q0c rhat2c q0Dlo rhat2Un0 rhat2cHi q0'Unguarded cr
   have hcr_eq : cr =
       CodeReq.union (CodeReq.singleton base (.DIVU .x5 .x7 .x6))
       (CodeReq.union (CodeReq.singleton (base + 4) (.MUL .x1 .x5 .x6))
@@ -279,7 +279,7 @@ theorem divK_div128_step2_branch_merged_spec
   -- h2 = prodcheck2_merged_spec at base+36 (8-singleton cr, positions 9-16
   -- of the 17-cr). Use split+simp pattern (8 levels deep but each level is
   -- cheap — heads don't match the prodcheck2 cr's head).
-  have h2_raw := divK_div128_prodcheck2_merged_spec sp q0c rhat2c rhat2c_hi un21
+  have h2_raw := divK_div128_prodcheck2_merged_spec sp q0c rhat2c rhat2cHi un21
     dlo un0 (base + 36)
   have hb4 : (base + 36 : Word) + 4 = base + 40 := by bv_addr
   have hb8 : (base + 36 : Word) + 8 = base + 44 := by bv_addr
@@ -313,10 +313,10 @@ theorem divK_div128_step2_branch_merged_spec
                   · split at h
                     · next hab => rw [beq_iff_eq] at hab; subst hab; simp_all [CodeReq.beq_offset_self_left, CodeReq.beq_base_offset]
                     · simp at h)
-  -- Frame h2 with (x6, x0) and ⌜rhat2c_hi = 0⌝ so the pure fact is carried
+  -- Frame h2 with (x6, x0) and ⌜rhat2cHi = 0⌝ so the pure fact is carried
   -- through the composition and ends up in branch_merged's fall-through post.
   have h2f := cpsTriple_frameR
-    ((.x6 ↦ᵣ dHi) ** (.x0 ↦ᵣ 0) ** ⌜rhat2c_hi = 0⌝)
+    ((.x6 ↦ᵣ dHi) ** (.x0 ↦ᵣ 0) ** ⌜rhat2cHi = 0⌝)
     (by pcFree) h2
   -- hperm: permute thru_guard's Q_f (incl. pure fact) to h2f's pre order.
   have composed := cpsBranch_seq_cpsTriple_with_perm_same_cr
@@ -341,12 +341,12 @@ theorem divK_div128_step2_branch_merged_spec
 
     **NOTE**: output's x7, x1, x11 values differ between guard-fires and
     guard-doesn't-fire paths:
-    - Guard fires (rhat2c_hi ≠ 0): x7 = un21 (unchanged), x1 = rhat2c_hi,
+    - Guard fires (rhat2cHi ≠ 0): x7 = un21 (unchanged), x1 = rhat2cHi,
       x11 = rhat2c.
-    - Guard doesn't fire (rhat2c_hi = 0): x7 = q0Dlo, x1 = rhat2Un0,
+    - Guard doesn't fire (rhat2cHi = 0): x7 = q0Dlo, x1 = rhat2Un0,
       x11 = un0.
 
-    The postcondition uses `rhat2c_hi = 0`-aware selectors to capture this. -/
+    The postcondition uses `rhat2cHi = 0`-aware selectors to capture this. -/
 theorem divK_div128_step2_spec
     (sp un21 dHi v1Old v5Old v11Old dlo un0 : Word) (base : Word) :
     let q0 := rv64_divu un21 dHi
@@ -356,15 +356,15 @@ theorem divK_div128_step2_spec
     let rhat2c := if hi = 0 then rhat2 else rhat2 + dHi
     let q0Dlo := q0c * dlo
     let rhat2Un0 := (rhat2c <<< (32 : BitVec 6).toNat) ||| un0
-    let rhat2c_hi := rhat2c >>> (32 : BitVec 6).toNat
+    let rhat2cHi := rhat2c >>> (32 : BitVec 6).toNat
     let q0' := div128Quot_phase2b_q0' q0c rhat2c dlo un0
     -- Exit values for registers that differ between guard-fires/doesn't
     -- paths. On guard-fires: x7 keeps un21 (MUL not run), x1 keeps
-    -- rhat2c_hi (loaded by SRLI), x11 keeps rhat2c (un0 not loaded).
+    -- rhat2cHi (loaded by SRLI), x11 keeps rhat2c (un0 not loaded).
     -- On guard-doesn't-fire: x7 holds q0Dlo, x1 holds rhat2Un0, x11 holds un0.
-    let x7_exit := if rhat2c_hi = 0 then q0Dlo else un21
-    let x1_exit := if rhat2c_hi = 0 then rhat2Un0 else rhat2c_hi
-    let x11_exit := if rhat2c_hi = 0 then un0 else rhat2c
+    let x7Exit := if rhat2cHi = 0 then q0Dlo else un21
+    let x1Exit := if rhat2cHi = 0 then rhat2Un0 else rhat2cHi
+    let x11Exit := if rhat2cHi = 0 then un0 else rhat2c
     let cr :=
       CodeReq.union (CodeReq.singleton base (.DIVU .x5 .x7 .x6))
       (CodeReq.union (CodeReq.singleton (base + 4) (.MUL .x1 .x5 .x6))
@@ -388,36 +388,36 @@ theorem divK_div128_step2_spec
        (.x1 ↦ᵣ v1Old) ** (.x11 ↦ᵣ v11Old) **
        (.x12 ↦ᵣ sp) ** (.x0 ↦ᵣ 0) **
        (sp + signExtend12 3952 ↦ₘ dlo) ** (sp + signExtend12 3944 ↦ₘ un0))
-      ((.x7 ↦ᵣ x7_exit) ** (.x6 ↦ᵣ dHi) ** (.x5 ↦ᵣ q0') **
-       (.x1 ↦ᵣ x1_exit) ** (.x11 ↦ᵣ x11_exit) **
+      ((.x7 ↦ᵣ x7Exit) ** (.x6 ↦ᵣ dHi) ** (.x5 ↦ᵣ q0') **
+       (.x1 ↦ᵣ x1Exit) ** (.x11 ↦ᵣ x11Exit) **
        (.x12 ↦ᵣ sp) ** (.x0 ↦ᵣ 0) **
        (sp + signExtend12 3952 ↦ₘ dlo) ** (sp + signExtend12 3944 ↦ₘ un0)) := by
-  intro q0 rhat2 hi q0c rhat2c q0Dlo rhat2Un0 rhat2c_hi q0' x7_exit x1_exit x11_exit cr
+  intro q0 rhat2 hi q0c rhat2c q0Dlo rhat2Un0 rhat2cHi q0' x7Exit x1Exit x11Exit cr
   -- Apply branch_merged to get a cpsBranch with both legs at base+68.
   have hbr := divK_div128_step2_branch_merged_spec sp un21 dHi v1Old v5Old v11Old
     dlo un0 base
   -- Target post as a local assertion.
-  let R : Assertion :=
-    (.x7 ↦ᵣ x7_exit) ** (.x6 ↦ᵣ dHi) ** (.x5 ↦ᵣ q0') **
-    (.x1 ↦ᵣ x1_exit) ** (.x11 ↦ᵣ x11_exit) **
+  let tgtPost : Assertion :=
+    (.x7 ↦ᵣ x7Exit) ** (.x6 ↦ᵣ dHi) ** (.x5 ↦ᵣ q0') **
+    (.x1 ↦ᵣ x1Exit) ** (.x11 ↦ᵣ x11Exit) **
     (.x12 ↦ᵣ sp) ** (.x0 ↦ᵣ 0) **
     (sp + signExtend12 3952 ↦ₘ dlo) ** (sp + signExtend12 3944 ↦ₘ un0)
   -- Helper: cpsTriple_refl at base+68 is a zero-step identity triple; we
   -- extend it from empty cr to our cr (vacuous) and use it for both branches.
-  have refl_of {P : Assertion} (h : ∀ hp, P hp → R hp) :
-      cpsTriple (base + 68) (base + 68) cr P R :=
+  have refl_of {P : Assertion} (h : ∀ hp, P hp → tgtPost hp) :
+      cpsTriple (base + 68) (base + 68) cr P tgtPost :=
     cpsTriple_extend_code (fun _ _ h => by simp [CodeReq.empty] at h)
       (cpsTriple_refl h)
-  -- Bridge for taken path (rhat2c_hi ≠ 0): strip pure fact, rewrite x7/x1/x11
-  -- exits to un21/rhat2c_hi/rhat2c, rewrite q0' to q0c via helper unfolding.
-  have h_t : cpsTriple (base + 68) (base + 68) cr _ R := refl_of (P :=
+  -- Bridge for taken path (rhat2cHi ≠ 0): strip pure fact, rewrite x7/x1/x11
+  -- exits to un21/rhat2cHi/rhat2c, rewrite q0' to q0c via helper unfolding.
+  have h_t : cpsTriple (base + 68) (base + 68) cr _ tgtPost := refl_of (P :=
     (.x7 ↦ᵣ un21) ** (.x6 ↦ᵣ dHi) ** (.x5 ↦ᵣ q0c) **
-    (.x1 ↦ᵣ rhat2c_hi) ** (.x11 ↦ᵣ rhat2c) **
-    (.x12 ↦ᵣ sp) ** (.x0 ↦ᵣ 0) ** ⌜rhat2c_hi ≠ 0⌝ **
+    (.x1 ↦ᵣ rhat2cHi) ** (.x11 ↦ᵣ rhat2c) **
+    (.x12 ↦ᵣ sp) ** (.x0 ↦ᵣ 0) ** ⌜rhat2cHi ≠ 0⌝ **
     (sp + signExtend12 3952 ↦ₘ dlo) ** (sp + signExtend12 3944 ↦ₘ un0)) (by
     intro hp hP
-    have h_hi_ne : rhat2c_hi ≠ 0 := by
-      -- Extract ⌜rhat2c_hi ≠ 0⌝ from position 7 in the sepConj chain.
+    have h_hi_ne : rhat2cHi ≠ 0 := by
+      -- Extract ⌜rhat2cHi ≠ 0⌝ from position 7 in the sepConj chain.
       obtain ⟨_, _, _, _, _, hrest⟩ := hP
       obtain ⟨_, _, _, _, _, hrest⟩ := hrest
       obtain ⟨_, _, _, _, _, hrest⟩ := hrest
@@ -431,19 +431,19 @@ theorem divK_div128_step2_spec
       show div128Quot_phase2b_q0' q0c rhat2c dlo un0 = q0c
       unfold div128Quot_phase2b_q0'
       exact if_neg h_hi_ne
-    have hx7 : x7_exit = un21 := if_neg h_hi_ne
-    have hx1 : x1_exit = rhat2c_hi := if_neg h_hi_ne
-    have hx11 : x11_exit = rhat2c := if_neg h_hi_ne
-    show R hp
-    show ((.x7 ↦ᵣ x7_exit) ** (.x6 ↦ᵣ dHi) ** (.x5 ↦ᵣ q0') **
-         (.x1 ↦ᵣ x1_exit) ** (.x11 ↦ᵣ x11_exit) **
+    have hx7 : x7Exit = un21 := if_neg h_hi_ne
+    have hx1 : x1Exit = rhat2cHi := if_neg h_hi_ne
+    have hx11 : x11Exit = rhat2c := if_neg h_hi_ne
+    show tgtPost hp
+    show ((.x7 ↦ᵣ x7Exit) ** (.x6 ↦ᵣ dHi) ** (.x5 ↦ᵣ q0') **
+         (.x1 ↦ᵣ x1Exit) ** (.x11 ↦ᵣ x11Exit) **
          (.x12 ↦ᵣ sp) ** (.x0 ↦ᵣ 0) **
          (sp + signExtend12 3952 ↦ₘ dlo) **
          (sp + signExtend12 3944 ↦ₘ un0)) hp
     rw [hq0', hx7, hx1, hx11]
     -- Strip the pure fact and permute.
     have hP' : ((.x7 ↦ᵣ un21) ** (.x6 ↦ᵣ dHi) ** (.x5 ↦ᵣ q0c) **
-                (.x1 ↦ᵣ rhat2c_hi) ** (.x11 ↦ᵣ rhat2c) **
+                (.x1 ↦ᵣ rhat2cHi) ** (.x11 ↦ᵣ rhat2c) **
                 (.x12 ↦ᵣ sp) ** (.x0 ↦ᵣ 0) **
                 (sp + signExtend12 3952 ↦ₘ dlo) **
                 (sp + signExtend12 3944 ↦ₘ un0)) hp :=
@@ -451,17 +451,17 @@ theorem divK_div128_step2_spec
         (sepConj_mono_right (sepConj_mono_right (sepConj_mono_right
         (sepConj_mono_right (fun h' hp' => ((sepConj_pure_left h').1 hp').2))))))) hp hP
     xperm_hyp hP')
-  -- Bridge for fall-through path: the post carries ⌜rhat2c_hi = 0⌝ so we
+  -- Bridge for fall-through path: the post carries ⌜rhat2cHi = 0⌝ so we
   -- can extract it and rewrite the exit selectors to their then-branch values.
-  have h_f : cpsTriple (base + 68) (base + 68) cr _ R := refl_of (P :=
+  have h_f : cpsTriple (base + 68) (base + 68) cr _ tgtPost := refl_of (P :=
     (.x7 ↦ᵣ q0Dlo) ** (.x6 ↦ᵣ dHi) ** (.x5 ↦ᵣ
       (if BitVec.ult rhat2Un0 q0Dlo then q0c + signExtend12 4095 else q0c)) **
     (.x1 ↦ᵣ rhat2Un0) ** (.x11 ↦ᵣ un0) **
-    (.x12 ↦ᵣ sp) ** (.x0 ↦ᵣ 0) ** ⌜rhat2c_hi = 0⌝ **
+    (.x12 ↦ᵣ sp) ** (.x0 ↦ᵣ 0) ** ⌜rhat2cHi = 0⌝ **
     (sp + signExtend12 3952 ↦ₘ dlo) ** (sp + signExtend12 3944 ↦ₘ un0)) (by
     intro hp hP
-    have h_hi_eq : rhat2c_hi = 0 := by
-      -- Extract ⌜rhat2c_hi = 0⌝ from position 7 in the sepConj chain.
+    have h_hi_eq : rhat2cHi = 0 := by
+      -- Extract ⌜rhat2cHi = 0⌝ from position 7 in the sepConj chain.
       obtain ⟨_, _, _, _, _, hrest⟩ := hP
       obtain ⟨_, _, _, _, _, hrest⟩ := hrest
       obtain ⟨_, _, _, _, _, hrest⟩ := hrest
@@ -475,11 +475,11 @@ theorem divK_div128_step2_spec
       show div128Quot_phase2b_q0' q0c rhat2c dlo un0 = _
       unfold div128Quot_phase2b_q0'
       rw [if_pos h_hi_eq]
-    have hx7 : x7_exit = q0Dlo := if_pos h_hi_eq
-    have hx1 : x1_exit = rhat2Un0 := if_pos h_hi_eq
-    have hx11 : x11_exit = un0 := if_pos h_hi_eq
-    show ((.x7 ↦ᵣ x7_exit) ** (.x6 ↦ᵣ dHi) ** (.x5 ↦ᵣ q0') **
-         (.x1 ↦ᵣ x1_exit) ** (.x11 ↦ᵣ x11_exit) **
+    have hx7 : x7Exit = q0Dlo := if_pos h_hi_eq
+    have hx1 : x1Exit = rhat2Un0 := if_pos h_hi_eq
+    have hx11 : x11Exit = un0 := if_pos h_hi_eq
+    show ((.x7 ↦ᵣ x7Exit) ** (.x6 ↦ᵣ dHi) ** (.x5 ↦ᵣ q0') **
+         (.x1 ↦ᵣ x1Exit) ** (.x11 ↦ᵣ x11Exit) **
          (.x12 ↦ᵣ sp) ** (.x0 ↦ᵣ 0) **
          (sp + signExtend12 3952 ↦ₘ dlo) **
          (sp + signExtend12 3944 ↦ₘ un0)) hp
