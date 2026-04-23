@@ -1,3 +1,4 @@
+-- file-size-exception: tracked by #66 / #61 (call-trial DIV+MOD specs in progress; further split deferred until both stack specs land).
 /-
   EvmAsm.Evm64.DivMod.SpecCall
 
