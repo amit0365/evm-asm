@@ -11,8 +11,6 @@
 -/
 
 import EvmAsm.Rv64.Execution
-import EvmAsm.Rv64.SailEquiv.StateRel
-import EvmAsm.Rv64.SailEquiv.MonadLemmas
 import EvmAsm.Rv64.SailEquiv.ALUProofs  -- for reg_ne_* and reg_agree_after_insert
 import LeanRV64D
 
