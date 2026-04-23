@@ -116,6 +116,88 @@ theorem div128Quot_shift0_le_one (a3 b3 : Word)
     (div128Quot (0 : Word) a3 b3).toNat ≤ 1 := by
   sorry
 
+/-- Under shift=0 (b3 ≥ 2^63), a3 < b3 implies val256(a) < val256(b).
+
+    Direct: val256(a) = a0 + a1*2^64 + a2*2^128 + a3*2^192.
+    a0,a1,a2 < 2^64 so a0+a1*2^64+a2*2^128 < 2^192.
+    Hence val256(a) < (a3+1)*2^192 ≤ b3*2^192 ≤ val256(b). -/
+theorem val256_lt_of_a3_lt_b3 (a0 a1 a2 a3 b0 b1 b2 b3 : Word)
+    (h : a3.toNat < b3.toNat) :
+    val256 a0 a1 a2 a3 < val256 b0 b1 b2 b3 := by
+  have h_low_bound : a0.toNat + a1.toNat * 2^64 + a2.toNat * 2^128 < 2^192 := by
+    have h0 := a0.isLt
+    have h1 := a1.isLt
+    have h2 := a2.isLt
+    calc a0.toNat + a1.toNat * 2^64 + a2.toNat * 2^128
+        ≤ (2^64 - 1) + (2^64 - 1) * 2^64 + (2^64 - 1) * 2^128 := by
+          have h1' : a1.toNat * 2^64 ≤ (2^64 - 1) * 2^64 :=
+            Nat.mul_le_mul_right _ (by omega)
+          have h2' : a2.toNat * 2^128 ≤ (2^64 - 1) * 2^128 :=
+            Nat.mul_le_mul_right _ (by omega)
+          omega
+      _ = 2^192 - 1 := by decide
+      _ < 2^192 := by decide
+  have h_b_ge : val256 b0 b1 b2 b3 ≥ b3.toNat * 2^192 := by
+    show b0.toNat + b1.toNat * 2^64 + b2.toNat * 2^128 + b3.toNat * 2^192 ≥ _
+    omega
+  have h_a_ub : val256 a0 a1 a2 a3 < (a3.toNat + 1) * 2^192 := by
+    show a0.toNat + a1.toNat * 2^64 + a2.toNat * 2^128 + a3.toNat * 2^192 < _
+    have : (a3.toNat + 1) * 2^192 = a3.toNat * 2^192 + 2^192 := by ring
+    omega
+  have h_bound : (a3.toNat + 1) * 2^192 ≤ b3.toNat * 2^192 := by
+    apply Nat.mul_le_mul_right
+    omega
+  omega
+
+/-- Under shift=0 (b3 ≥ 2^63), the top-limb ratio `a3.toNat / b3.toNat`
+    upper-bounds the full 256-bit ratio. Proof: both are in {0, 1},
+    and val256(a) ≥ val256(b) forces a3 ≥ b3 (so a3/b3 = 1). -/
+theorem a3_div_b3_ge_val256_div (a0 a1 a2 a3 b0 b1 b2 b3 : Word)
+    (hb3_ge : b3.toNat ≥ 2^63)
+    (hb : val256 b0 b1 b2 b3 > 0) :
+    val256 a0 a1 a2 a3 / val256 b0 b1 b2 b3 ≤ a3.toNat / b3.toNat := by
+  -- val256(b) ≥ b3 * 2^192 ≥ 2^63 * 2^192 = 2^255.
+  have hv_b_ge : val256 b0 b1 b2 b3 ≥ 2^255 := by
+    show b0.toNat + b1.toNat * 2^64 + b2.toNat * 2^128 + b3.toNat * 2^192 ≥ _
+    have : b3.toNat * 2^192 ≥ 2^63 * 2^192 := Nat.mul_le_mul_right _ hb3_ge
+    have : (2^63 : Nat) * 2^192 = 2^255 := by decide
+    omega
+  -- val256(a) < 2^256.
+  have hv_a_lt : val256 a0 a1 a2 a3 < 2^256 := val256_bound _ _ _ _
+  -- val256(a) / val256(b) ∈ {0, 1}.
+  have h_ratio_le : val256 a0 a1 a2 a3 / val256 b0 b1 b2 b3 ≤ 1 := by
+    rw [Nat.div_le_iff_le_mul_add_pred hb]
+    -- val256(a) < val256(b) * 1 + val256(b) = 2*val256(b). Need < 2^256 ≤ 2*val256(b).
+    -- 2*val256(b) ≥ 2*2^255 = 2^256 > val256(a).
+    have : 2 * val256 b0 b1 b2 b3 ≥ 2^256 := by
+      have : 2 * val256 b0 b1 b2 b3 ≥ 2 * 2^255 := Nat.mul_le_mul_left _ hv_b_ge
+      have : 2 * 2^255 = (2^256 : Nat) := by decide
+      omega
+    omega
+  -- Case: val256(a) / val256(b) = 0 (trivial) vs 1.
+  rcases Nat.lt_or_ge (val256 a0 a1 a2 a3) (val256 b0 b1 b2 b3) with h | h
+  · -- val256(a) < val256(b) ⟹ ratio = 0.
+    have h_eq : val256 a0 a1 a2 a3 / val256 b0 b1 b2 b3 = 0 :=
+      Nat.div_eq_of_lt h
+    rw [h_eq]
+    exact Nat.zero_le _
+  · -- val256(a) ≥ val256(b) ⟹ ratio = 1 and a3 ≥ b3.
+    have h_ratio_eq : val256 a0 a1 a2 a3 / val256 b0 b1 b2 b3 = 1 := by
+      -- ratio ≥ 1 (from h) and ratio ≤ 1.
+      have h_ge : val256 a0 a1 a2 a3 / val256 b0 b1 b2 b3 ≥ 1 :=
+        Nat.one_le_div_iff hb |>.mpr h
+      omega
+    rw [h_ratio_eq]
+    -- Need a3/b3 ≥ 1, i.e., a3 ≥ b3.
+    -- From val256(a) ≥ val256(b) + val256_lt_of_a3_lt_b3 contrapositive: a3 ≥ b3.
+    have h_a3_ge : a3.toNat ≥ b3.toNat := by
+      by_contra h_lt
+      push Not at h_lt
+      exact absurd h (Nat.not_le.mpr (val256_lt_of_a3_lt_b3 a0 a1 a2 a3 b0 b1 b2 b3 h_lt))
+    -- a3.toNat ≥ b3.toNat and b3.toNat > 0 ⟹ a3/b3 ≥ 1.
+    have hb3_pos : 0 < b3.toNat := by omega
+    exact (Nat.one_le_div_iff hb3_pos).mpr h_a3_ge
+
 /-- If `div128Quot 0 a3 b3 = 0` under shift=0, then a3 < b3. -/
 theorem div128Quot_shift0_eq_zero_implies_a3_lt_b3 (a3 b3 : Word)
     (hb3_ge : b3.toNat ≥ 2^63)
@@ -133,43 +215,5 @@ theorem div128Quot_shift0_eq_zero_implies_a3_lt_b3 (a3 b3 : Word)
     omega
   have h_div_zero : a3.toNat / b3.toNat = 0 := Nat.le_zero.mp h_ge
   exact (Nat.div_eq_zero_iff_lt h_b3_pos).mp h_div_zero
-
-/-- Under shift=0 (b3 ≥ 2^63), a3 < b3 implies val256(a) < val256(b).
-
-    Direct: val256(a) = a0 + a1*2^64 + a2*2^128 + a3*2^192.
-    a0,a1,a2 < 2^64 so a0+a1*2^64+a2*2^128 < 2^192.
-    Hence val256(a) < (a3+1)*2^192 ≤ b3*2^192 ≤ val256(b). -/
-theorem val256_lt_of_a3_lt_b3 (a0 a1 a2 a3 b0 b1 b2 b3 : Word)
-    (h : a3.toNat < b3.toNat) :
-    val256 a0 a1 a2 a3 < val256 b0 b1 b2 b3 := by
-  have h_low_bound : a0.toNat + a1.toNat * 2^64 + a2.toNat * 2^128 < 2^192 := by
-    have h0 := a0.isLt
-    have h1 := a1.isLt
-    have h2 := a2.isLt
-    -- a0 ≤ 2^64-1, a1*2^64 ≤ (2^64-1)*2^64, a2*2^128 ≤ (2^64-1)*2^128.
-    -- Sum ≤ (2^64-1)*(1 + 2^64 + 2^128) = 2^192 - 1.
-    calc a0.toNat + a1.toNat * 2^64 + a2.toNat * 2^128
-        ≤ (2^64 - 1) + (2^64 - 1) * 2^64 + (2^64 - 1) * 2^128 := by
-          have h1' : a1.toNat * 2^64 ≤ (2^64 - 1) * 2^64 :=
-            Nat.mul_le_mul_right _ (by omega)
-          have h2' : a2.toNat * 2^128 ≤ (2^64 - 1) * 2^128 :=
-            Nat.mul_le_mul_right _ (by omega)
-          omega
-      _ = 2^192 - 1 := by decide
-      _ < 2^192 := by decide
-  -- val256 a = a0 + a1*2^64 + a2*2^128 + a3*2^192.
-  -- a3 < b3 ⟹ a3 ≤ b3 - 1 ⟹ a3*2^192 ≤ (b3-1)*2^192 = b3*2^192 - 2^192.
-  -- val256 a < (b3-1)*2^192 + 2^192 = b3*2^192 ≤ val256 b.
-  have h_b_ge : val256 b0 b1 b2 b3 ≥ b3.toNat * 2^192 := by
-    show b0.toNat + b1.toNat * 2^64 + b2.toNat * 2^128 + b3.toNat * 2^192 ≥ _
-    omega
-  have h_a_ub : val256 a0 a1 a2 a3 < (a3.toNat + 1) * 2^192 := by
-    show a0.toNat + a1.toNat * 2^64 + a2.toNat * 2^128 + a3.toNat * 2^192 < _
-    have : (a3.toNat + 1) * 2^192 = a3.toNat * 2^192 + 2^192 := by ring
-    omega
-  have h_bound : (a3.toNat + 1) * 2^192 ≤ b3.toNat * 2^192 := by
-    apply Nat.mul_le_mul_right
-    omega
-  omega
 
 end EvmAsm.Evm64
