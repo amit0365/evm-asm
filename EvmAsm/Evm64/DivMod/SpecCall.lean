@@ -921,4 +921,92 @@ theorem n4CallSkipSemanticHolds_def {a b : EvmWord} :
        (div128Quot u4 u3 b3').toNat) :=
   rfl
 
+/-- **Call+skip n=4 div/mod getLimbN bridge.** Under the runtime call-path
+    conditions + skip-borrow + the semantic-correctness hypothesis
+    `n4CallSkipSemanticHolds`, the algorithm's trial quotient
+    `qHat = div128Quot u4 u3 b3'` equals `(EvmWord.div a b).getLimbN 0`
+    (and the upper three quotient limbs are zero).
+
+    Mirror of `n4_max_skip_div_mod_getLimbN` (DivN4Overestimate.lean:666) for
+    the call path. The max version uses `n4MaxSkipSemanticHolds` (= `c3 = 0`
+    from mulsub + max overestimate) to close via `div_correct_n4_no_shift`.
+    The call version uses `n4CallSkipSemanticHolds` (= the algorithmic lower
+    bound `qHat ≥ val256(a)/val256(b)`) combined with T3's upper bound from
+    skip-borrow to pin `qHat.toNat = val256(a)/val256(b) = a.toNat/b.toNat`.
+
+    **Proof sketch** (to be filled in):
+    1. From T3 (`div128Quot_call_skip_mul_val256_b_le_val256_a`):
+       `qHat.toNat * val256(b) ≤ val256(a)`, hence `qHat.toNat ≤ val256(a)/val256(b)`.
+    2. From hsem: `val256(a)/val256(b) ≤ qHat.toNat`.
+    3. Therefore `qHat.toNat = val256(a)/val256(b) = a.toNat/b.toNat = (EvmWord.div a b).toNat`.
+    4. Since `qHat.toNat < 2^64` (Word bound), `(EvmWord.div a b).toNat < 2^64`, so
+       upper 3 limbs are 0. The low limb equals `qHat` by Word-equality of toNat. -/
+theorem n4_call_skip_div_mod_getLimbN (a b : EvmWord)
+    (hbnz : b ≠ 0)
+    (hb3nz : b.getLimbN 3 ≠ 0)
+    (hshift_nz : (clzResult (b.getLimbN 3)).1 ≠ 0)
+    (hbltu : isCallTrialN4Evm a b)
+    (hborrow : isSkipBorrowN4CallEvm a b)
+    (hsem : n4CallSkipSemanticHolds a b) :
+    let shift := (clzResult (b.getLimbN 3)).1.toNat % 64
+    let antiShift :=
+      (signExtend12 (0 : BitVec 12) - (clzResult (b.getLimbN 3)).1).toNat % 64
+    let b3' := ((b.getLimbN 3) <<< shift) ||| ((b.getLimbN 2) >>> antiShift)
+    let u4 := (a.getLimbN 3) >>> antiShift
+    let u3 := ((a.getLimbN 3) <<< shift) ||| ((a.getLimbN 2) >>> antiShift)
+    let qHat := div128Quot u4 u3 b3'
+    (EvmWord.div a b).getLimbN 0 = qHat ∧
+    (EvmWord.div a b).getLimbN 1 = 0 ∧
+    (EvmWord.div a b).getLimbN 2 = 0 ∧
+    (EvmWord.div a b).getLimbN 3 = 0 := by
+  -- TODO(#66): fill in the 4-step proof via T3 + hsem + tight-equality +
+  -- limb decomposition of a Word-bounded EvmWord.
+  sorry
+
+/-- **EVM-stack-level DIV spec on the n=4 call+skip sub-path.**
+
+    Scaffold mirror of `evm_div_n4_max_skip_stack_spec`. Consumes runtime
+    conditions (`isCallTrialN4Evm`, `isSkipBorrowN4CallEvm`), shift non-zero,
+    alignment, and the semantic-correctness fact `n4CallSkipSemanticHolds`.
+    Produces the clean `divN4StackPreCall` → `divN4CallSkipStackPost` shape.
+
+    Reduces to `evm_div_n4_full_call_skip_stack_pre_spec_bundled` + a
+    postcondition reshape via `n4_call_skip_div_mod_getLimbN` and
+    `div_n4_call_skip_stack_weaken`. The post reshape is analogous to the
+    max-skip path (Spec.lean:1309) but walks through `fullDivN4CallSkipPost`
+    and `denormDivPost` (no dedicated `_unfold` lemma yet — to be added). -/
+theorem evm_div_n4_call_skip_stack_spec (sp base : Word)
+    (a b : EvmWord) (v5 v6 v7 v10 v11 : Word)
+    (q0 q1 q2 q3 u0 u1 u2 u3 u4 u5 u6 u7
+     nMem shiftMem jMem retMem dMem dloMem scratch_un0 : Word)
+    (hbnz : b ≠ 0)
+    (hb3nz : b.getLimbN 3 ≠ 0)
+    (hshift_nz : (clzResult (b.getLimbN 3)).1 ≠ 0)
+    (halign : ((base + 516) + signExtend12 (0 : BitVec 12)) &&& ~~~(1 : Word) = base + 516)
+    (hbltu : isCallTrialN4Evm a b)
+    (hborrow : isSkipBorrowN4CallEvm a b)
+    (hsem : n4CallSkipSemanticHolds a b) :
+    cpsTriple base (base + nopOff) (divCode base)
+      (divN4StackPreCall sp a b v5 v6 v7 v10 v11
+         q0 q1 q2 q3 u0 u1 u2 u3 u4 u5 u6 u7
+         shiftMem nMem jMem retMem dMem dloMem scratch_un0)
+      (divN4CallSkipStackPost sp a b) := by
+  -- Obtain the pre-spec result (concrete full post).
+  have h_pre := evm_div_n4_full_call_skip_stack_pre_spec_bundled sp base a b
+    v5 v6 v7 v10 v11 q0 q1 q2 q3 u0 u1 u2 u3 u4 u5 u6 u7
+    nMem shiftMem jMem retMem dMem dloMem scratch_un0
+    hbnz hb3nz hshift_nz halign hbltu hborrow
+  -- Extract the qHat = (EvmWord.div a b).getLimbN 0 etc. from the semantic
+  -- hypothesis + T3 via the bridge theorem.
+  obtain ⟨hdiv0, hdiv1, hdiv2, hdiv3⟩ :=
+    n4_call_skip_div_mod_getLimbN a b hbnz hb3nz hshift_nz hbltu hborrow hsem
+  -- Post reshape: analogous to max-skip's flattening via
+  -- `fullDivN4MaxSkipPost_unfold + denormDivPost_unfold + xperm_hyp`.
+  -- Call-skip version will need a `fullDivN4CallSkipPost_unfold` helper
+  -- (to be added) or a direct `delta + simp` approach tracking the 19-cell
+  -- scratch vs the max-skip's 15-cell scratch.
+  -- TODO(#66 follow-up): finish the reshape proof. Depends on finishing the
+  -- bridge theorem above.
+  sorry
+
 end EvmAsm.Evm64
