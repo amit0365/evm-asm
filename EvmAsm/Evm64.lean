@@ -21,15 +21,11 @@ import EvmAsm.Evm64.Or
 import EvmAsm.Evm64.Xor
 import EvmAsm.Evm64.Not
 
--- EvmWord arithmetic correctness lemmas
-import EvmAsm.Evm64.EvmWordArith
-
--- Arithmetic
+-- Arithmetic (Add.Spec transitively imports EvmWordArith)
 import EvmAsm.Evm64.Add
 import EvmAsm.Evm64.Sub
 
--- Comparisons
-import EvmAsm.Evm64.Compare.LimbSpec
+-- Comparisons (Lt.Spec transitively imports Compare.LimbSpec)
 import EvmAsm.Evm64.Lt
 import EvmAsm.Evm64.Gt
 import EvmAsm.Evm64.Eq
