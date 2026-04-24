@@ -294,6 +294,25 @@ theorem div128Quot_shift0_cu_q1_dlo_eq_zero (dHi dLo div_un1 : Word) (hdHi_ne : 
     div128Quot_shift0_q1_prime_eq_zero dHi dLo div_un1 hdHi_ne]
   simp
 
+/-- Under uHi=0 + hdHi_ne, Phase 2b's un21 = cu_rhat_un1 - cu_q1_dlo = div_un1. -/
+theorem div128Quot_shift0_un21_eq_div_un1 (dHi dLo div_un1 : Word) (hdHi_ne : dHi ≠ 0) :
+    (let q1 := rv64_divu (0 : Word) dHi
+     let rhat := (0 : Word) - q1 * dHi
+     let hi1 := q1 >>> (32 : BitVec 6).toNat
+     let q1c := if hi1 = 0 then q1 else q1 + signExtend12 4095
+     let rhatc := if hi1 = 0 then rhat else rhat + dHi
+     let qDlo := q1c * dLo
+     let rhatUn1 := (rhatc <<< (32 : BitVec 6).toNat) ||| div_un1
+     let q1' := if BitVec.ult rhatUn1 qDlo then q1c + signExtend12 4095 else q1c
+     let rhat' := if BitVec.ult rhatUn1 qDlo then rhatc + dHi else rhatc
+     let cu_rhat_un1 := (rhat' <<< (32 : BitVec 6).toNat) ||| div_un1
+     let cu_q1_dlo := q1' * dLo
+     cu_rhat_un1 - cu_q1_dlo) = div_un1 := by
+  simp only []
+  rw [div128Quot_shift0_cu_rhat_un1_eq_div_un1 dHi dLo div_un1 hdHi_ne,
+      div128Quot_shift0_cu_q1_dlo_eq_zero dHi dLo div_un1 hdHi_ne]
+  simp
+
 -- ============================================================================
 -- The main composite lemma — scaffolded with sorrys for Phase 1 tracing
 -- and Phase 2b reasoning. Filled incrementally per feedback_commit_sorry_intermediate.
