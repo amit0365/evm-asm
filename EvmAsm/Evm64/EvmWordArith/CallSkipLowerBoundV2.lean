@@ -90,6 +90,43 @@ theorem algorithmUn21_unfold (u4 u3 b3' : Word) :
        cu_rhat_un1 - cu_q1_dlo) := by
   delta algorithmUn21; rfl
 
+/-- The algorithm's Phase-1b output `q1'` as a function of `(u4, u3, b3')`.
+    Same let-chain as `algorithmUn21`, but returns `q1'` instead of `un21`.
+    Note: takes `u3` as a parameter (even though q1' doesn't directly depend
+    on the low bits of u3) so the Phase 1b ult-check input `rhatUn1` —
+    which uses `div_un1 = u3 >>> 32` — lines up with the algorithm.
+    Marked `@[irreducible]` to keep the 11-step chain from polluting
+    type elaboration (matches `algorithmUn21` treatment). -/
+@[irreducible]
+def algorithmQ1Prime (u4 u3 b3' : Word) : Word :=
+  let dHi := b3' >>> (32 : BitVec 6).toNat
+  let dLo := (b3' <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat
+  let div_un1 := u3 >>> (32 : BitVec 6).toNat
+  let q1 := rv64_divu u4 dHi
+  let rhat := u4 - q1 * dHi
+  let hi1 := q1 >>> (32 : BitVec 6).toNat
+  let q1c := if hi1 = 0 then q1 else q1 + signExtend12 4095
+  let rhatc := if hi1 = 0 then rhat else rhat + dHi
+  let qDlo := q1c * dLo
+  let rhatUn1 := (rhatc <<< (32 : BitVec 6).toNat) ||| div_un1
+  if BitVec.ult rhatUn1 qDlo then q1c + signExtend12 4095 else q1c
+
+/-- Named unfold for `algorithmQ1Prime`. -/
+theorem algorithmQ1Prime_unfold (u4 u3 b3' : Word) :
+    algorithmQ1Prime u4 u3 b3' =
+      (let dHi := b3' >>> (32 : BitVec 6).toNat
+       let dLo := (b3' <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat
+       let div_un1 := u3 >>> (32 : BitVec 6).toNat
+       let q1 := rv64_divu u4 dHi
+       let rhat := u4 - q1 * dHi
+       let hi1 := q1 >>> (32 : BitVec 6).toNat
+       let q1c := if hi1 = 0 then q1 else q1 + signExtend12 4095
+       let rhatc := if hi1 = 0 then rhat else rhat + dHi
+       let qDlo := q1c * dLo
+       let rhatUn1 := (rhatc <<< (32 : BitVec 6).toNat) ||| div_un1
+       if BitVec.ult rhatUn1 qDlo then q1c + signExtend12 4095 else q1c) := by
+  delta algorithmQ1Prime; rfl
+
 -- =============================================================================
 -- §A — Core Knuth-B lower bound (128/64 level)
 --
@@ -195,6 +232,7 @@ theorem div128Quot_qHat_plus_one_times_b3_gt_u_normal
     (u4 u3 b3' : Word)
     (hb3'_ge : b3'.toNat ≥ 2^63)
     (hu4_lt_b3' : u4.toNat < b3'.toNat)
+    (hu4_lt_dHi_pow32 : u4.toNat < (b3' >>> (32 : BitVec 6).toNat).toNat * 2^32)
     (h_un21_lt_dHi_pow32 :
       (algorithmUn21 u4 u3 b3').toNat <
       (b3' >>> (32 : BitVec 6).toNat).toNat * 2^32) :
@@ -252,6 +290,18 @@ theorem div128Quot_qHat_plus_one_times_b3_gt_u_normal
       ((b3' <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat)
       u3
       h_dHi_ge h_dHi_lt h_dLo_lt h_un21_lt_dHi_pow32 h_un21_lt_vTop
+  -- Phase 1 tight: `(u4*2^32 + div_un1) / vTop ≤ q1'`.
+  have h_u4_lt_vTop : u4.toNat <
+      (b3' >>> (32 : BitVec 6).toNat).toNat * 2^32 +
+      ((b3' <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat).toNat :=
+    Nat.lt_of_lt_of_le hu4_lt_dHi_pow32 (Nat.le_add_right _ _)
+  have h_ph1_tight :=
+    div128Quot_q1_prime_ge_q_true_1_of_uHi_lt_dHi_mul_pow32
+      u4
+      (b3' >>> (32 : BitVec 6).toNat)
+      ((b3' <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat)
+      u3
+      h_dHi_ge h_dHi_lt h_dLo_lt hu4_lt_dHi_pow32 h_u4_lt_vTop
   -- The remaining gap:
   -- (a) Phase 1 tight: `q1' ≥ q_true_1` via `_of_uHi_lt_dHi_mul_pow32`.
   --     Requires `u4 < dHi*2^32`; narrow range [dHi*2^32, vTop) still open.
@@ -276,7 +326,7 @@ theorem div128Quot_qHat_plus_one_times_b3_gt_u_compensation
     (u4 u3 b3' : Word)
     (hb3'_ge : b3'.toNat ≥ 2^63)
     (hu4_lt_b3' : u4.toNat < b3'.toNat)
-    (h_un21_ge_dHi_pow32 :
+    (h_compensation : u4.toNat ≥ (b3' >>> (32 : BitVec 6).toNat).toNat * 2^32 ∨
       (algorithmUn21 u4 u3 b3').toNat ≥
       (b3' >>> (32 : BitVec 6).toNat).toNat * 2^32) :
     ((div128Quot u4 u3 b3').toNat + 1) * b3'.toNat >
@@ -292,12 +342,17 @@ theorem div128Quot_qHat_plus_one_times_b3_gt_u
     (hu4_lt_b3' : u4.toNat < b3'.toNat) :
     ((div128Quot u4 u3 b3').toNat + 1) * b3'.toNat >
       u4.toNat * 2^64 + u3.toNat := by
-  by_cases h_un21 :
-    (algorithmUn21 u4 u3 b3').toNat <
-    (b3' >>> (32 : BitVec 6).toNat).toNat * 2^32
-  · exact div128Quot_qHat_plus_one_times_b3_gt_u_normal u4 u3 b3' hb3'_ge hu4_lt_b3' h_un21
+  by_cases h_u4 :
+    u4.toNat < (b3' >>> (32 : BitVec 6).toNat).toNat * 2^32
+  · by_cases h_un21 :
+      (algorithmUn21 u4 u3 b3').toNat <
+      (b3' >>> (32 : BitVec 6).toNat).toNat * 2^32
+    · exact div128Quot_qHat_plus_one_times_b3_gt_u_normal u4 u3 b3' hb3'_ge
+        hu4_lt_b3' h_u4 h_un21
+    · apply div128Quot_qHat_plus_one_times_b3_gt_u_compensation u4 u3 b3' hb3'_ge hu4_lt_b3'
+      right; omega
   · apply div128Quot_qHat_plus_one_times_b3_gt_u_compensation u4 u3 b3' hb3'_ge hu4_lt_b3'
-    omega
+    left; omega
 
 /-- **A4** (the §A target, derived from A2). -/
 theorem div128Quot_ge_q_true_normalized
