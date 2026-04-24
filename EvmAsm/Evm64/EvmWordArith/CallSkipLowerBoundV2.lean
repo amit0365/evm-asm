@@ -543,7 +543,30 @@ theorem algorithmQ1Prime_step6_word_nat_if_bridge
     (algorithmQ1Prime u4 u3 b3').toNat =
       (if q1c.toNat * dLo.toNat > rhatc.toNat * 2^32 + div_un1.toNat
        then q1c.toNat - 1 else q1c.toNat) := by
-  sorry
+  intro dHi dLo div_un1 q1 rhat hi1 q1c rhatc
+  have h_ult_bridge := algorithmQ1Prime_step5_ult_bridge u4 u3 b3'
+    hb3'_ge hu4_lt_b3' hu4_lt_dHi_pow32
+  simp only [] at h_ult_bridge
+  rw [algorithmQ1Prime_unfold]
+  show (if BitVec.ult _ (q1c * dLo) then q1c + signExtend12 4095 else q1c).toNat = _
+  by_cases h_word_ult : BitVec.ult
+      ((rhatc <<< (32 : BitVec 6).toNat) ||| div_un1) (q1c * dLo) = true
+  · rw [if_pos h_word_ult]
+    have h_nat := h_ult_bridge.mp h_word_ult
+    rw [if_pos h_nat]
+    have h_q1c_pos :=
+      div128Quot_phase1b_check_implies_q1c_pos q1c dLo
+        ((rhatc <<< (32 : BitVec 6).toNat) ||| div_un1) h_word_ult
+    rw [BitVec.toNat_add, signExtend12_4095_toNat]
+    have h_q1c_lt : q1c.toNat < 2^64 := q1c.isLt
+    rw [show q1c.toNat + (2^64 - 1) = (q1c.toNat - 1) + 2^64 from by omega,
+        Nat.add_mod_right,
+        Nat.mod_eq_of_lt (by omega : q1c.toNat - 1 < 2^64)]
+  · rw [if_neg h_word_ult]
+    have h_not_nat : ¬ (q1c.toNat * dLo.toNat > rhatc.toNat * 2^32 + div_un1.toNat) := by
+      intro h
+      exact h_word_ult (h_ult_bridge.mpr h)
+    rw [if_neg h_not_nat]
 
 /-- **Bridge sub-A** (Knuth-B upper at Phase 1b): under standard hcall,
     `algorithmQ1Prime.toNat ≤ (u4*2^32 + div_un1) / b3' + 1`.
