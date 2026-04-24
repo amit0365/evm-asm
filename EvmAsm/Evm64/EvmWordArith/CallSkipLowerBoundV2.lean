@@ -81,6 +81,53 @@ theorem halfword_combine_ge_of_tight (q1' q0' q_true_1 q_true_0 : Nat)
   have h1 : q_true_1 * 2^32 ≤ q1' * 2^32 := Nat.mul_le_mul_right _ h_q1'_ge
   exact Nat.add_le_add h1 h_q0'_ge
 
+/-- **A2.S1.div_id** (pure Nat): two-step schoolbook division identity.
+    `(A*2^64 + a1*2^32 + a0) / V = ((A*2^32+a1)/V)*2^32 + ((rem*2^32+a0)/V)`
+    where `rem = (A*2^32+a1) % V`. This is the halfword-pair decomposition of
+    the 128-bit division, showing that successive halfword divisions recover
+    the true quotient. Foundational for the Knuth-B tight-phases reduction. -/
+theorem two_step_div_identity (A a1 a0 V : Nat) (hV_pos : 0 < V) :
+    (A * 2^64 + a1 * 2^32 + a0) / V =
+    ((A * 2^32 + a1) / V) * 2^32 +
+    ((((A * 2^32 + a1) % V) * 2^32 + a0) / V) := by
+  set q1 := (A * 2^32 + a1) / V with hq1_def
+  set r1 := (A * 2^32 + a1) % V with hr1_def
+  set q0 := (r1 * 2^32 + a0) / V with hq0_def
+  set r0 := (r1 * 2^32 + a0) % V with hr0_def
+  have h_decomp_1 : A * 2^32 + a1 = V * q1 + r1 := (Nat.div_add_mod _ V).symm
+  have h_decomp_0 : r1 * 2^32 + a0 = V * q0 + r0 := (Nat.div_add_mod _ V).symm
+  have h_r0_lt : r0 < V := Nat.mod_lt _ hV_pos
+  have h_full : A * 2^64 + a1 * 2^32 + a0 = r0 + (q1 * 2^32 + q0) * V := by
+    calc A * 2^64 + a1 * 2^32 + a0
+        = (A * 2^32 + a1) * 2^32 + a0 := by ring
+      _ = (V * q1 + r1) * 2^32 + a0 := by rw [h_decomp_1]
+      _ = V * q1 * 2^32 + (r1 * 2^32 + a0) := by ring
+      _ = V * q1 * 2^32 + (V * q0 + r0) := by rw [h_decomp_0]
+      _ = r0 + (q1 * 2^32 + q0) * V := by ring
+  rw [h_full, Nat.add_mul_div_right _ _ hV_pos, Nat.div_eq_of_lt h_r0_lt,
+      Nat.zero_add]
+
+/-- **A2.S1.body** (pure Nat + abstract phase hypotheses): if the algorithm's
+    qHat decomposes as `q1'*2^32 + q0'` (halfword combine output) AND the
+    phase-wise tight bounds `q_true_1 ≤ q1'` and `q_true_0 ≤ q0'` hold AND
+    the halfword division identity ties `q_true_1`, `q_true_0` to the true
+    128/64 quotient, then A2's conclusion follows.
+
+    This is the clean "last-mile" composition: given the phase tight bounds
+    abstractly, derive `(qHat+1)*vTop > u`. Pure Nat — doesn't touch the
+    algorithm's let-chains. -/
+theorem qHat_plus_one_gt_u_via_tight_phases
+    (u q1' q0' q_true_1 q_true_0 V : Nat)
+    (hV_pos : 0 < V)
+    (h_qHat_decomp : u / V = q_true_1 * 2^32 + q_true_0)
+    (h_ph1 : q_true_1 ≤ q1')
+    (h_ph2 : q_true_0 ≤ q0') :
+    (q1' * 2^32 + q0' + 1) * V > u := by
+  have h_ge : u / V ≤ q1' * 2^32 + q0' := by
+    rw [h_qHat_decomp]
+    exact halfword_combine_ge_of_tight q1' q0' q_true_1 q_true_0 h_ph1 h_ph2
+  exact nat_succ_mul_gt_of_div_le (q1' * 2^32 + q0') u V hV_pos h_ge
+
 /-- **A2.S1**: Case "normal" — when Phase 2's `un21 < vTop` holds, the
     per-phase tight bound gives the result.
 
