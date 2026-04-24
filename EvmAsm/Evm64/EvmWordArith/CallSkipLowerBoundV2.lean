@@ -127,6 +127,29 @@ theorem algorithmQ1Prime_unfold (u4 u3 b3' : Word) :
        if BitVec.ult rhatUn1 qDlo then q1c + signExtend12 4095 else q1c) := by
   delta algorithmQ1Prime; rfl
 
+/-- **Bridge**: under standard hcall + `un21 < dHi*2^32`, the algorithm's un21
+    is at least the mathematical remainder `(u4*2^32 + div_un1) % b3'`.
+
+    **Why**: Phase 1b's ult-check correction guarantees q1' ≤ q_true_1 + 1.
+    When q1' = q_true_1, un21 = r1_math. When q1' = q_true_1 + 1, un21 wraps
+    to `r1_math + (2^64 - b3')`. Since `2^64 - b3' ≥ 0`, un21 ≥ r1_math in
+    both cases. The Phase 1b correction is DESIGNED to rule out `q1' ≥
+    q_true_1 + 2`, so no higher-wrap cases arise.
+
+    **TODO** (~100 lines): formalize via KB-3j (un21 wrap case split) +
+    Phase 1b ult-check semantics. -/
+theorem algorithmUn21_ge_r1_math
+    (u4 u3 b3' : Word)
+    (hb3'_ge : b3'.toNat ≥ 2^63)
+    (hu4_lt_b3' : u4.toNat < b3'.toNat)
+    (hu4_lt_dHi_pow32 : u4.toNat < (b3' >>> (32 : BitVec 6).toNat).toNat * 2^32)
+    (h_un21_lt_dHi_pow32 :
+      (algorithmUn21 u4 u3 b3').toNat <
+      (b3' >>> (32 : BitVec 6).toNat).toNat * 2^32) :
+    (algorithmUn21 u4 u3 b3').toNat ≥
+      (u4.toNat * 2^32 + (u3 >>> (32 : BitVec 6).toNat).toNat) % b3'.toNat := by
+  sorry
+
 -- =============================================================================
 -- §A — Core Knuth-B lower bound (128/64 level)
 --
