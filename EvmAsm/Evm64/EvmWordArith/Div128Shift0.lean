@@ -605,16 +605,12 @@ theorem div128Quot_shift0_le_one (a3 b3 : Word)
     (hb3_ge : b3.toNat ≥ 2^63)
     (hb3_nz : b3 ≠ 0) :
     (div128Quot (0 : Word) a3 b3).toNat ≤ 1 := by
-  -- TODO(#67): Direct unfold of `div128Quot` yields an enormous expression
-  -- because each `let`-bound intermediate gets zeta-expanded, and `simp`
-  -- doesn't aggressively reduce nested `if hi1 = 0 then X else Y` branches
-  -- where `hi1 = 0` is only established via Nat-level reasoning on `dHi ≥ 2^31`.
-  --
-  -- Better approach for next iteration: prove a characterization lemma
-  -- `div128Quot (0:Word) a3 b3 = div128Quot_phase2b_q0' q0 rhat2 dLo div_un0`
-  -- (where q0 = rv64_divu (a3>>32) dHi, etc.) via careful unfolding + step-by-step
-  -- `show` rewrites that match the Phase 1 trivialization helpers. Then bound
-  -- the simpler expression.
+  -- Blocker: the existing shift=0 helpers use `div_un1 := (a3 <<< 32) >>> 32`
+  -- (low 32 bits of a3), but `div128Quot` actually binds
+  -- `div_un1 := uLo >>> 32 = a3 >>> 32` (high 32 bits). The chain identities
+  -- (e.g. `un21 = div_un1`) are polymorphic in div_un1, but the specialized
+  -- `_le_one` et al composites pin the wrong choice. Next iteration:
+  -- re-specialize with `a3 >>> 32` and close via `q1'_zero + zero_or`.
   sorry
 
 /-- If `div128Quot 0 a3 b3 = 0` under shift=0, then a3 < b3. -/
