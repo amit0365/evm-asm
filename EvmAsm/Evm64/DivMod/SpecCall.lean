@@ -1727,4 +1727,100 @@ theorem evm_div_n4_call_addback_beq_stack_spec (sp base : Word)
   rw [word_add_zero] at hq
   xperm_hyp hq
 
+/-- **Call+addback BEQ n=4 MOD denorm adapter (SORRY).** Stack-level adapter
+    folding the four denormalized remainder slots at `sp+32..sp+56` into
+    `evmWordIs (sp+32) (EvmWord.mod a b)` for the call+addback BEQ path.
+
+    Mirror of `output_slot_to_evmWordIs_mod_n4_call_skip_denorm` but for the
+    addback branch. The post's mulsub uses raw `qHat = div128Quot …`, then 1
+    or 2 addbacks correct it so the post-addback remainder equals
+    `val256(a_norm) - q_out * val256(b_norm)` (where q_out is the corrected
+    quotient, matching `n4CallAddbackBeqSemanticHolds`).
+
+    Proof approach (to fill in):
+    1. Use `hsem` to derive `q_out * val256(b) ≤ val256(a)` (bound needed for
+       the parameterized `val256_denorm_eq_val256_mod_of_overestimate`).
+    2. Show the post-addback partial remainder equals `mulsubN4 q_out b_norm
+       a_norm`'s output limbs (via addback correctness theorems combined with
+       Euclidean equations).
+    3. Apply `val256_denorm_eq_val256_mod_of_overestimate` with qHat = q_out
+       (the parameterized chain from the landed call-skip MOD PR).
+    4. Use `mod_of_val256_eq_mod` + `evmWordIs_sp32_limbs_eq` to fold into
+       `evmWordIs`. -/
+theorem output_slot_to_evmWordIs_mod_n4_call_addback_beq_denorm
+    (sp : Word) (a b : EvmWord)
+    (hb3nz : b.getLimbN 3 ≠ 0)
+    (hshift_nz : (clzResult (b.getLimbN 3)).1 ≠ 0)
+    (hcarry2_nz : isAddbackCarry2NzN4CallEvm a b)
+    (hborrow : isAddbackBorrowN4CallEvm a b)
+    (hsem : n4CallAddbackBeqSemanticHolds a b) :
+    let shift := (clzResult (b.getLimbN 3)).1.toNat % 64
+    let antiShift :=
+      (signExtend12 (0 : BitVec 12) - (clzResult (b.getLimbN 3)).1).toNat % 64
+    let b3' := ((b.getLimbN 3) <<< shift) ||| ((b.getLimbN 2) >>> antiShift)
+    let b2' := ((b.getLimbN 2) <<< shift) ||| ((b.getLimbN 1) >>> antiShift)
+    let b1' := ((b.getLimbN 1) <<< shift) ||| ((b.getLimbN 0) >>> antiShift)
+    let b0' := (b.getLimbN 0) <<< shift
+    let u3 := ((a.getLimbN 3) <<< shift) ||| ((a.getLimbN 2) >>> antiShift)
+    let u2 := ((a.getLimbN 2) <<< shift) ||| ((a.getLimbN 1) >>> antiShift)
+    let u1 := ((a.getLimbN 1) <<< shift) ||| ((a.getLimbN 0) >>> antiShift)
+    let u0 := (a.getLimbN 0) <<< shift
+    let u4 := (a.getLimbN 3) >>> antiShift
+    let qHat := div128Quot u4 u3 b3'
+    let ms := mulsubN4 qHat b0' b1' b2' b3' u0 u1 u2 u3
+    let c3 := ms.2.2.2.2
+    let u4_new := u4 - c3
+    let ab := addbackN4 ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 u4_new b0' b1' b2' b3'
+    let ab' := addbackN4 ab.1 ab.2.1 ab.2.2.1 ab.2.2.2.1 ab.2.2.2.2 b0' b1' b2' b3'
+    let carry := addbackN4_carry ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 b0' b1' b2' b3'
+    let un0Out := if carry = 0 then ab'.1 else ab.1
+    let un1Out := if carry = 0 then ab'.2.1 else ab.2.1
+    let un2Out := if carry = 0 then ab'.2.2.1 else ab.2.2.1
+    let un3Out := if carry = 0 then ab'.2.2.2.1 else ab.2.2.2.1
+    (((sp + 32) ↦ₘ ((un0Out >>> shift) ||| (un1Out <<< (64 - shift)))) **
+     ((sp + 40) ↦ₘ ((un1Out >>> shift) ||| (un2Out <<< (64 - shift)))) **
+     ((sp + 48) ↦ₘ ((un2Out >>> shift) ||| (un3Out <<< (64 - shift)))) **
+     ((sp + 56) ↦ₘ (un3Out >>> shift))) =
+    evmWordIs (sp + 32) (EvmWord.mod a b) := by
+  -- TODO(#66 follow-up): key math gap. Steps:
+  -- 1. From hsem, derive q_out * val256(b) ≤ val256(a) where q_out is
+  --    qHat + (1 or 2) × (-1). (q_out.toNat = val256(a)/val256(b), and
+  --    division q * b ≤ a is standard.)
+  -- 2. Via addback correctness + mulsub Euclidean + hsem, show
+  --    val256(un0Out..un3Out) = val256(a_norm) - q_out * val256(b_norm).
+  -- 3. Apply the parameterized denorm chain (landed in #1207) with
+  --    qHat = q_out to fold into EvmWord.mod a b.
+  sorry
+
+/-- **EVM-stack-level MOD spec on the n=4 call+addback BEQ sub-path (SORRY).**
+
+    Mirror of `evm_div_n4_call_addback_beq_stack_spec` for MOD. Depends on
+    the `output_slot_to_evmWordIs_mod_n4_call_addback_beq_denorm` adapter
+    above (currently sorry). Once the adapter is filled in, this stack spec
+    reduces mechanically using the template from
+    `evm_mod_n4_call_skip_stack_spec` (landed in #1207). -/
+theorem evm_mod_n4_call_addback_beq_stack_spec (sp base : Word)
+    (a b : EvmWord) (v5 v6 v7 v10 v11 : Word)
+    (q0 q1 q2 q3 u0 u1 u2 u3 u4 u5 u6 u7
+     nMem shiftMem jMem retMem dMem dloMem scratch_un0 : Word)
+    (hbnz : b ≠ 0)
+    (hb3nz : b.getLimbN 3 ≠ 0)
+    (hshift_nz : (clzResult (b.getLimbN 3)).1 ≠ 0)
+    (hvalid : ValidMemRange sp 8)
+    (halign : ((base + 516) + signExtend12 (0 : BitVec 12)) &&& ~~~(1 : Word) = base + 516)
+    (hbltu : isCallTrialN4Evm a b)
+    (hcarry2_nz : isAddbackCarry2NzN4CallEvm a b)
+    (hborrow : isAddbackBorrowN4CallEvm a b)
+    (hsem : n4CallAddbackBeqSemanticHolds a b) :
+    cpsTriple base (base + nopOff) (modCode base)
+      (modN4StackPreCall sp a b v5 v6 v7 v10 v11
+         q0 q1 q2 q3 u0 u1 u2 u3 u4 u5 u6 u7
+         shiftMem nMem jMem retMem dMem dloMem scratch_un0)
+      (modN4CallSkipStackPost sp a b) := by
+  -- TODO(#66 follow-up): close via the `evm_mod_n4_full_call_addback_beq_stack_pre_spec_bundled`
+  -- pre-spec + `output_slot_to_evmWordIs_mod_n4_call_addback_beq_denorm` adapter (still
+  -- sorry above) + `mod_n4_call_skip_stack_weaken` (output shape matches). Deferred
+  -- until the adapter is real.
+  sorry
+
 end EvmAsm.Evm64
