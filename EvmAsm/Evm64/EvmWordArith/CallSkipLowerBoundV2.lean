@@ -250,6 +250,17 @@ theorem algorithmQ0Prime_ge_q_true_0
       u3
       hdHi_ge hdHi_lt hdLo_lt h_un21_lt_dHi_pow32 h_un21_lt_vTop
 
+/-- **Bridge sub-A (weak, `+2`)**: `algorithmQ1Prime.toNat ≤ q_true_1 + 2`
+    stepping stone (proof deferred — attempt hit maxRecDepth). -/
+theorem algorithmQ1Prime_le_q_true_1_plus_two
+    (u4 u3 b3' : Word)
+    (hb3'_ge : b3'.toNat ≥ 2^63)
+    (hu4_lt_b3' : u4.toNat < b3'.toNat)
+    (hu4_lt_dHi_pow32 : u4.toNat < (b3' >>> (32 : BitVec 6).toNat).toNat * 2^32) :
+    (algorithmQ1Prime u4 u3 b3').toNat ≤
+      (u4.toNat * 2^32 + (u3 >>> (32 : BitVec 6).toNat).toNat) / b3'.toNat + 2 := by
+  sorry
+
 /-- **Bridge sub-A** (Knuth-B upper at Phase 1b): under standard hcall,
     `algorithmQ1Prime.toNat ≤ (u4*2^32 + div_un1) / b3' + 1`. This is the
     "off by at most 1" Knuth-B upper bound in wrapped form. -/
