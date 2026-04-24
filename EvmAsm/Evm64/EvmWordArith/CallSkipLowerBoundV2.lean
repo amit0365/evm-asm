@@ -462,12 +462,38 @@ theorem div128Quot_qHat_plus_one_times_b3_gt_u_normal
   have h_un21_ge_rmath :=
     algorithmUn21_ge_r1_math u4 u3 b3' hb3'_ge hu4_lt_b3' hu4_lt_dHi_pow32
       h_un21_lt_dHi_pow32
-  -- Composition: the pieces needed. Deferred to follow-up iteration —
-  -- current attempt hit type inference issues with the abstract q_true_0
-  -- expression. The structural path is clear though:
-  --   `qHat_plus_one_gt_u_via_tight_phases` with the four hypotheses:
-  --   V pos, h_two_step, h_ph1_tight, h_q_true_0_le (via monotonicity).
-  sorry
+  -- Monotonicity: lift Phase 2 tight from algorithm un21 to r1_math.
+  have h_mono_num :
+      (u4.toNat * 2 ^ 32 + (u3 >>> (32 : BitVec 6).toNat).toNat) % b3'.toNat * 2 ^ 32 +
+      ((u3 <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat).toNat ≤
+      (algorithmUn21 u4 u3 b3').toNat * 2 ^ 32 +
+      ((u3 <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat).toNat := by
+    apply Nat.add_le_add_right
+    exact Nat.mul_le_mul_right _ h_un21_ge_rmath
+  have h_q_true_0_le :
+      ((u4.toNat * 2 ^ 32 + (u3 >>> (32 : BitVec 6).toNat).toNat) % b3'.toNat * 2 ^ 32 +
+       ((u3 <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat).toNat) /
+      ((b3' >>> (32 : BitVec 6).toNat).toNat * 2^32 +
+       ((b3' <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat).toNat) ≤
+      (algorithmQ0Prime u4 u3 b3').toNat :=
+    Nat.le_trans (Nat.div_le_div_right h_mono_num) h_ph2_tight
+  -- Rewrite goal.
+  rw [h_u3_decomp, h_qHat_decomp]
+  have h_u_rewrite : u4.toNat * 2^64 +
+      ((u3 >>> (32 : BitVec 6).toNat).toNat * 2^32 +
+       ((u3 <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat).toNat) =
+      u4.toNat * 2^64 +
+        (u3 >>> (32 : BitVec 6).toNat).toNat * 2^32 +
+        ((u3 <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat).toNat := by ring
+  rw [h_u_rewrite]
+  -- Use h_vTop_decomp to normalize b3'.
+  have h_v_eq := h_vTop_decomp.symm
+  rw [h_v_eq] at h_q_true_0_le
+  -- Normalize h_two_step and h_ph1_tight by converting divisor b3' ↔ decomp.
+  rw [← h_vTop_decomp] at h_ph1_tight
+  -- Apply the final composition.
+  apply qHat_plus_one_gt_u_via_tight_phases _ _ _ _ _ _ hb3'_pos h_two_step h_ph1_tight
+  exact h_q_true_0_le
 
 /-- **A2.S2**: Case "compensation" — when `un21 ≥ dHi*2^32`. Includes
     BOTH the Phase 1 false-alarm regime (`un21 ≥ vTop`) AND the Phase 2
