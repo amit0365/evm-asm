@@ -238,11 +238,20 @@ theorem div128Quot_qHat_plus_one_times_b3_gt_u_normal
     have : (u3 <<< (32 : BitVec 6).toNat : Word).toNat < 2^64 :=
       (u3 <<< (32 : BitVec 6).toNat : Word).isLt
     exact Nat.div_lt_of_lt_mul (by omega)
-  -- Applying Phase 2 tight `_of_un21_lt_dHi_mul_pow32` from this context
-  -- hits `maximum recursion depth` due to let-chain unification. The
-  -- remaining proof requires either a restructured helper that accepts
-  -- abstract Word parameters for un21/q0'/etc., or a different proof
-  -- path. Deferred to follow-up iterations.
+  -- Phase 2 tight: `(algorithmUn21*2^32 + div_un0) / vTop ≤ q0'` where
+  -- q0' is Phase 2's output. Uses the irreducible `algorithmUn21` wrapper
+  -- to keep the let-chain folded during unification.
+  have h_un21_lt_vTop : (algorithmUn21 u4 u3 b3').toNat <
+      (b3' >>> (32 : BitVec 6).toNat).toNat * 2^32 +
+      ((b3' <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat).toNat :=
+    Nat.lt_of_lt_of_le h_un21_lt_dHi_pow32 (Nat.le_add_right _ _)
+  have h_ph2_tight :=
+    div128Quot_q0_prime_ge_q_true_0_of_un21_lt_dHi_mul_pow32
+      (algorithmUn21 u4 u3 b3')
+      (b3' >>> (32 : BitVec 6).toNat)
+      ((b3' <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat)
+      u3
+      h_dHi_ge h_dHi_lt h_dLo_lt h_un21_lt_dHi_pow32 h_un21_lt_vTop
   sorry
 
 /-- **A2.S2**: Case "compensation" — when `un21 ≥ dHi*2^32`. Includes
