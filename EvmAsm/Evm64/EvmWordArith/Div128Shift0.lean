@@ -331,6 +331,25 @@ theorem div128Quot_shift0_q0_eq (dHi dLo div_un1 : Word) (hdHi_ne : dHi ≠ 0) :
   simp only []
   rw [div128Quot_shift0_un21_eq_div_un1 dHi dLo div_un1 hdHi_ne]
 
+/-- Under div_un1 < 2^32 and dHi ≥ 2^31: `(rv64_divu div_un1 dHi).toNat ≤ 1`. -/
+theorem rv64_divu_lo32_hi32_le_one (div_un1 dHi : Word)
+    (hdiv_un1_lt : div_un1.toNat < 2^32) (hdHi_ge : dHi.toNat ≥ 2^31) :
+    (rv64_divu div_un1 dHi).toNat ≤ 1 := by
+  have hdHi_ne : dHi ≠ 0 := by
+    intro h
+    rw [h] at hdHi_ge
+    simp at hdHi_ge
+  rw [rv64_divu_toNat _ _ hdHi_ne]
+  -- div_un1.toNat / dHi.toNat: div_un1 < 2^32, dHi ≥ 2^31, so quotient ≤ 1.
+  -- Since (2^32 - 1) / 2^31 = 1, worst case is 1.
+  have hq : div_un1.toNat / dHi.toNat ≤ div_un1.toNat / 2^31 :=
+    Nat.div_le_div_left hdHi_ge (by positivity)
+  have hub : div_un1.toNat / 2^31 ≤ 1 := by
+    apply Nat.div_le_iff_le_mul (by decide : 0 < (2:Nat)^31) |>.mpr
+    have : (1 : Nat) * 2^31 = 2^31 := by ring
+    omega
+  omega
+
 -- ============================================================================
 -- The main composite lemma — scaffolded with sorrys for Phase 1 tracing
 -- and Phase 2b reasoning. Filled incrementally per feedback_commit_sorry_intermediate.
