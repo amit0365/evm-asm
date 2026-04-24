@@ -44,29 +44,113 @@ open EvmWord (val256)
 
 -- =============================================================================
 -- §A — Core Knuth-B lower bound (128/64 level)
+--
+-- The main theorem uses `div128Quot_ge_q_true_normalized` (A4), which in
+-- turn uses `div128Quot_qHat_plus_one_times_b3_gt_u` (A2). The Knuth-B
+-- UPPER form (previously scaffolded as "A1") is not on the critical path
+-- and has been dropped to simplify the file.
+--
+-- A2's proof is decomposed into sub-lemmas (A2.S1–A2.S4 below).
 -- =============================================================================
 
-/-- **A1**: Knuth-B upper form. `qHat * b3' ≤ u + 2*b3'`.
-    (UPPER direction; useful context but not the target.)
+/-- **A2.S1**: Case "normal" — when Phase 2's `un21 < vTop` holds, the
+    per-phase tight bound gives the result.
 
-    **TODO**: ~100 lines via Phase 1b + Phase 2b euclidean composition. -/
-theorem div128Quot_qHat_times_b3_le_u_plus_two_b3
+    Takes `un21 < vTop` as an explicit hypothesis (satisfied when Phase 1b
+    is tight). This is the easier case of A2.
+
+    **TODO**: ~100 lines via existing `div128Quot_toNat_eq_strict`
+    + Phase 1b/Phase 2b euclidean + q_true decomposition. -/
+theorem div128Quot_qHat_plus_one_times_b3_gt_u_normal
     (u4 u3 b3' : Word)
     (hb3'_ge : b3'.toNat ≥ 2^63)
-    (hu4_lt_b3' : u4.toNat < b3'.toNat) :
-    (div128Quot u4 u3 b3').toNat * b3'.toNat ≤
-      u4.toNat * 2^64 + u3.toNat + 2 * b3'.toNat := by
+    (hu4_lt_b3' : u4.toNat < b3'.toNat)
+    (h_un21_lt_vTop :
+      (let dHi := b3' >>> (32 : BitVec 6).toNat
+       let dLo := (b3' <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat
+       let div_un1 := u3 >>> (32 : BitVec 6).toNat
+       let q1 := rv64_divu u4 dHi
+       let rhat := u4 - q1 * dHi
+       let hi1 := q1 >>> (32 : BitVec 6).toNat
+       let q1c := if hi1 = 0 then q1 else q1 + signExtend12 4095
+       let rhatc := if hi1 = 0 then rhat else rhat + dHi
+       let qDlo := q1c * dLo
+       let rhatUn1 := (rhatc <<< (32 : BitVec 6).toNat) ||| div_un1
+       let q1' := if BitVec.ult rhatUn1 qDlo then q1c + signExtend12 4095 else q1c
+       let rhat' := if BitVec.ult rhatUn1 qDlo then rhatc + dHi else rhatc
+       let cu_rhat_un1 := (rhat' <<< (32 : BitVec 6).toNat) ||| div_un1
+       let cu_q1_dlo := q1' * dLo
+       let un21 := cu_rhat_un1 - cu_q1_dlo
+       un21.toNat < b3'.toNat)) :
+    ((div128Quot u4 u3 b3').toNat + 1) * b3'.toNat >
+      u4.toNat * 2^64 + u3.toNat := by
+  sorry
+
+/-- **A2.S2**: Case "compensation" — when Phase 2's `un21 ≥ vTop`
+    (Phase 1 false alarm regime), Phase 2's output overshoots in a way
+    that compensates for Phase 1's undershoot.
+
+    The final `halfword_combine` `(q1' << 32) | q0'` absorbs the Phase 2
+    overshoot: the "extra" that would push q0' past 2^32 gets truncated
+    into the q1' column, matching what a tight Phase 1 would have produced.
+
+    **TODO**: the hardest sub-lemma, ~200 lines. Requires careful tracking
+    of Word truncation in the halfword combine. -/
+theorem div128Quot_qHat_plus_one_times_b3_gt_u_compensation
+    (u4 u3 b3' : Word)
+    (hb3'_ge : b3'.toNat ≥ 2^63)
+    (hu4_lt_b3' : u4.toNat < b3'.toNat)
+    (h_un21_ge_vTop :
+      (let dHi := b3' >>> (32 : BitVec 6).toNat
+       let dLo := (b3' <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat
+       let div_un1 := u3 >>> (32 : BitVec 6).toNat
+       let q1 := rv64_divu u4 dHi
+       let rhat := u4 - q1 * dHi
+       let hi1 := q1 >>> (32 : BitVec 6).toNat
+       let q1c := if hi1 = 0 then q1 else q1 + signExtend12 4095
+       let rhatc := if hi1 = 0 then rhat else rhat + dHi
+       let qDlo := q1c * dLo
+       let rhatUn1 := (rhatc <<< (32 : BitVec 6).toNat) ||| div_un1
+       let q1' := if BitVec.ult rhatUn1 qDlo then q1c + signExtend12 4095 else q1c
+       let rhat' := if BitVec.ult rhatUn1 qDlo then rhatc + dHi else rhatc
+       let cu_rhat_un1 := (rhat' <<< (32 : BitVec 6).toNat) ||| div_un1
+       let cu_q1_dlo := q1' * dLo
+       let un21 := cu_rhat_un1 - cu_q1_dlo
+       un21.toNat ≥ b3'.toNat)) :
+    ((div128Quot u4 u3 b3').toNat + 1) * b3'.toNat >
+      u4.toNat * 2^64 + u3.toNat := by
   sorry
 
 /-- **A2**: Knuth-B lower form (divisibility). `(qHat + 1) * b3' > u`.
-    Phase 1+2 compensation argument. **TODO**: ~300 lines. -/
+    Composed via case split on Phase 2's un21 vs vTop. -/
 theorem div128Quot_qHat_plus_one_times_b3_gt_u
     (u4 u3 b3' : Word)
     (hb3'_ge : b3'.toNat ≥ 2^63)
     (hu4_lt_b3' : u4.toNat < b3'.toNat) :
     ((div128Quot u4 u3 b3').toNat + 1) * b3'.toNat >
       u4.toNat * 2^64 + u3.toNat := by
-  sorry
+  -- Case split on whether un21 < vTop (normal) or un21 ≥ vTop (compensation).
+  by_cases h_un21 :
+    (let dHi := b3' >>> (32 : BitVec 6).toNat
+     let dLo := (b3' <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat
+     let div_un1 := u3 >>> (32 : BitVec 6).toNat
+     let q1 := rv64_divu u4 dHi
+     let rhat := u4 - q1 * dHi
+     let hi1 := q1 >>> (32 : BitVec 6).toNat
+     let q1c := if hi1 = 0 then q1 else q1 + signExtend12 4095
+     let rhatc := if hi1 = 0 then rhat else rhat + dHi
+     let qDlo := q1c * dLo
+     let rhatUn1 := (rhatc <<< (32 : BitVec 6).toNat) ||| div_un1
+     let q1' := if BitVec.ult rhatUn1 qDlo then q1c + signExtend12 4095 else q1c
+     let rhat' := if BitVec.ult rhatUn1 qDlo then rhatc + dHi else rhatc
+     let cu_rhat_un1 := (rhat' <<< (32 : BitVec 6).toNat) ||| div_un1
+     let cu_q1_dlo := q1' * dLo
+     let un21 := cu_rhat_un1 - cu_q1_dlo
+     un21.toNat < b3'.toNat)
+  · exact div128Quot_qHat_plus_one_times_b3_gt_u_normal u4 u3 b3' hb3'_ge hu4_lt_b3' h_un21
+  · apply div128Quot_qHat_plus_one_times_b3_gt_u_compensation u4 u3 b3' hb3'_ge hu4_lt_b3'
+    simp only [] at h_un21 ⊢
+    omega
 
 /-- **A4** (the §A target, derived from A2). -/
 theorem div128Quot_ge_q_true_normalized
