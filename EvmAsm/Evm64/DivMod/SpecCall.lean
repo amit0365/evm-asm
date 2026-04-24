@@ -2535,10 +2535,12 @@ theorem n4_shift0_call_addback_beq_mod_getLimbN (a b : EvmWord)
     simp [mod_target, EvmWord.fromLimbs_toNat, val256]
   have hmod_target_eq_a : mod_target = a :=
     BitVec.eq_of_toNat_eq (by rw [hmod_target_toNat, h_val_ab_eq_a, ha_val])
-  -- TODO: final refine — the chained rw triggers whnf timeout on the
-  -- `if carry = 0 then ab'.i else ab.i` resolution. Likely fix: apply
-  -- if_neg to the goal separately before rewriting, or prove a dedicated
-  -- `un_iOut = ab.i` helper first.
+  -- TODO: close final refine. The theorem statement itself times out at whnf
+  -- in the conjunction (even before the refine), suggesting the let-chain
+  -- blow-up is in the goal elaboration. Next iteration: restructure via
+  -- extracting a simpler intermediate `ab_limbs_eq` helper that returns
+  -- `ab.i = (EvmWord.mod a b).getLimbN i` without the conditional `un_iOut`,
+  -- then wrap the `if_neg hcarry_nz` externally.
   sorry
 
 /-- **EVM-stack-level MOD spec on the n=4 shift=0 call+addback-BEQ sub-path.**
