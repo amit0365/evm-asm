@@ -55,7 +55,7 @@ theorem unsigned_div_equiv (a b : BitVec 64) :
 /-- Unsigned remainder: SAIL's Int.tmod on non-negative = BitVec umod. -/
 theorem unsigned_rem_equiv (a b : BitVec 64) (hb : b ≠ 0#64) :
     to_bits_truncate (l := 64) ((↑a.toNat : Int).tmod (↑b.toNat : Int)) = a % b := by
-  have hbn : b.toNat ≠ 0 := by intro h; exact hb (BitVec.eq_of_toNat_eq (by simp [h]))
+  have : b.toNat ≠ 0 := by intro h; exact hb (BitVec.eq_of_toNat_eq (by simp [h]))
   rw [(Int.ofNat_tmod a.toNat b.toNat).symm, to_bits_truncate_natCast]
   apply BitVec.eq_of_toNat_eq; simp [BitVec.toNat_umod]
   have : a.toNat % b.toNat < b.toNat := Nat.mod_lt _ (by omega)
