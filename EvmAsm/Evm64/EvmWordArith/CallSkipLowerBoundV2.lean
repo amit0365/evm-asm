@@ -472,6 +472,9 @@ theorem algorithmQ1Prime_step5_ult_bridge
     (BitVec.ult rhatUn1 (q1c * dLo) = true) ↔
       (q1c.toNat * dLo.toNat >
        rhatc.toNat * 2^32 + div_un1.toNat) := by
+  -- TODO (deferred): attempted proof via ult_iff + halfword_combine +
+  -- q1c*dLo no-wrap (from q1c ≤ 2^32+1) hit type mismatches. ~30 lines
+  -- via more careful lemma specializations.
   sorry
 
 /-- **Bridge sub-A** (Knuth-B upper at Phase 1b): under standard hcall,
