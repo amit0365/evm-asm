@@ -25,76 +25,13 @@
 -/
 
 import EvmAsm.Rv64.Execution
-import EvmAsm.Rv64.SailEquiv.StateRel
 import EvmAsm.Rv64.SailEquiv.MonadLemmas
-import LeanRV64D
 
 open LeanRV64D.Functions
 open Sail
 
 namespace EvmAsm.Rv64.SailEquiv
 
-
--- ============================================================================
--- Register inequality facts (pre-proved via decide)
--- ============================================================================
-
-private theorem reg_ne_x1_x2 : (Register.x1 == Register.x2) = false := by decide
-private theorem reg_ne_x1_x5 : (Register.x1 == Register.x5) = false := by decide
-private theorem reg_ne_x1_x6 : (Register.x1 == Register.x6) = false := by decide
-private theorem reg_ne_x1_x7 : (Register.x1 == Register.x7) = false := by decide
-private theorem reg_ne_x1_x10 : (Register.x1 == Register.x10) = false := by decide
-private theorem reg_ne_x1_x11 : (Register.x1 == Register.x11) = false := by decide
-private theorem reg_ne_x1_x12 : (Register.x1 == Register.x12) = false := by decide
-private theorem reg_ne_x2_x1 : (Register.x2 == Register.x1) = false := by decide
-private theorem reg_ne_x2_x5 : (Register.x2 == Register.x5) = false := by decide
-private theorem reg_ne_x2_x6 : (Register.x2 == Register.x6) = false := by decide
-private theorem reg_ne_x2_x7 : (Register.x2 == Register.x7) = false := by decide
-private theorem reg_ne_x2_x10 : (Register.x2 == Register.x10) = false := by decide
-private theorem reg_ne_x2_x11 : (Register.x2 == Register.x11) = false := by decide
-private theorem reg_ne_x2_x12 : (Register.x2 == Register.x12) = false := by decide
-private theorem reg_ne_x5_x1 : (Register.x5 == Register.x1) = false := by decide
-private theorem reg_ne_x5_x2 : (Register.x5 == Register.x2) = false := by decide
-private theorem reg_ne_x5_x6 : (Register.x5 == Register.x6) = false := by decide
-private theorem reg_ne_x5_x7 : (Register.x5 == Register.x7) = false := by decide
-private theorem reg_ne_x5_x10 : (Register.x5 == Register.x10) = false := by decide
-private theorem reg_ne_x5_x11 : (Register.x5 == Register.x11) = false := by decide
-private theorem reg_ne_x5_x12 : (Register.x5 == Register.x12) = false := by decide
-private theorem reg_ne_x6_x1 : (Register.x6 == Register.x1) = false := by decide
-private theorem reg_ne_x6_x2 : (Register.x6 == Register.x2) = false := by decide
-private theorem reg_ne_x6_x5 : (Register.x6 == Register.x5) = false := by decide
-private theorem reg_ne_x6_x7 : (Register.x6 == Register.x7) = false := by decide
-private theorem reg_ne_x6_x10 : (Register.x6 == Register.x10) = false := by decide
-private theorem reg_ne_x6_x11 : (Register.x6 == Register.x11) = false := by decide
-private theorem reg_ne_x6_x12 : (Register.x6 == Register.x12) = false := by decide
-private theorem reg_ne_x7_x1 : (Register.x7 == Register.x1) = false := by decide
-private theorem reg_ne_x7_x2 : (Register.x7 == Register.x2) = false := by decide
-private theorem reg_ne_x7_x5 : (Register.x7 == Register.x5) = false := by decide
-private theorem reg_ne_x7_x6 : (Register.x7 == Register.x6) = false := by decide
-private theorem reg_ne_x7_x10 : (Register.x7 == Register.x10) = false := by decide
-private theorem reg_ne_x7_x11 : (Register.x7 == Register.x11) = false := by decide
-private theorem reg_ne_x7_x12 : (Register.x7 == Register.x12) = false := by decide
-private theorem reg_ne_x10_x1 : (Register.x10 == Register.x1) = false := by decide
-private theorem reg_ne_x10_x2 : (Register.x10 == Register.x2) = false := by decide
-private theorem reg_ne_x10_x5 : (Register.x10 == Register.x5) = false := by decide
-private theorem reg_ne_x10_x6 : (Register.x10 == Register.x6) = false := by decide
-private theorem reg_ne_x10_x7 : (Register.x10 == Register.x7) = false := by decide
-private theorem reg_ne_x10_x11 : (Register.x10 == Register.x11) = false := by decide
-private theorem reg_ne_x10_x12 : (Register.x10 == Register.x12) = false := by decide
-private theorem reg_ne_x11_x1 : (Register.x11 == Register.x1) = false := by decide
-private theorem reg_ne_x11_x2 : (Register.x11 == Register.x2) = false := by decide
-private theorem reg_ne_x11_x5 : (Register.x11 == Register.x5) = false := by decide
-private theorem reg_ne_x11_x6 : (Register.x11 == Register.x6) = false := by decide
-private theorem reg_ne_x11_x7 : (Register.x11 == Register.x7) = false := by decide
-private theorem reg_ne_x11_x10 : (Register.x11 == Register.x10) = false := by decide
-private theorem reg_ne_x11_x12 : (Register.x11 == Register.x12) = false := by decide
-private theorem reg_ne_x12_x1 : (Register.x12 == Register.x1) = false := by decide
-private theorem reg_ne_x12_x2 : (Register.x12 == Register.x2) = false := by decide
-private theorem reg_ne_x12_x5 : (Register.x12 == Register.x5) = false := by decide
-private theorem reg_ne_x12_x6 : (Register.x12 == Register.x6) = false := by decide
-private theorem reg_ne_x12_x7 : (Register.x12 == Register.x7) = false := by decide
-private theorem reg_ne_x12_x10 : (Register.x12 == Register.x10) = false := by decide
-private theorem reg_ne_x12_x11 : (Register.x12 == Register.x11) = false := by decide
 
 -- ============================================================================
 -- Bridge: reg_agree after a register insert (32x32 case split)
@@ -117,7 +54,7 @@ theorem reg_agree_after_insert (sSail : SailState) (sRv : MachineState)
       | (cases r <;>
           simp only [sailRegVal, Std.ExtDHashMap.get?_insert_self,
             Std.ExtDHashMap.get?_insert, MachineState.getReg,
-            beq_self_eq_true, ite_true, decide_true, decide_false, ite_false,
+            beq_self_eq_true, ite_true,
             show (Register.x0 == Register.x0) = true from rfl] <;>
           (first
             | rfl
@@ -309,7 +246,7 @@ theorem sra_sail_equiv (sRv : MachineState) (sSail : SailState)
       StateRel (execInstrBr sRv (.SRA rd rs1 rs2)) sSail' := by
   unfold execute_RTYPE
   simp only [runSail_bind, runSail_rX_bits_of_stateRel hrel, runSail_pure,
-    shift_bits_right_arith, Sail.BitVec.extractLsb, BitVec.toNatInt, Int.toNat_emod]
+    shift_bits_right_arith, Sail.BitVec.extractLsb, BitVec.toNatInt]
   simp only [runSail_wX_bits_of_reg]
   exact ⟨_, rfl, ⟨
     fun r => by simpa [execInstrBr, MachineState.setPC]
@@ -339,7 +276,7 @@ theorem lui_sail_equiv (sRv : MachineState) (sSail : SailState)
         = some (RETIRE_SUCCESS, sSail') ∧
       StateRel (execInstrBr sRv (.LUI rd imm)) sSail' := by
   unfold execute_UTYPE
-  simp only [runSail_bind, runSail_pure, lui_equiv]
+  simp only [runSail_bind, runSail_pure]
   simp only [runSail_wX_bits_of_reg]
   exact ⟨_, rfl, ⟨
     fun r => by simpa [execInstrBr, MachineState.setPC, ← lui_equiv]
@@ -366,8 +303,7 @@ theorem addiw_sail_equiv (sRv : MachineState) (sSail : SailState)
         = some (RETIRE_SUCCESS, sSail') ∧
       StateRel (execInstrBr sRv (.ADDIW rd rs1 imm)) sSail' := by
   unfold execute_ADDIW
-  simp only [runSail_bind, runSail_rX_bits_of_stateRel hrel, runSail_pure,
-    addiw_equiv]
+  simp only [runSail_bind, runSail_rX_bits_of_stateRel hrel, runSail_pure]
   simp only [runSail_wX_bits_of_reg]
   exact ⟨_, rfl, ⟨
     fun r => by simpa [execInstrBr, MachineState.setPC, signExtend12, ← addiw_equiv]
@@ -392,7 +328,7 @@ theorem auipc_sail_equiv (sRv : MachineState) (sSail : SailState)
         = some (RETIRE_SUCCESS, sSail') ∧
       StateRel (execInstrBr sRv (.AUIPC rd imm)) sSail' := by
   unfold execute_UTYPE
-  simp only [runSail_bind, runSail_pure, runSail_get_arch_pc h_pc, lui_equiv]
+  simp only [runSail_bind, runSail_pure, runSail_get_arch_pc h_pc]
   simp only [runSail_wX_bits_of_reg]
   exact ⟨_, rfl, ⟨
     fun r => by simpa [execInstrBr, MachineState.setPC, ← lui_equiv]

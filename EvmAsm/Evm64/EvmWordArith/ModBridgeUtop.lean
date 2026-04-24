@@ -95,15 +95,37 @@ theorem val256_lt_of_b3_bound (b0 b1 b2 b3 : Word) {s : Nat} (hs : s ≤ 64)
     (hb3_bound : b3.toNat < 2 ^ (64 - s)) :
     val256 b0 b1 b2 b3 < 2 ^ (256 - s) := by
   unfold val256
-  have h0 := b0.isLt
-  have h1 := b1.isLt
-  have h2 := b2.isLt
   -- val256 b ≤ (2^64 - 1)(1 + 2^64 + 2^128) + (2^(64-s) - 1) * 2^192 = 2^(256-s) - 1.
   have hpow : (2 : Nat) ^ (256 - s) = 2 ^ (64 - s) * 2 ^ 192 := by
     rw [← pow_add, show (64 - s) + 192 = 256 - s from by omega]
   rw [hpow]
-  nlinarith [h0, h1, h2, hb3_bound,
+  nlinarith [b0.isLt, b1.isLt, b2.isLt, hb3_bound,
              (show 0 < 2 ^ (64 - s) from by positivity)]
+
+/-- **Key bound for call-addback MOD denorm adapter**: under the CLZ top-limb
+    bound on `b3`, the modulus `val256(a) mod val256(b)` times `2^s` stays
+    below `2^256`. This guarantees no "5th limb overflow" (`u4_out = 0`)
+    post-addback, ensuring the 4-limb denormalization captures the full
+    remainder without truncation.
+
+    Combines `val256_lt_of_b3_bound` with `Nat.mod_lt`, then uses pow
+    decomposition. -/
+theorem val256_mod_mul_pow_lt_pow256_of_b3_bound
+    (a0 a1 a2 a3 b0 b1 b2 b3 : Word) {s : Nat} (hs : s ≤ 64)
+    (hbnz : val256 b0 b1 b2 b3 > 0)
+    (hb3_bound : b3.toNat < 2 ^ (64 - s)) :
+    val256 a0 a1 a2 a3 % val256 b0 b1 b2 b3 * 2 ^ s < 2 ^ 256 := by
+  have hb_bound : val256 b0 b1 b2 b3 < 2 ^ (256 - s) :=
+    val256_lt_of_b3_bound b0 b1 b2 b3 hs hb3_bound
+  have hmod_lt : val256 a0 a1 a2 a3 % val256 b0 b1 b2 b3 < val256 b0 b1 b2 b3 :=
+    Nat.mod_lt _ hbnz
+  have hmod_bound : val256 a0 a1 a2 a3 % val256 b0 b1 b2 b3 < 2 ^ (256 - s) := by
+    omega
+  have hpow : (2 : Nat) ^ 256 = 2 ^ (256 - s) * 2 ^ s := by
+    rw [← pow_add, show (256 - s) + s = 256 from by omega]
+  rw [hpow]
+  have hspos : 0 < 2 ^ s := Nat.pos_of_ne_zero (by positivity)
+  exact (Nat.mul_lt_mul_right hspos).mpr hmod_bound
 
 /-- Fully abstract Nat-level `uTop = c3_n` lemma. Takes all relevant
     Euclidean equations and bounds as plain Nat facts — lets the caller
