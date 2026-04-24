@@ -979,10 +979,35 @@ theorem div128Quot_qHat_plus_one_times_b3_gt_u_normal
   apply qHat_plus_one_gt_u_via_tight_phases _ _ _ _ _ _ hb3'_pos h_two_step h_ph1_tight
   exact h_q_true_0_le
 
+/-- **A2.S2.narrow_u4_tight_un21**: narrow u4 (Phase 1a corrects) AND
+    un21 < dHi*2^32 (Phase 2 Case A works). The compensation comes
+    from Phase 1a's q1c = q1 - 1 getting propagated. -/
+theorem div128Quot_qHat_plus_one_times_b3_gt_u_narrow_u4_tight_un21
+    (u4 u3 b3' : Word)
+    (hb3'_ge : b3'.toNat ≥ 2^63)
+    (hu4_lt_b3' : u4.toNat < b3'.toNat)
+    (hu4_ge : u4.toNat ≥ (b3' >>> (32 : BitVec 6).toNat).toNat * 2^32)
+    (h_un21_lt : (algorithmUn21 u4 u3 b3').toNat <
+      (b3' >>> (32 : BitVec 6).toNat).toNat * 2^32) :
+    ((div128Quot u4 u3 b3').toNat + 1) * b3'.toNat >
+      u4.toNat * 2^64 + u3.toNat := by
+  sorry
+
+/-- **A2.S2.narrow_u4_wide_un21**: narrow u4 (Phase 1a corrects) AND
+    un21 ≥ dHi*2^32. Compounded compensation from Phase 1a + Phase 2. -/
+theorem div128Quot_qHat_plus_one_times_b3_gt_u_narrow_u4_wide_un21
+    (u4 u3 b3' : Word)
+    (hb3'_ge : b3'.toNat ≥ 2^63)
+    (hu4_lt_b3' : u4.toNat < b3'.toNat)
+    (hu4_ge : u4.toNat ≥ (b3' >>> (32 : BitVec 6).toNat).toNat * 2^32)
+    (h_un21_ge : (algorithmUn21 u4 u3 b3').toNat ≥
+      (b3' >>> (32 : BitVec 6).toNat).toNat * 2^32) :
+    ((div128Quot u4 u3 b3').toNat + 1) * b3'.toNat >
+      u4.toNat * 2^64 + u3.toNat := by
+  sorry
+
 /-- **A2.S2.narrow_u4**: compensation case when `u4 ≥ dHi*2^32`.
-    Phase 1a's trial quotient q1 ≥ 2^32 triggers Phase 1a correction
-    (q1c = q1 - 1). Analysis of the resulting q1'/un21 is needed.
-    **TODO**: ~120 lines. -/
+    Dispatches to tight-un21 / wide-un21 sub-cases. -/
 theorem div128Quot_qHat_plus_one_times_b3_gt_u_narrow_u4
     (u4 u3 b3' : Word)
     (hb3'_ge : b3'.toNat ≥ 2^63)
@@ -990,7 +1015,12 @@ theorem div128Quot_qHat_plus_one_times_b3_gt_u_narrow_u4
     (hu4_ge : u4.toNat ≥ (b3' >>> (32 : BitVec 6).toNat).toNat * 2^32) :
     ((div128Quot u4 u3 b3').toNat + 1) * b3'.toNat >
       u4.toNat * 2^64 + u3.toNat := by
-  sorry
+  by_cases h : (algorithmUn21 u4 u3 b3').toNat <
+      (b3' >>> (32 : BitVec 6).toNat).toNat * 2^32
+  · exact div128Quot_qHat_plus_one_times_b3_gt_u_narrow_u4_tight_un21
+      u4 u3 b3' hb3'_ge hu4_lt_b3' hu4_ge h
+  · exact div128Quot_qHat_plus_one_times_b3_gt_u_narrow_u4_wide_un21
+      u4 u3 b3' hb3'_ge hu4_lt_b3' hu4_ge (by omega)
 
 /-- **A2.S2.wide_un21_narrow**: Phase 2 narrow-range false-alarm
     (un21 ∈ [dHi*2^32, vTop)). Phase 1 still tight. Phase 2 may
