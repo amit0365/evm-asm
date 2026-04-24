@@ -307,8 +307,23 @@ theorem algorithmQ1Prime_le_q_true_1_plus_two
   exact Nat.le_trans h_q1'_le (by omega)
 
 /-- **Bridge sub-A** (Knuth-B upper at Phase 1b): under standard hcall,
-    `algorithmQ1Prime.toNat ≤ (u4*2^32 + div_un1) / b3' + 1`. This is the
-    "off by at most 1" Knuth-B upper bound in wrapped form. -/
+    `algorithmQ1Prime.toNat ≤ (u4*2^32 + div_un1) / b3' + 1`. The
+    "off by at most 1" Knuth-B upper bound in wrapped form.
+
+    **Proof plan** (not yet filled):
+    1. Apply `div128Quot_first_round_post` → `q1c*dHi + rhatc = u4`.
+    2. Apply `div128Quot_q1c_ge_q_true_1` → `q_true_1 ≤ q1c`.
+    3. Use `_plus_two` result transported to q1c (via q1c ≤ q1' or
+       via trial_quotient_le + q1c ≤ q1) → q1c ≤ q_true_1 + 2.
+    4. Apply `half_round_overestimate_le_one` with q := q1c.toNat,
+       r := rhatc.toNat → q' := (if q*dLo > r*2^32+un1 then q-1 else q)
+       satisfies q' ≤ q_true_1 + 1.
+    5. Bridge Word-level ult `BitVec.ult rhatUn1 (q1c*dLo)` to Nat-level
+       `q1c.toNat * dLo.toNat > rhatUn1.toNat = rhatc.toNat * 2^32
+       + div_un1.toNat` (requires `rhatc < 2^32` via
+       `div128Quot_rhatc_lt_pow32_of_uHi_lt_dHi_mul_pow32` under
+       `u4 < dHi*2^32`, and no-wrap for `q1c*dLo` via
+       `div128Quot_q1c_dLo_no_wrap`). -/
 theorem algorithmQ1Prime_le_q_true_1_plus_one
     (u4 u3 b3' : Word)
     (hb3'_ge : b3'.toNat ≥ 2^63)
