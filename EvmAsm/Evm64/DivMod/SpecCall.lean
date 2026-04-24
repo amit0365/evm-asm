@@ -1412,7 +1412,6 @@ theorem denorm_limbN_eq_mod_of_overestimate_getLimbN
     the max trial `signExtend12 4095`. -/
 theorem output_slot_to_evmWordIs_mod_n4_call_skip_denorm
     (sp : Word) (a b : EvmWord)
-    (hbnz : b ≠ 0)
     (hb3nz : b.getLimbN 3 ≠ 0)
     (hshift_nz : (clzResult (b.getLimbN 3)).1 ≠ 0)
     (hborrow : isSkipBorrowN4CallEvm a b)
@@ -1436,7 +1435,6 @@ theorem output_slot_to_evmWordIs_mod_n4_call_skip_denorm
      ((sp + 48) ↦ₘ ((ms.2.2.1 >>> shift) ||| (ms.2.2.2.1 <<< (64 - shift)))) **
      ((sp + 56) ↦ₘ (ms.2.2.2.1 >>> shift))) =
     evmWordIs (sp + 32) (EvmWord.mod a b) := by
-  intro shift antiShift b3' b2' b1' b0' u3 u2 u1 u0 u4 qHat ms
   -- Shift bounds.
   have hshift_le_63 := clzResult_fst_toNat_le (b.getLimbN 3)
   have hshift_pos : 0 < (clzResult (b.getLimbN 3)).1.toNat := by
@@ -1481,17 +1479,12 @@ theorem output_slot_to_evmWordIs_mod_n4_call_skip_denorm
       (((b.getLimbN 3) <<< (clzResult (b.getLimbN 3)).1.toNat) |||
        ((b.getLimbN 2) >>> (64 - (clzResult (b.getLimbN 3)).1.toNat))))
     hshift_pos hshift_lt_64 hb3_bound hT3 hsem hb3nz hc3_le
-  -- Setup is complete: `hT3` gives `qHat.toNat * val256(b) ≤ val256(a)`,
-  -- `hsem` gives `val256(a) / val256(b) ≤ qHat.toNat`, `hc3_le` gives
-  -- `c3_n ≤ u4 = a.getLimbN 3 >>> (64 - shift)`. `h_limbs` then gives
-  -- the four per-limb equalities `(EvmWord.mod a b).getLimbN k = denorm_slot_k`.
-  -- The remaining gap: the adapter's goal uses let-bound `ms` (which is
-  -- `mulsubN4 qHat b0' b1' ...` where b0'..b3', u0..u3 are themselves
-  -- let-bound using `shift`/`antiShift`). After `rw [shift = s]`, only
-  -- `shift` unfolds; `ms`'s internals stay fvar-bound. Matching `ms.1`
-  -- against `h_limbs.1`'s explicit `mulsubN4 qHat (b0 <<< s) ...` form
-  -- requires full zeta through the intro'd let-chain. Defer to next iter.
-  sorry
+  -- The goal is a big let-chain. Zeta-reduce everything to the explicit
+  -- form, then rewrite `% 64` and `antiShift` to the un-modded Nat form
+  -- so the helper's output matches.
+  simp only [hmod_eq, hanti_toNat_mod]
+  exact (evmWordIs_sp32_limbs_eq sp (EvmWord.mod a b) _ _ _ _
+    h_limbs.1 h_limbs.2.1 h_limbs.2.2.1 h_limbs.2.2.2).symm
 
 /-- **EVM-stack-level MOD spec on the n=4 call+skip sub-path.**
 
@@ -1501,8 +1494,7 @@ theorem output_slot_to_evmWordIs_mod_n4_call_skip_denorm
 
     Reduces to `evm_mod_n4_full_call_skip_stack_pre_spec_bundled` + a
     postcondition reshape via `output_slot_to_evmWordIs_mod_n4_call_skip_denorm`
-    and `mod_n4_call_skip_stack_weaken`. Currently depends on one sorry
-    inside the denorm adapter (see above). -/
+    and `mod_n4_call_skip_stack_weaken`. -/
 theorem evm_mod_n4_call_skip_stack_spec (sp base : Word)
     (a b : EvmWord) (v5 v6 v7 v10 v11 : Word)
     (q0 q1 q2 q3 u0 u1 u2 u3 u4 u5 u6 u7
@@ -1519,12 +1511,44 @@ theorem evm_mod_n4_call_skip_stack_spec (sp base : Word)
          q0 q1 q2 q3 u0 u1 u2 u3 u4 u5 u6 u7
          shiftMem nMem jMem retMem dMem dloMem scratch_un0)
       (modN4CallSkipStackPost sp a b) := by
-  -- TODO(#66 follow-up): the scaffolded reshape below requires aligning
-  -- `shift` as `Word` (from `fullModN4CallSkipPost_unfold`) with `Nat`
-  -- (from `output_slot_to_evmWordIs_mod_n4_call_skip_denorm`) via
-  -- `hmod_eq`/`hanti_toNat_mod` normalizations — see the max-skip MOD
-  -- stack spec proof (Spec.lean:1442) for the template. Deferred until
-  -- the denorm adapter sorry above is filled in.
-  sorry
+  have h_pre := evm_mod_n4_full_call_skip_stack_pre_spec_bundled sp base a b
+    v5 v6 v7 v10 v11 q0 q1 q2 q3 u0 u1 u2 u3 u4 u5 u6 u7
+    nMem shiftMem jMem retMem dMem dloMem scratch_un0
+    hbnz hb3nz hshift_nz halign hbltu hborrow
+  -- Shift bound normalizations (mirror max-skip pattern).
+  have hshift_le_63 := clzResult_fst_toNat_le (b.getLimbN 3)
+  have hshift_pos : 0 < (clzResult (b.getLimbN 3)).1.toNat := by
+    by_contra h
+    push Not at h
+    apply hshift_nz
+    apply BitVec.eq_of_toNat_eq
+    rw [show (0 : Word).toNat = 0 from rfl]; omega
+  have hmod_eq : (clzResult (b.getLimbN 3)).1.toNat % 64 =
+      (clzResult (b.getLimbN 3)).1.toNat := by omega
+  have h0se12 : signExtend12 (0 : BitVec 12) - (clzResult (b.getLimbN 3)).1 =
+      -((clzResult (b.getLimbN 3)).1) := by rw [signExtend12_0]; simp
+  have hanti_toNat_mod :
+      (signExtend12 (0 : BitVec 12) - (clzResult (b.getLimbN 3)).1).toNat % 64 =
+      64 - (clzResult (b.getLimbN 3)).1.toNat := by
+    rw [h0se12, BitVec.toNat_neg]
+    have : ((clzResult (b.getLimbN 3)).1).toNat ≤ 2^64 := by
+      have := ((clzResult (b.getLimbN 3)).1).isLt; omega
+    omega
+  -- Denorm adapter: fold the four output slots into `evmWordIs (sp+32) mod`.
+  have h_slot := output_slot_to_evmWordIs_mod_n4_call_skip_denorm sp a b
+    hb3nz hshift_nz hborrow hsem
+  refine cpsTriple_weaken (fun _ hp => hp) ?_ h_pre
+  intro h hq
+  simp only [fullModN4CallSkipPost_unfold, denormModPost_unfold] at hq
+  apply mod_n4_call_skip_stack_weaken sp a b h
+  rw [show evmWordIs sp a =
+      ((sp ↦ₘ a.getLimbN 0) ** ((sp + 8) ↦ₘ a.getLimbN 1) **
+       ((sp + 16) ↦ₘ a.getLimbN 2) ** ((sp + 24) ↦ₘ a.getLimbN 3))
+      from evmWordIs_sp_unfold]
+  rw [show evmWordIs (sp + 32) (EvmWord.mod a b) = _ from h_slot.symm]
+  rw [divScratchValuesCall_unfold, divScratchValues_unfold]
+  rw [word_add_zero] at hq
+  simp only [hmod_eq, hanti_toNat_mod] at hq ⊢
+  xperm_hyp hq
 
 end EvmAsm.Evm64
