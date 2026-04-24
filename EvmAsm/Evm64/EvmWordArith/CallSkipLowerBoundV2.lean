@@ -707,6 +707,44 @@ theorem algorithmUn21_L3b_q_true_1_V_le_u
     (u / V) * V ≤ u := by
   exact Nat.div_mul_le_self u V
 
+/-- **_of_tight sub-case "exact" L2.a**: Phase 1b Euclidean invariant at u4.
+    Wraps `div128Quot_phase1b_post`. After Phase 1b, the corrected pair
+    `(q1', rhat')` satisfies `q1'.toNat * dHi.toNat + rhat'.toNat = u4.toNat`. -/
+theorem algorithmUn21_L2a_phase1b_euclidean_at_u4
+    (u4 u3 b3' : Word)
+    (hb3'_ge : b3'.toNat ≥ 2^63) :
+    let dHi := b3' >>> (32 : BitVec 6).toNat
+    let dLo := (b3' <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat
+    let div_un1 := u3 >>> (32 : BitVec 6).toNat
+    let q1 := rv64_divu u4 dHi
+    let rhat := u4 - q1 * dHi
+    let hi1 := q1 >>> (32 : BitVec 6).toNat
+    let q1c := if hi1 = 0 then q1 else q1 + signExtend12 4095
+    let rhatc := if hi1 = 0 then rhat else rhat + dHi
+    let qDlo := q1c * dLo
+    let rhatUn1 := (rhatc <<< (32 : BitVec 6).toNat) ||| div_un1
+    let q1' := if BitVec.ult rhatUn1 qDlo then q1c + signExtend12 4095 else q1c
+    let rhat' := if BitVec.ult rhatUn1 qDlo then rhatc + dHi else rhatc
+    q1'.toNat * dHi.toNat + rhat'.toNat = u4.toNat := by
+  intro dHi dLo div_un1 q1 rhat hi1 q1c rhatc qDlo rhatUn1 q1' rhat'
+  have h_dHi_lt : dHi.toNat < 2^32 := by
+    show (b3' >>> (32 : BitVec 6).toNat).toNat < 2^32
+    rw [BitVec.toNat_ushiftRight, AddrNorm.bv6_toNat_32, Nat.shiftRight_eq_div_pow]
+    have : b3'.toNat < 2^64 := b3'.isLt
+    exact Nat.div_lt_of_lt_mul (by omega)
+  have h_dHi_ne : dHi ≠ 0 := by
+    intro heq
+    have h : (b3' >>> (32 : BitVec 6).toNat).toNat = 0 := by
+      change dHi.toNat = 0; rw [heq]; rfl
+    rw [BitVec.toNat_ushiftRight, AddrNorm.bv6_toNat_32, Nat.shiftRight_eq_div_pow] at h
+    have : b3'.toNat ≥ 2^63 := hb3'_ge
+    omega
+  have h_post : q1c.toNat * dHi.toNat + rhatc.toNat = u4.toNat :=
+    div128Quot_first_round_post u4 dHi h_dHi_ne h_dHi_lt
+  have h_rhatc_lt : rhatc.toNat < 2 * dHi.toNat :=
+    div128Quot_rhatc_lt_2dHi u4 dHi h_dHi_ne h_dHi_lt
+  exact div128Quot_phase1b_post u4 dHi q1c rhatc dLo rhatUn1 h_dHi_lt h_post h_rhatc_lt
+
 /-- **_of_tight sub-case "exact" L1.c**: word-level subtraction unfolds via
     `BitVec.toNat_sub`. `algorithmUn21 = cu_rhat_un1 - cu_q1_dlo` directly,
     so `un21.toNat = (2^64 - cu_q1_dlo.toNat + cu_rhat_un1.toNat) % 2^64`. -/
