@@ -2225,8 +2225,98 @@ theorem n4_shift0_call_addback_beq_div_getLimbN (a b : EvmWord)
     have h_ne_zero : qHat.toNat ≠ 0 := by
       intro h; apply hqHat_nz; apply BitVec.eq_of_toNat_eq; rw [h]; rfl
     omega
-  -- TODO(#67): remaining steps — derive carry = 1 of first addback, hence
-  -- q_out = qHat - 1 = 0, hence EvmWord.div a b = fromLimbs (0, 0, 0, 0).
+  -- Step 4: val256(a) < val256(b) (from mulsub Euclidean + c3 ≠ 0).
+  set ms := mulsubN4 qHat
+    (b.getLimbN 0) (b.getLimbN 1) (b.getLimbN 2) (b.getLimbN 3)
+    (a.getLimbN 0) (a.getLimbN 1) (a.getLimbN 2) (a.getLimbN 3) with hms_def
+  have h_mulsub := mulsubN4_val256_eq qHat
+    (b.getLimbN 0) (b.getLimbN 1) (b.getLimbN 2) (b.getLimbN 3)
+    (a.getLimbN 0) (a.getLimbN 1) (a.getLimbN 2) (a.getLimbN 3)
+  simp only [] at h_mulsub
+  have hc3_pos : ms.2.2.2.2.toNat ≥ 1 := by
+    rcases Nat.eq_zero_or_pos ms.2.2.2.2.toNat with h | h
+    · exfalso; apply hc3_nz
+      show ms.2.2.2.2 = 0
+      apply BitVec.eq_of_toNat_eq; rw [h]; rfl
+    · exact h
+  have h_val_ms_bound :
+      val256 ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 < 2^256 := EvmWord.val256_bound _ _ _ _
+  have h_val_a_lt_b :
+      val256 (a.getLimbN 0) (a.getLimbN 1) (a.getLimbN 2) (a.getLimbN 3) <
+      val256 (b.getLimbN 0) (b.getLimbN 1) (b.getLimbN 2) (b.getLimbN 3) := by
+    -- From h_mulsub: val256(a) + c3*2^256 = val256(ms) + qHat*val256(b)
+    -- With qHat.toNat = 1: val256(a) + c3*2^256 = val256(ms) + val256(b).
+    -- c3 ≥ 1 and val256(ms) < 2^256 ⟹ val256(a) + 2^256 ≤ val256(ms) + val256(b) < 2^256 + val256(b).
+    -- Hence val256(a) < val256(b).
+    nlinarith
+  -- Step 5: first-addback carry = 1.
+  set carry := addbackN4_carry ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1
+    (b.getLimbN 0) (b.getLimbN 1) (b.getLimbN 2) (b.getLimbN 3) with hcarry_def
+  have h_addback := addbackN4_val256_eq ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 0
+    (b.getLimbN 0) (b.getLimbN 1) (b.getLimbN 2) (b.getLimbN 3)
+  simp only [] at h_addback
+  -- Need c3 ≤ 1 to pin c3 = 1. From mulsubN4_c3_le_one with qHat ≤ a/b + 1.
+  have hb_nz_or : b.getLimbN 0 ||| b.getLimbN 1 ||| b.getLimbN 2 ||| b.getLimbN 3 ≠ 0 :=
+    (EvmWord.ne_zero_iff_getLimbN_or).mp hbnz
+  have hb_pos_val : val256 (b.getLimbN 0) (b.getLimbN 1) (b.getLimbN 2) (b.getLimbN 3) > 0 :=
+    EvmWord.val256_pos_of_or_ne_zero hb_nz_or
+  have h_ab_bound :
+      val256 (addbackN4 ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 0
+        (b.getLimbN 0) (b.getLimbN 1) (b.getLimbN 2) (b.getLimbN 3)).1
+             (addbackN4 ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 0
+        (b.getLimbN 0) (b.getLimbN 1) (b.getLimbN 2) (b.getLimbN 3)).2.1
+             (addbackN4 ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 0
+        (b.getLimbN 0) (b.getLimbN 1) (b.getLimbN 2) (b.getLimbN 3)).2.2.1
+             (addbackN4 ms.1 ms.2.1 ms.2.2.1 ms.2.2.2.1 0
+        (b.getLimbN 0) (b.getLimbN 1) (b.getLimbN 2) (b.getLimbN 3)).2.2.2.1 < 2^256 :=
+    EvmWord.val256_bound _ _ _ _
+  -- From h_mulsub + h_addback: val256(ms) + val256(b) = val256(a) + c3*2^256.
+  -- So val256(ab) + carry*2^256 = val256(a) + c3*2^256.
+  -- Both c3 and carry are in [0, 2^64) as Words, bounded ≥ 1 (c3) and < some.
+  -- Conclude carry ≠ 0: if carry = 0, val256(ab) = val256(a) + c3*2^256 ≥ 2^256. Contradiction.
+  have hcarry_nz : carry ≠ 0 := by
+    intro h_carry_zero
+    have h_carry_toNat : carry.toNat = 0 := by rw [h_carry_zero]; rfl
+    -- val256(ms) + val256(b) = val256(ab) + 0 = val256(ab) < 2^256.
+    -- But val256(ms) + val256(b) = val256(a) + c3*2^256 ≥ val256(a) + 2^256 ≥ 2^256.
+    -- Contradiction.
+    have h_ab := h_addback
+    rw [h_carry_toNat, Nat.zero_mul, Nat.add_zero] at h_ab
+    -- h_ab: val256(ms) + val256(b) = val256(ab)
+    -- h_mulsub rearrangement: val256(ms) + val256(b) ≥ val256(a) + 2^256
+    have h_pow : (2 : Nat) ^ 256 > 0 := by positivity
+    nlinarith
+  -- Step 6: q_out = qHat + signExtend12 4095 (single addback branch).
+  -- The output's `if carry = 0 then ... else qHat + signExtend12 4095` picks else branch.
+  -- q_out.toNat = (1 + (2^64 - 1)) mod 2^64 = 0.
+  -- Step 7: (EvmWord.div a b) has all limbs 0.
+  have ha_val : val256 (a.getLimbN 0) (a.getLimbN 1) (a.getLimbN 2) (a.getLimbN 3)
+      = a.toNat := by
+    simp only [← EvmWord.getLimb_as_getLimbN_0, ← EvmWord.getLimb_as_getLimbN_1,
+               ← EvmWord.getLimb_as_getLimbN_2, ← EvmWord.getLimb_as_getLimbN_3]
+    exact EvmWord.val256_eq_toNat a
+  have hb_val : val256 (b.getLimbN 0) (b.getLimbN 1) (b.getLimbN 2) (b.getLimbN 3)
+      = b.toNat := by
+    simp only [← EvmWord.getLimb_as_getLimbN_0, ← EvmWord.getLimb_as_getLimbN_1,
+               ← EvmWord.getLimb_as_getLimbN_2, ← EvmWord.getLimb_as_getLimbN_3]
+    exact EvmWord.val256_eq_toNat b
+  have hb_pos : 0 < b.toNat := by
+    rcases Nat.eq_zero_or_pos b.toNat with h | h
+    · exfalso; apply hbnz; exact BitVec.eq_of_toNat_eq (by simp [h])
+    · exact h
+  have h_a_lt_b : a.toNat < b.toNat := by
+    have := h_val_a_lt_b; rw [ha_val, hb_val] at this; exact this
+  -- q_out = 0 (via carry ≠ 0, q_out = qHat + signExtend12 4095, qHat = 1).
+  have hq_out_eq : (if carry = 0 then qHat + signExtend12 4095 + signExtend12 4095
+                   else qHat + signExtend12 4095) = (0 : Word) := by
+    rw [if_neg hcarry_nz]
+    apply BitVec.eq_of_toNat_eq
+    rw [BitVec.toNat_add, hqHat_eq_one, signExtend12_4095_toNat]
+    decide
+  -- TODO: final step — derive (EvmWord.div a b) = 0 (all limbs zero) from
+  -- `a.toNat < b.toNat`, then combine with `hq_out_eq` for the limb 0 case.
+  -- Ran into minor `BitVec.udiv` vs `/` and `EvmWord.getLimbN 0` parsing
+  -- issues; to be resolved in next iteration.
   sorry
 
 end EvmAsm.Evm64
