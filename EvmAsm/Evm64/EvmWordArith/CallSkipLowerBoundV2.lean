@@ -307,7 +307,8 @@ theorem algorithmQ1Prime_le_q_true_1_plus_two
   exact Nat.le_trans h_q1'_le (by omega)
 
 /-- **_plus_one sub-step 1**: Phase 1a Euclidean at Nat level. Under
-    hcall, `q1c.toNat * dHi.toNat + rhatc.toNat = u4.toNat`. -/
+    hcall, `q1c.toNat * dHi.toNat + rhatc.toNat = u4.toNat`.
+    Direct wrap of `div128Quot_first_round_post`. -/
 theorem algorithmQ1Prime_step1_phase1a_euclidean
     (u4 u3 b3' : Word)
     (hb3'_ge : b3'.toNat ≥ 2^63)
@@ -320,7 +321,18 @@ theorem algorithmQ1Prime_step1_phase1a_euclidean
     let q1c := if hi1 = 0 then q1 else q1 + signExtend12 4095
     let rhatc := if hi1 = 0 then rhat else rhat + dHi
     q1c.toNat * dHi.toNat + rhatc.toNat = u4.toNat := by
-  sorry
+  have h_dHi_ne : (b3' >>> (32 : BitVec 6).toNat) ≠ 0 := by
+    intro heq
+    have h : (b3' >>> (32 : BitVec 6).toNat).toNat = 0 := by rw [heq]; rfl
+    rw [BitVec.toNat_ushiftRight, AddrNorm.bv6_toNat_32, Nat.shiftRight_eq_div_pow] at h
+    have : b3'.toNat ≥ 2^63 := hb3'_ge
+    omega
+  have h_dHi_lt : (b3' >>> (32 : BitVec 6).toNat).toNat < 2^32 := by
+    rw [BitVec.toNat_ushiftRight, AddrNorm.bv6_toNat_32, Nat.shiftRight_eq_div_pow]
+    have : b3'.toNat < 2^64 := b3'.isLt
+    exact Nat.div_lt_of_lt_mul (by omega)
+  exact div128Quot_first_round_post u4 (b3' >>> (32 : BitVec 6).toNat)
+    h_dHi_ne h_dHi_lt
 
 /-- **_plus_one sub-step 2**: KB-LB3 wrapped. `q_true_1 ≤ q1c.toNat`. -/
 theorem algorithmQ1Prime_step2_q1c_ge_q_true_1
