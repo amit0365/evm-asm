@@ -363,7 +363,18 @@ theorem algorithmQ1Prime_step4_rhatc_lt_pow32
     let hi1 := q1 >>> (32 : BitVec 6).toNat
     let rhatc := if hi1 = 0 then rhat else rhat + dHi
     rhatc.toNat < 2^32 := by
-  sorry
+  have h_dHi_ne : (b3' >>> (32 : BitVec 6).toNat) ≠ 0 := by
+    intro heq
+    have h : (b3' >>> (32 : BitVec 6).toNat).toNat = 0 := by rw [heq]; rfl
+    rw [BitVec.toNat_ushiftRight, AddrNorm.bv6_toNat_32, Nat.shiftRight_eq_div_pow] at h
+    have : b3'.toNat ≥ 2^63 := hb3'_ge
+    omega
+  have h_dHi_lt : (b3' >>> (32 : BitVec 6).toNat).toNat < 2^32 := by
+    rw [BitVec.toNat_ushiftRight, AddrNorm.bv6_toNat_32, Nat.shiftRight_eq_div_pow]
+    have : b3'.toNat < 2^64 := b3'.isLt
+    exact Nat.div_lt_of_lt_mul (by omega)
+  exact div128Quot_rhatc_lt_pow32_of_uHi_lt_dHi_mul_pow32 u4
+    (b3' >>> (32 : BitVec 6).toNat) h_dHi_ne hu4_lt_dHi_pow32 h_dHi_lt
 
 /-- **_plus_one sub-step 5**: Word↔Nat ult bridge. Under hcall,
     `BitVec.ult rhatUn1 (q1c*dLo) ↔ q1c.toNat * dLo.toNat
