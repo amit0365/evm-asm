@@ -186,6 +186,24 @@ theorem div128Quot_qHat_plus_one_times_b3_gt_u_normal
       (b3' >>> (32 : BitVec 6).toNat).toNat * 2^32 +
       ((b3' <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat).toNat :=
     div128Quot_vTop_decomp b3'
+  -- u3 halfword split: u3 = div_un1 * 2^32 + div_un0
+  -- where div_un1 = u3 >>> 32 (high 32 bits), div_un0 = u3 % 2^32 (low 32 bits).
+  have h_u3_decomp : u3.toNat =
+      (u3 >>> (32 : BitVec 6).toNat).toNat * 2^32 +
+      ((u3 <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat).toNat :=
+    div128Quot_vTop_decomp u3
+  -- div_un1 and div_un0 bounds.
+  have h_div_un1_lt :
+      (u3 >>> (32 : BitVec 6).toNat).toNat < 2^32 := by
+    rw [BitVec.toNat_ushiftRight, AddrNorm.bv6_toNat_32, Nat.shiftRight_eq_div_pow]
+    have : u3.toNat < 2^64 := u3.isLt
+    exact Nat.div_lt_of_lt_mul (by omega)
+  have h_div_un0_lt :
+      ((u3 <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat).toNat < 2^32 := by
+    rw [BitVec.toNat_ushiftRight, AddrNorm.bv6_toNat_32, Nat.shiftRight_eq_div_pow]
+    have : (u3 <<< (32 : BitVec 6).toNat : Word).toNat < 2^64 :=
+      (u3 <<< (32 : BitVec 6).toNat : Word).isLt
+    exact Nat.div_lt_of_lt_mul (by omega)
   sorry
 
 /-- **A2.S2**: Case "compensation" — when `un21 ≥ dHi*2^32`. Includes
