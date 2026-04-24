@@ -170,13 +170,13 @@ theorem isMaxTrialN4_false_of_shift_nz (a3 b2 b3 : Word)
     ¬ isMaxTrialN4 a3 b2 b3 := by
   unfold isMaxTrialN4
   simp only [not_not]
-  have h_shift_le := clzResult_fst_toNat_le b3
   have h_shift_pos : 1 ≤ (clzResult b3).1.toNat := by
     rcases Nat.eq_zero_or_pos (clzResult b3).1.toNat with h | h
     · exfalso; apply hshift_nz
       exact BitVec.eq_of_toNat_eq (by simp [h])
     · exact h
-  have h_u4 := u_top_lt_pow63_of_shift_nz a3 (clzResult b3).1 h_shift_pos h_shift_le
+  have h_u4 := u_top_lt_pow63_of_shift_nz a3 (clzResult b3).1 h_shift_pos
+    (clzResult_fst_toNat_le b3)
   have h_b3_shifted := b3_shifted_ge_pow63 hb3nz
   have h_or_ge : (((b3 <<< ((clzResult b3).1.toNat % 64))) |||
                    (b2 >>> ((signExtend12 (0 : BitVec 12) -
