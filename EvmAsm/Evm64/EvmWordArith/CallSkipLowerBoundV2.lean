@@ -145,6 +145,36 @@ theorem algorithmQ0Prime_unfold (u4 u3 b3' : Word) :
        div128Quot_phase2b_q0' q0c rhat2c dLo div_un0) := by
   delta algorithmQ0Prime; rfl
 
+/-- **Phase 2 tight, wrapped**: Phase 2 tight specialized to our inputs
+    and folded into the `algorithmQ0Prime` wrapper. Removes the q0'
+    syntactic-mismatch blocker for downstream composition. -/
+theorem algorithmQ0Prime_ge_q_true_0
+    (u4 u3 b3' : Word)
+    (hdHi_ge : (b3' >>> (32 : BitVec 6).toNat).toNat ≥ 2^31)
+    (hdHi_lt : (b3' >>> (32 : BitVec 6).toNat).toNat < 2^32)
+    (hdLo_lt :
+      ((b3' <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat).toNat < 2^32)
+    (h_un21_lt_dHi_pow32 :
+      (algorithmUn21 u4 u3 b3').toNat <
+      (b3' >>> (32 : BitVec 6).toNat).toNat * 2^32)
+    (h_un21_lt_vTop :
+      (algorithmUn21 u4 u3 b3').toNat <
+      (b3' >>> (32 : BitVec 6).toNat).toNat * 2^32 +
+      ((b3' <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat).toNat) :
+    ((algorithmUn21 u4 u3 b3').toNat * 2^32 +
+      ((u3 <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat).toNat) /
+      ((b3' >>> (32 : BitVec 6).toNat).toNat * 2^32 +
+      ((b3' <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat).toNat) ≤
+    (algorithmQ0Prime u4 u3 b3').toNat := by
+  rw [algorithmQ0Prime_unfold]
+  exact
+    div128Quot_q0_prime_ge_q_true_0_of_un21_lt_dHi_mul_pow32
+      (algorithmUn21 u4 u3 b3')
+      (b3' >>> (32 : BitVec 6).toNat)
+      ((b3' <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat)
+      u3
+      hdHi_ge hdHi_lt hdLo_lt h_un21_lt_dHi_pow32 h_un21_lt_vTop
+
 /-- Named unfold for `algorithmQ1Prime`. -/
 theorem algorithmQ1Prime_unfold (u4 u3 b3' : Word) :
     algorithmQ1Prime u4 u3 b3' =
