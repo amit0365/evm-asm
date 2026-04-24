@@ -187,6 +187,27 @@ theorem algorithmQ1Prime_ge_q_true_1
       u3
       hdHi_ge hdHi_lt hdLo_lt hu4_lt_dHi_pow32 hu4_lt_vTop
 
+/-- **div128Quot decomposition, wrapped**: `div128Quot.toNat = algorithmQ1Prime.toNat
+    * 2^32 + algorithmQ0Prime.toNat` under hcall + `q0' < 2^32`. Folds
+    `div128Quot_toNat_eq_strict`'s internal q0'/q1' into the wrappers. -/
+theorem div128Quot_toNat_eq_algorithmQ1_Q0
+    (u4 u3 b3' : Word)
+    (hdHi_ge : (b3' >>> (32 : BitVec 6).toNat).toNat ≥ 2^31)
+    (hdHi_lt : (b3' >>> (32 : BitVec 6).toNat).toNat < 2^32)
+    (hdLo_lt :
+      ((b3' <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat).toNat < 2^32)
+    (hu4_lt_vTop :
+      u4.toNat < (b3' >>> (32 : BitVec 6).toNat).toNat * 2^32 +
+      ((b3' <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat).toNat)
+    (hq0_lt : (algorithmQ0Prime u4 u3 b3').toNat < 2^32) :
+    (div128Quot u4 u3 b3').toNat =
+      (algorithmQ1Prime u4 u3 b3').toNat * 2^32 +
+      (algorithmQ0Prime u4 u3 b3').toNat := by
+  -- TODO: the `rw [algorithmQ*_unfold]` approach fails because the
+  -- let-chain shapes in `div128Quot_toNat_eq_strict`'s conclusion and
+  -- the rewritten wrappers don't align. Need a different tactic.
+  sorry
+
 /-- **Phase 2 tight, wrapped**: Phase 2 tight specialized to our inputs
     and folded into the `algorithmQ0Prime` wrapper. Removes the q0'
     syntactic-mismatch blocker for downstream composition. -/
