@@ -364,6 +364,18 @@ theorem lo32_toNat_lt_pow32 (a : Word) :
   rw [Nat.mul_div_cancel _ (by positivity : 0 < (2:Nat)^32)]
   exact Nat.mod_lt _ (by positivity)
 
+/-- Structural bound: `(a >>> 32).toNat < 2^32` (high 32 bits of a fit in 32 bits). -/
+theorem hi32_toNat_lt_pow32 (a : Word) :
+    (a >>> (32 : BitVec 6).toNat).toNat < 2^32 := by
+  rw [show (32 : BitVec 6).toNat = 32 from by decide]
+  rw [BitVec.toNat_ushiftRight, Nat.shiftRight_eq_div_pow]
+  have h : a.toNat < 2^64 := a.isLt
+  have hpow : (2:Nat)^64 = 2^32 * 2^32 := by decide
+  have h1 : a.toNat / 2^32 < 2^32 := by
+    rw [hpow] at h
+    exact Nat.div_lt_iff_lt_mul (by positivity) |>.mpr h
+  exact h1
+
 -- TODO: composed q0_le_one (uses dHi_ne/dHi_ge at lines 429/421) will be
 -- added after dHi_ne in the file layout.
 
@@ -416,7 +428,7 @@ theorem div128Quot_shift0_q0_le_one (a3 b3 : Word)
     (hb3_ge : b3.toNat ≥ 2^63) :
     (let dHi := b3 >>> (32 : BitVec 6).toNat
      let dLo := (b3 <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat
-     let div_un1 := (a3 <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat
+     let div_un1 := a3 >>> (32 : BitVec 6).toNat
      let q1 := rv64_divu (0 : Word) dHi
      let rhat := (0 : Word) - q1 * dHi
      let hi1 := q1 >>> (32 : BitVec 6).toNat
@@ -433,9 +445,9 @@ theorem div128Quot_shift0_q0_le_one (a3 b3 : Word)
   simp only []
   rw [div128Quot_shift0_q0_eq (b3 >>> (32 : BitVec 6).toNat)
         ((b3 <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat)
-        ((a3 <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat)
+        (a3 >>> (32 : BitVec 6).toNat)
         (div128Quot_shift0_dHi_ne b3 hb3_ge)]
-  exact rv64_divu_lo32_hi32_le_one _ _ (lo32_toNat_lt_pow32 a3)
+  exact rv64_divu_lo32_hi32_le_one _ _ (hi32_toNat_lt_pow32 a3)
     (div128Quot_shift0_dHi_ge b3 hb3_ge)
 
 /-- Generic: if `x.toNat ≤ 1`, then `(x >>> 32).toNat = 0` (hi-32 bits are 0). -/
@@ -454,7 +466,7 @@ theorem div128Quot_shift0_hi2_eq_zero (a3 b3 : Word)
     (hb3_ge : b3.toNat ≥ 2^63) :
     (let dHi := b3 >>> (32 : BitVec 6).toNat
      let dLo := (b3 <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat
-     let div_un1 := (a3 <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat
+     let div_un1 := a3 >>> (32 : BitVec 6).toNat
      let q1 := rv64_divu (0 : Word) dHi
      let rhat := (0 : Word) - q1 * dHi
      let hi1 := q1 >>> (32 : BitVec 6).toNat
@@ -515,7 +527,7 @@ theorem div128Quot_shift0_q0c_eq_q0 (a3 b3 : Word)
     (hb3_ge : b3.toNat ≥ 2^63) :
     (let dHi := b3 >>> (32 : BitVec 6).toNat
      let dLo := (b3 <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat
-     let div_un1 := (a3 <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat
+     let div_un1 := a3 >>> (32 : BitVec 6).toNat
      let q1 := rv64_divu (0 : Word) dHi
      let rhat := (0 : Word) - q1 * dHi
      let hi1 := q1 >>> (32 : BitVec 6).toNat
@@ -541,7 +553,7 @@ theorem div128Quot_shift0_q0c_toNat_le_one (a3 b3 : Word)
     (hb3_ge : b3.toNat ≥ 2^63) :
     (let dHi := b3 >>> (32 : BitVec 6).toNat
      let dLo := (b3 <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat
-     let div_un1 := (a3 <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat
+     let div_un1 := a3 >>> (32 : BitVec 6).toNat
      let q1 := rv64_divu (0 : Word) dHi
      let rhat := (0 : Word) - q1 * dHi
      let hi1 := q1 >>> (32 : BitVec 6).toNat
@@ -568,9 +580,8 @@ theorem div128Quot_shift0_q0_prime_toNat_le_one (a3 b3 : Word)
     (hb3_ge : b3.toNat ≥ 2^63) :
     (let dHi := b3 >>> (32 : BitVec 6).toNat
      let dLo := (b3 <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat
-     let div_un1 := (a3 <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat
-     let div_un0 := ((0 : Word) <<< (32 : BitVec 6).toNat) >>>
-                    (32 : BitVec 6).toNat
+     let div_un1 := a3 >>> (32 : BitVec 6).toNat
+     let div_un0 := (a3 <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat
      let q1 := rv64_divu (0 : Word) dHi
      let rhat := (0 : Word) - q1 * dHi
      let hi1 := q1 >>> (32 : BitVec 6).toNat
@@ -605,12 +616,13 @@ theorem div128Quot_shift0_le_one (a3 b3 : Word)
     (hb3_ge : b3.toNat ≥ 2^63)
     (hb3_nz : b3 ≠ 0) :
     (div128Quot (0 : Word) a3 b3).toNat ≤ 1 := by
-  -- Blocker: the existing shift=0 helpers use `div_un1 := (a3 <<< 32) >>> 32`
-  -- (low 32 bits of a3), but `div128Quot` actually binds
-  -- `div_un1 := uLo >>> 32 = a3 >>> 32` (high 32 bits). The chain identities
-  -- (e.g. `un21 = div_un1`) are polymorphic in div_un1, but the specialized
-  -- `_le_one` et al composites pin the wrong choice. Next iteration:
-  -- re-specialize with `a3 >>> 32` and close via `q1'_zero + zero_or`.
+  -- Refactored composites now use `div_un1 := a3 >>> 32` (matching div128Quot).
+  -- After `unfold div128Quot` + `rw [h_q1'_zero]` + zero_or cleanup, the goal
+  -- reduces to `q0'.toNat ≤ 1`, which should match `h_q0'_le_one` verbatim —
+  -- but unification still reports a type mismatch (pretty printer times out,
+  -- can't see the exact shape diff). Next iteration: inspect goal state via
+  -- `show`-based normalization or extract matching lemma with explicit
+  -- identifier re-binding.
   sorry
 
 /-- If `div128Quot 0 a3 b3 = 0` under shift=0, then a3 < b3. -/
