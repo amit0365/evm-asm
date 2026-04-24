@@ -438,6 +438,16 @@ theorem div128Quot_shift0_q0_le_one (a3 b3 : Word)
   exact rv64_divu_lo32_hi32_le_one _ _ (lo32_toNat_lt_pow32 a3)
     (div128Quot_shift0_dHi_ge b3 hb3_ge)
 
+/-- Generic: if `x.toNat ≤ 1`, then `(x >>> 32).toNat = 0` (hi-32 bits are 0). -/
+theorem hi32_eq_zero_of_toNat_le_one (x : Word) (hx : x.toNat ≤ 1) :
+    (x >>> (32 : BitVec 6).toNat).toNat = 0 := by
+  rw [show (32 : BitVec 6).toNat = 32 from by decide]
+  rw [BitVec.toNat_ushiftRight, Nat.shiftRight_eq_div_pow]
+  have : x.toNat < 2^32 := by
+    have : (2 : Nat) ^ 32 > 1 := by decide
+    omega
+  exact Nat.div_eq_of_lt this
+
 /-- Upper bound: under shift=0 (b3 ≥ 2^63), `div128Quot 0 a3 b3` is at most 1.
 
     Proof sketch:
