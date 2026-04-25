@@ -138,6 +138,59 @@ theorem algorithmUn21_L4_qdLo_le_rhat_div_un1
   have h_qV_expand : q * (dHi * 2^32 + dLo) = q * dHi * 2^32 + q * dLo := by ring
   linarith [h_q_V_le, h_qV_expand, h_u_mul]
 
+/-- **L4_plus_one helper**: pure-Nat algebraic identity for the off-by-one case.
+    When q is one more than the true quotient (so q*V > u, but (q-1)*V ≤ u),
+    the relation `q*dLo = rhat*2^32 + div_un1 + V - r` holds, where
+    `V = dHi*2^32 + dLo`, `r = u%V`, and `rhat` satisfies `q*dHi + rhat = u4`.
+
+    This is the analog of L4_qdLo_le for the overshoot case. Used to compute
+    `2^64 - q*dLo` in the L4_plus_one body. -/
+theorem algorithmUn21_L4_qdLo_eq_plus_V_minus_r
+    (u4 div_un1 dHi dLo q rhat : Nat)
+    (hq_pos : q ≥ 1)
+    (hV_pos : dHi * 2^32 + dLo ≥ 1)
+    (h_eucl : q * dHi + rhat = u4)
+    (h_q_V_gt : q * (dHi * 2^32 + dLo) > u4 * 2^32 + div_un1)
+    (h_qm1_V_le : (q - 1) * (dHi * 2^32 + dLo) ≤ u4 * 2^32 + div_un1) :
+    q * dLo + (u4 * 2^32 + div_un1) % (dHi * 2^32 + dLo) =
+      rhat * 2^32 + div_un1 + (dHi * 2^32 + dLo) := by
+  -- Set V := dHi*2^32 + dLo, u := u4*2^32 + div_un1, r := u % V.
+  -- Strategy: from h_eucl, u = q*dHi*2^32 + rhat*2^32 + div_un1.
+  -- And q*V = q*dHi*2^32 + q*dLo. So q*V - u = q*dLo - rhat*2^32 - div_un1.
+  -- Also r = u - (q-1)*V (from h_qm1_V_le being the unique quotient bound).
+  -- So q*V = (q-1)*V + V = u - r + V, giving q*V - u = V - r.
+  -- Combining: q*dLo - rhat*2^32 - div_un1 = V - r.
+  -- Equivalently: q*dLo + r = rhat*2^32 + div_un1 + V.
+  have h_qV : q * (dHi * 2^32 + dLo) = q * dHi * 2^32 + q * dLo := by ring
+  have h_u_decomp : u4 * 2^32 + div_un1 = q * dHi * 2^32 + rhat * 2^32 + div_un1 := by
+    have h1 : (q * dHi + rhat) * 2^32 = u4 * 2^32 := by rw [h_eucl]
+    linarith [h1, Nat.add_mul (q * dHi) rhat (2^32)]
+  have h_qm1_eq_div : q - 1 = (u4 * 2^32 + div_un1) / (dHi * 2^32 + dLo) := by
+    have h_lt : (u4 * 2^32 + div_un1) / (dHi * 2^32 + dLo) < q :=
+      (Nat.div_lt_iff_lt_mul (by linarith [hV_pos])).mpr h_q_V_gt
+    have h_le : q - 1 ≤ (u4 * 2^32 + div_un1) / (dHi * 2^32 + dLo) :=
+      (Nat.le_div_iff_mul_le (by linarith [hV_pos])).mpr h_qm1_V_le
+    omega
+  have hr_value : u4 * 2^32 + div_un1 =
+      (q - 1) * (dHi * 2^32 + dLo) + (u4 * 2^32 + div_un1) % (dHi * 2^32 + dLo) := by
+    rw [h_qm1_eq_div]
+    have h_mod := Nat.div_add_mod (u4 * 2^32 + div_un1) (dHi * 2^32 + dLo)
+    linarith [h_mod, Nat.mul_comm (dHi * 2^32 + dLo)
+      ((u4 * 2^32 + div_un1) / (dHi * 2^32 + dLo))]
+  have h_q_eq_qm1_plus_1 : q = (q - 1) + 1 := by omega
+  have h_qV_eq : q * (dHi * 2^32 + dLo) = (q - 1) * (dHi * 2^32 + dLo) + (dHi * 2^32 + dLo) := by
+    conv_lhs => rw [h_q_eq_qm1_plus_1]; rw [Nat.add_mul, Nat.one_mul]
+  -- From h_qV_eq + hr_value: q*V = u + V - r.
+  -- From h_qV: q*V = q*dHi*2^32 + q*dLo.
+  -- So q*dHi*2^32 + q*dLo = u + V - r.
+  -- And u = q*dHi*2^32 + rhat*2^32 + div_un1.
+  -- So q*dHi*2^32 + q*dLo = q*dHi*2^32 + rhat*2^32 + div_un1 + V - r.
+  -- Cancel q*dHi*2^32: q*dLo = rhat*2^32 + div_un1 + V - r.
+  -- Equivalently: q*dLo + r = rhat*2^32 + div_un1 + V.
+  have h_r_lt_V : (u4 * 2^32 + div_un1) % (dHi * 2^32 + dLo) < dHi * 2^32 + dLo :=
+    Nat.mod_lt _ (by linarith [hV_pos])
+  linarith [h_qV, h_u_decomp, hr_value, h_qV_eq]
+
 /-- **L4 helper**: pure-Nat — under the standard preconditions,
     `(u4*2^32 + div_un1) % V = rhat*2^32 + div_un1 - q*dLo`.
 
