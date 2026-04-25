@@ -400,11 +400,114 @@ theorem div128Quot_qHat_plus_one_times_b3_gt_u_wide_un21_wide
   -- Phase 1 false-alarmed (from contrapositive bridge).
   have h_q1_eq := algorithmQ1Prime_eq_q_true_1_plus_one_of_un21_ge_vTop u4 u3 b3'
     hb3'_ge hu4_lt_b3' hu4_lt h_un21_ge_vTop
-  -- KEY MISSING SUB-LEMMA: div128Quot.toNat ≥ algorithmQ1Prime.toNat * 2^32.
-  -- This is the OR-shift lower bound: for x = (a << 32) ||| b with a < 2^32,
-  -- x.toNat ≥ a.toNat * 2^32 (regardless of b).
-  -- Combined with q1' = q_true_1 + 1, this gives a lower bound on div128Quot.
-  sorry
+  -- Standard preconditions.
+  have hb3'_pos : 0 < b3'.toNat := by have : b3'.toNat ≥ 2^63 := hb3'_ge; omega
+  have h_dHi_ge : (b3' >>> (32 : BitVec 6).toNat).toNat ≥ 2^31 := by
+    rw [BitVec.toNat_ushiftRight, AddrNorm.bv6_toNat_32, Nat.shiftRight_eq_div_pow]
+    have : b3'.toNat ≥ 2^63 := hb3'_ge; omega
+  have h_dHi_lt : (b3' >>> (32 : BitVec 6).toNat).toNat < 2^32 := by
+    rw [BitVec.toNat_ushiftRight, AddrNorm.bv6_toNat_32, Nat.shiftRight_eq_div_pow]
+    have : b3'.toNat < 2^64 := b3'.isLt
+    exact Nat.div_lt_of_lt_mul (by omega)
+  have h_dLo_lt :
+      ((b3' <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat).toNat < 2^32 := by
+    rw [BitVec.toNat_ushiftRight, AddrNorm.bv6_toNat_32, Nat.shiftRight_eq_div_pow]
+    have : (b3' <<< (32 : BitVec 6).toNat : Word).toNat < 2^64 :=
+      (b3' <<< (32 : BitVec 6).toNat : Word).isLt
+    exact Nat.div_lt_of_lt_mul (by omega)
+  have h_div_un0_lt :
+      ((u3 <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat).toNat < 2^32 := by
+    rw [BitVec.toNat_ushiftRight, AddrNorm.bv6_toNat_32, Nat.shiftRight_eq_div_pow]
+    have : (u3 <<< (32 : BitVec 6).toNat : Word).toNat < 2^64 :=
+      (u3 <<< (32 : BitVec 6).toNat : Word).isLt
+    exact Nat.div_lt_of_lt_mul (by omega)
+  have h_div_un1_lt :
+      (u3 >>> (32 : BitVec 6).toNat).toNat < 2^32 := by
+    rw [BitVec.toNat_ushiftRight, AddrNorm.bv6_toNat_32, Nat.shiftRight_eq_div_pow]
+    have : u3.toNat < 2^64 := u3.isLt
+    exact Nat.div_lt_of_lt_mul (by omega)
+  have h_v_eq : b3'.toNat =
+      (b3' >>> (32 : BitVec 6).toNat).toNat * 2^32 +
+      ((b3' <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat).toNat :=
+    div128Quot_vTop_decomp b3'
+  have h_u3_decomp : u3.toNat =
+      (u3 >>> (32 : BitVec 6).toNat).toNat * 2^32 +
+      ((u3 <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat).toNat :=
+    div128Quot_vTop_decomp u3
+  have h_u4_lt_vTop : u4.toNat <
+      (b3' >>> (32 : BitVec 6).toNat).toNat * 2^32 +
+      ((b3' <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat).toNat :=
+    Nat.lt_of_lt_of_le hu4_lt (Nat.le_add_right _ _)
+  -- algorithmQ1Prime.toNat < 2^32.
+  have h_q1_lt : (algorithmQ1Prime u4 u3 b3').toNat < 2^32 := by
+    rw [algorithmQ1Prime_unfold]
+    exact div128Quot_q1_prime_lt_pow32 u4 (b3' >>> (32 : BitVec 6).toNat)
+      ((b3' <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat) u3
+      h_dHi_ge h_dHi_lt h_dLo_lt h_u4_lt_vTop
+  -- div128Quot expressed via the algorithm wrappers.
+  have h_div128_eq : div128Quot u4 u3 b3' =
+      (algorithmQ1Prime u4 u3 b3') <<< (32 : BitVec 6).toNat |||
+      algorithmQ0Prime u4 u3 b3' := by
+    unfold div128Quot
+    rw [algorithmQ1Prime_unfold, algorithmQ0Prime_unfold]
+    simp only [algorithmUn21_unfold]
+  -- OR-shift lower bound: div128Quot.toNat ≥ q1' * 2^32.
+  have h_div128_ge : (div128Quot u4 u3 b3').toNat ≥ (algorithmQ1Prime u4 u3 b3').toNat * 2^32 := by
+    rw [h_div128_eq]
+    exact div128Quot_or_shift_ge _ _ h_q1_lt
+  -- Substitute q1' = q_true_1 + 1.
+  set q_true_1 := (u4.toNat * 2^32 + (u3 >>> (32 : BitVec 6).toNat).toNat) / b3'.toNat
+    with hq_true_1_def
+  rw [h_q1_eq] at h_div128_ge
+  -- Now h_div128_ge: div128Quot.toNat ≥ (q_true_1 + 1) * 2^32.
+  -- Apply two_step_div_identity (after rewriting u3 = a1*2^32 + a0).
+  set a1 := (u3 >>> (32 : BitVec 6).toNat).toNat with ha1_def
+  set a0 := ((u3 <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat).toNat with ha0_def
+  have h_u3_eq : u3.toNat = a1 * 2^32 + a0 := h_u3_decomp
+  have h_two_step_raw :=
+    two_step_div_identity u4.toNat a1 a0 b3'.toNat hb3'_pos
+  have h_two_step : (u4.toNat * 2^64 + u3.toNat) / b3'.toNat =
+      ((u4.toNat * 2^32 + a1) / b3'.toNat) * 2^32 +
+      (((u4.toNat * 2^32 + a1) % b3'.toNat * 2^32 + a0) / b3'.toNat) := by
+    rw [h_u3_eq]
+    have h_combine : u4.toNat * 2^64 + (a1 * 2^32 + a0) =
+        u4.toNat * 2^64 + a1 * 2^32 + a0 := by ring
+    rw [h_combine]
+    exact h_two_step_raw
+  -- q_true_0 < 2^32: numerator ≤ b3'*2^32 - 1, so q_true_0 ≤ 2^32 - 1.
+  have h_q_true_0_lt : ((u4.toNat * 2^32 + (u3 >>> (32 : BitVec 6).toNat).toNat) %
+      b3'.toNat * 2^32 +
+      ((u3 <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat).toNat) / b3'.toNat < 2^32 := by
+    apply Nat.div_lt_of_lt_mul
+    have h_mod_lt : (u4.toNat * 2^32 + (u3 >>> (32 : BitVec 6).toNat).toNat) % b3'.toNat <
+        b3'.toNat := Nat.mod_lt _ hb3'_pos
+    nlinarith
+  -- q_true_full < (q_true_1 + 1) * 2^32 ≤ div128Quot.toNat.
+  have h_q_true_0_lt' : ((u4.toNat * 2^32 + a1) % b3'.toNat * 2^32 + a0) / b3'.toNat < 2^32 := by
+    show ((u4.toNat * 2^32 + (u3 >>> (32 : BitVec 6).toNat).toNat) % b3'.toNat * 2^32 +
+        ((u3 <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat).toNat) / b3'.toNat < 2^32
+    exact h_q_true_0_lt
+  have h_q_true_full_lt : (u4.toNat * 2^64 + u3.toNat) / b3'.toNat < (q_true_1 + 1) * 2^32 := by
+    rw [h_two_step]
+    have h_qt1 : q_true_1 = (u4.toNat * 2^32 + a1) / b3'.toNat := hq_true_1_def
+    nlinarith [h_q_true_0_lt']
+  -- (q_true_full + 1) * b3' > u (Nat.div semantics).
+  have h_qhat_plus_one : ((u4.toNat * 2^64 + u3.toNat) / b3'.toNat + 1) * b3'.toNat >
+      u4.toNat * 2^64 + u3.toNat := by
+    have h_dam := Nat.div_add_mod (u4.toNat * 2^64 + u3.toNat) b3'.toNat
+    have h_mod_lt : (u4.toNat * 2^64 + u3.toNat) % b3'.toNat < b3'.toNat :=
+      Nat.mod_lt _ hb3'_pos
+    nlinarith
+  -- Combine: div128Quot.toNat ≥ (q_true_1 + 1) * 2^32 > q_true_full.
+  have h_div128_gt : (div128Quot u4 u3 b3').toNat > (u4.toNat * 2^64 + u3.toNat) / b3'.toNat :=
+    Nat.lt_of_lt_of_le h_q_true_full_lt h_div128_ge
+  -- (div128Quot.toNat + 1) * b3' ≥ (q_true_full + 2) * b3' > u.
+  have h_div128_succ : (div128Quot u4 u3 b3').toNat + 1 ≥
+      (u4.toNat * 2^64 + u3.toNat) / b3'.toNat + 2 := by omega
+  have h_step1 : ((div128Quot u4 u3 b3').toNat + 1) * b3'.toNat ≥
+      ((u4.toNat * 2^64 + u3.toNat) / b3'.toNat + 2) * b3'.toNat :=
+    Nat.mul_le_mul_right _ h_div128_succ
+  linarith [h_step1, h_qhat_plus_one]
 
 /-- **A2.S2.wide_un21**: compensation case when `u4 < dHi*2^32` but
     `un21 ≥ dHi*2^32`. Dispatches to narrow/wide sub-cases. -/
