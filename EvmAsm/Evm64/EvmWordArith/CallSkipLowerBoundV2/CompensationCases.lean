@@ -704,7 +704,6 @@ theorem algorithmQ0Prime_ge_q_true_0_of_q1_prime_eq_q_true_1_narrow_wide_lt_pow6
 theorem div128Quot_rhat2c_lt_pow32_of_un21_mod_dHi_plus_dHi_lt_pow32
     (un21 dHi : Word)
     (hdHi_ne : dHi ≠ 0)
-    (hdHi_lt : dHi.toNat < 2^32)
     (h : un21.toNat % dHi.toNat + dHi.toNat < 2^32) :
     let q0 := rv64_divu un21 dHi
     let rhat2 := un21 - q0 * dHi
@@ -712,10 +711,53 @@ theorem div128Quot_rhat2c_lt_pow32_of_un21_mod_dHi_plus_dHi_lt_pow32
     let rhat2c := if hi2 = 0 then rhat2 else rhat2 + dHi
     rhat2c.toNat < 2^32 := by
   intro q0 rhat2 hi2 rhat2c
-  let _ := hdHi_ne
-  let _ := hdHi_lt
-  let _ := h
-  sorry
+  -- Derived facts.
+  have hdHi_pos : 0 < dHi.toNat := by
+    rcases Nat.eq_zero_or_pos dHi.toNat with h0 | h0
+    · exfalso; apply hdHi_ne; exact BitVec.eq_of_toNat_eq (by simp [h0])
+    · exact h0
+  have hq0_eq : q0.toNat = un21.toNat / dHi.toNat := rv64_divu_toNat un21 dHi hdHi_ne
+  -- Word-level mul has no overflow: q0 * dHi.toNat ≤ un21.toNat < 2^64.
+  have h_mul_le : q0.toNat * dHi.toNat ≤ un21.toNat := by
+    rw [hq0_eq]; exact Nat.div_mul_le_self _ _
+  have h_q0_dHi_eq : (q0 * dHi).toNat = q0.toNat * dHi.toNat := by
+    rw [BitVec.toNat_mul]
+    apply Nat.mod_eq_of_lt
+    have : un21.toNat < 2^64 := un21.isLt
+    omega
+  -- rhat2.toNat = un21.toNat - q0.toNat * dHi.toNat = un21 mod dHi.
+  have h_eq : un21.toNat - q0.toNat * dHi.toNat = un21.toNat % dHi.toNat := by
+    rw [hq0_eq]
+    have h_dam : dHi.toNat * (un21.toNat / dHi.toNat) + un21.toNat % dHi.toNat = un21.toNat :=
+      Nat.div_add_mod _ _
+    have h_comm : dHi.toNat * (un21.toNat / dHi.toNat) =
+        (un21.toNat / dHi.toNat) * dHi.toNat := Nat.mul_comm _ _
+    have h_mod_lt : un21.toNat % dHi.toNat < dHi.toNat := Nat.mod_lt _ hdHi_pos
+    omega
+  have hrhat2_eq : rhat2.toNat = un21.toNat % dHi.toNat := by
+    show (un21 - q0 * dHi).toNat = _
+    rw [BitVec.toNat_sub, h_q0_dHi_eq]
+    have h_un21_lt : un21.toNat < 2^64 := un21.isLt
+    -- Goal: (2^64 - q0.toNat * dHi.toNat + un21.toNat) % 2^64 = un21.toNat % dHi.toNat
+    rw [show 2^64 - q0.toNat * dHi.toNat + un21.toNat =
+            (un21.toNat - q0.toNat * dHi.toNat) + 2^64 from by omega]
+    rw [Nat.add_mod_right, h_eq]
+    apply Nat.mod_eq_of_lt
+    have h_mod_lt : un21.toNat % dHi.toNat < dHi.toNat := Nat.mod_lt _ hdHi_pos
+    omega
+  -- Case-split on hi2 = 0 to compute rhat2c.toNat.
+  show rhat2c.toNat < 2^32
+  by_cases h_hi2 : hi2 = 0
+  · -- rhat2c = rhat2 = un21 mod dHi < dHi < 2^32.
+    have h_rhat2c_unfold : rhat2c = rhat2 := if_pos h_hi2
+    rw [h_rhat2c_unfold, hrhat2_eq]
+    have : un21.toNat % dHi.toNat < dHi.toNat := Nat.mod_lt _ hdHi_pos
+    omega
+  · -- rhat2c = rhat2 + dHi (no wrap since un21%dHi + dHi < 2^32 ≤ 2^64).
+    have h_rhat2c_unfold : rhat2c = rhat2 + dHi := if_neg h_hi2
+    rw [h_rhat2c_unfold, BitVec.toNat_add, hrhat2_eq]
+    rw [Nat.mod_eq_of_lt (by omega)]
+    exact h
 
 /-- **Un21-level Phase 2 tightness for rhat2c < 2^32** (TODO).
 
@@ -766,7 +808,7 @@ theorem div128Quot_q0_prime_ge_q_true_0_of_rhat2c_lt_pow32_un21_level
       intro heq; rw [heq] at hdHi_ge; simp at hdHi_ge
     have h_rhat2c_lt_word : rhat2c.toNat < 2^32 :=
       div128Quot_rhat2c_lt_pow32_of_un21_mod_dHi_plus_dHi_lt_pow32
-        un21 dHi hdHi_ne hdHi_lt h_rhat2c_lt
+        un21 dHi hdHi_ne h_rhat2c_lt
     let _ := h_un21_ge_pow63
     exact div128Quot_q1_prime_ge_q_true_1_small_rhatc un21 dHi dLo
       (uLo <<< (32 : BitVec 6).toNat)
