@@ -473,11 +473,28 @@ theorem algorithmUn21_lt_vTop_of_q1_prime_not_overshoot_hu4_lt
     hb3'_ge hu4_lt_b3' hu4_lt h_un21_ge
   omega
 
-/-- **A2.S2 un21 < vTop under no-overshoot, wide-u4 case** (TODO).
+/-- **A2.S2 un21 < vTop under no-overshoot, wide-u4 case** (TODO — likely
+    requires a different proof strategy).
 
-    Under `u4 ≥ dHi*2^32` (Phase 1a corrects), the contrapositive bridge
-    is unavailable (it requires `u4 < dHi*2^32`). Closing this requires a
-    separate analysis of the algorithm's wide-u4 Phase 1 branches. -/
+    Under `u4 ≥ dHi*2^32` (Phase 1a corrects), the algorithm's behavior
+    is highly constrained:
+    - Phase 1a sets q1c = 2^32 - 1 (since hi1 ≠ 0).
+    - Phase 1b may correct to q1' ∈ {2^32 - 2, 2^32 - 1}.
+    - From `u4 < b3'` (hu4_lt_b3'), q_true_1 < 2^32; combined with
+      `u4 ≥ dHi*2^32`, q_true_1 is large (≥ ~2^32 - 2).
+    - Under `q1' ≤ q_true_1` (hypothesis), the *exact* case `q1' = q_true_1`
+      gives un21 = r1_math < vTop. ✓
+    - The *undershoot* case `q1' = q_true_1 - 1` (specifically q1' = 2^32 - 2,
+      q_true_1 = 2^32 - 1) gives un21 = b3' + r1_math ≥ vTop. ✗
+
+    **The un21 < vTop invariant is FALSE in the wide-u4 undershoot
+    sub-case**, which means our q0' < 2^32 + OR-shift halfword strategy
+    can't close the global compensation goal in that regime. The
+    undershoot sub-case will need a different decomposition for the
+    final closure (e.g., directly bounding div128Quot.toNat via the
+    `(_ ||| _).toNat ≥ _` Nat OR lower bound on q0' alone).
+
+    Stubbed pending the alternative-strategy redesign. -/
 theorem algorithmUn21_lt_vTop_of_q1_prime_not_overshoot_hu4_ge
     (u4 u3 b3' : Word)
     (hb3'_ge : b3'.toNat ≥ 2^63)
