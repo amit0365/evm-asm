@@ -561,37 +561,40 @@ theorem algorithmQ1Prime_ge_q_true_1_in_wide_u4_q1_eq_pow32_loose
   have h_q1' := algorithmQ1Prime_ge_q1_dHi_minus_two u4 u3 b3' hb3'_ge
   omega
 
-/-- **Wide-u4 no-undershoot, sub-case B.2** (TODO — genuine boundary +
-    Word truncation analysis).
+/-- **Wide-u4 no-undershoot, sub-case B.2** (TODO — KEY ARCHITECTURAL ISSUE).
 
-    Under Case B AND q_true_1 = 2^32 - 1 exactly: q1c = q_true_1 = 2^32 - 1.
-    Phase 1b's ult check `(rhatc << 32 | div_un1) < q1c * dLo` determines
-    whether q1' = q1c (no undershoot) or q1' = q1c - 1 (undershoot).
+    **DISCOVERY (2026-04-25)**: this sub-case's claim is GENUINELY FALSE
+    in a specific Word-truncation sub-regime.
 
-    **Math analysis (un-truncated)**: From q_true_1 = 2^32 - 1, we have
-    `u_top ≥ (2^32 - 1) * b3'`. Expanding `u_top = u4*2^32 + a1` and
-    `b3' = dHi*2^32 + dLo` and `u4 = dHi*2^32 + r` (Case B), we get:
-        rhatc * 2^32 + a1 ≥ (2^32 - 1) * dLo = q1c * dLo
-    where `rhatc = r + dHi`. So un-truncated, the ult check is FALSE
-    (Phase 1b doesn't fire) and q1' = q_true_1.
+    **Concrete failing example**: dHi = 2^32 - 1, dLo = 2^32 - 1,
+    r = 1 (so u4 = (2^32-1)*2^32 + 1, b3' = (2^32-1)*2^32 + (2^32-1),
+    a1 = 0). Then:
+    - q_true_1 = 2^32 - 1 (boundary).
+    - q1 = u4/dHi = 2^32. q1c = q1 - 1 = 2^32 - 1 = q_true_1.
+    - rhatc = r + dHi = 1 + (2^32 - 1) = 2^32. Truncation case.
+    - Truncated `(rhatc << 32 | div_un1).toNat` = 0 + 0 = 0.
+    - q1c * dLo = (2^32 - 1)^2. Truncated check `0 < (2^32-1)^2` FIRES.
+    - Phase 1b corrects: q1' = q1c - 1 = 2^32 - 2 = q_true_1 - 1.
+    - **Undershoot**.
 
-    **Word truncation issue**: rhatc ∈ [dHi, 2*dHi). When dHi > 2^31,
-    rhatc can exceed 2^32, causing `(rhatc << 32)` to wrap and the
-    truncated ult check may fire SPURIOUSLY. In that case
-    q1' = q_true_1 - 1 (undershoot), and the wide-u4 no-undershoot
-    claim is FALSE in this regime.
+    **Path 1 (rhatc < 2^32) is impossible** in general: r ≤ dLo and
+    rhatc = r + dHi can exceed 2^32 when dHi + dLo > 2^32 (which is the
+    typical wide-u4 case). r could be up to ~dLo, giving rhatc up to
+    ~dHi + dLo ~ 2^33.
 
-    **Two paths to closure**:
-    - Path 1: prove rhatc < 2^32 in this regime (would require deeper
-      analysis showing the q_true_1 = 2^32 - 1 boundary forces rhatc <
-      2^32). Then ult check is honest and Phase 1b doesn't fire.
-    - Path 2: accept that B.2 + truncation can give undershoot, and
-      handle this specific case via a different mechanism (e.g., showing
-      Phase 2 compensates for this exact 1-step undershoot).
+    **Implication**: the entire global compensation strategy via
+    `_of_q1_prime_not_overshoot` has a HOLE in this sub-regime. The
+    wide-u4 no-undershoot claim is FALSE here, which means the q1' =
+    q_true_1 (exact) reduction doesn't hold.
 
-    Path 1 looks more tractable: the constraint q_true_1 = 2^32 - 1 is
-    very tight and may indeed force specific bounds on rhatc. Stubbed
-    pending detailed Word arithmetic analysis. -/
+    **Path 2 (Phase 2 compensation) is the only path**: handle this
+    specific 1-step undershoot via a separate argument that Phase 2
+    compensates. This requires moving away from the EXACT q1' = q_true_1
+    pre-condition and accepting q1' ∈ {q_true_1, q_true_1 - 1} in B.2.
+
+    Stubbed as a known architectural issue; the underlying call-skip
+    lower bound holds (Knuth's Theorem B guarantees it) but our specific
+    proof approach doesn't yet bridge to that fact in this sub-regime. -/
 theorem algorithmQ1Prime_ge_q_true_1_in_wide_u4_q1_eq_pow32_tight
     (u4 u3 b3' : Word)
     (hb3'_ge : b3'.toNat ≥ 2^63)
