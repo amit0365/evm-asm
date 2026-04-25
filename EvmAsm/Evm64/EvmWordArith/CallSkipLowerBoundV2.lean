@@ -268,12 +268,15 @@ theorem div128Quot_call_skip_ge_val256_div_v2
   have h_u4_lt_b3' : u4.toNat < b3'.toNat :=
     isCallTrialN4_toNat_lt a3 b2 b3 hcall
   -- u4 < 2^63 derived from u4 = a3 >> antiShift with antiShift ≥ 1 (shift ≠ 0).
-  -- Direct application of `u_top_lt_pow63_of_shift_nz` (MaxTrialVacuity.lean)
-  -- once we extract `1 ≤ shift.toNat ≤ 63` from `hshift_nz`. TODO: the
-  -- conversion from `shift ≠ 0` (Word) to `shift.toNat ∈ [1, 63]` requires
-  -- a small Word arithmetic lemma; stubbed for now while the overall
-  -- hypothesis-threading lands.
-  have h_u4_lt_pow63 : u4.toNat < 2^63 := by sorry
+  -- Direct application of `u_top_lt_pow63_of_shift_nz` (MaxTrialVacuity.lean).
+  have h_shift_pos : 1 ≤ (clzResult b3).1.toNat := by
+    rcases Nat.eq_zero_or_pos (clzResult b3).1.toNat with h | h
+    · exfalso; apply hshift_nz
+      exact BitVec.eq_of_toNat_eq (by simp [h])
+    · exact h
+  have h_u4_lt_pow63 : u4.toNat < 2^63 :=
+    u_top_lt_pow63_of_shift_nz a3 (clzResult b3).1 h_shift_pos
+      (clzResult_fst_toNat_le b3)
   have h_core := div128Quot_ge_q_true_normalized u4 u3 b3' h_b3'_ge h_u4_lt_b3' h_u4_lt_pow63
   exact Nat.le_trans h_bridge h_core
 
