@@ -30,14 +30,23 @@ open EvmAsm.Rv64
     of the case-split in A2.S2 sub-cases) into `q1' = q_true_1` exactly,
     enabling the Phase 2 tight argument.
 
-    The existing `algorithmQ1Prime_ge_q_true_1` requires u4 < dHi*2^32, which
-    fails here. The KB-LB7 lemma (`_of_uHi_lt_pow63`) requires uHi < 2^63,
-    which also fails when u4 ≥ dHi*2^32 ≥ 2^63 (under hb3'_ge).
+    **Refined plan** based on Knuth-B analysis:
+    - KB-LB3 (`div128Quot_q1c_ge_q_true_1`) applies under hu4_lt_vTop alone
+      and gives `q_true_1 ≤ q1c.toNat` — the post-Phase-1a lower bound.
+      This works in narrow_u4 ✓.
+    - Phase 1b case-split:
+      - No correction: q1' = q1c, so q1' ≥ q_true_1 directly via KB-LB3. ✓
+      - Correction fires (q1' = q1c - 1): need q1c ≥ q_true_1 + 1.
+        - Under rhatc < 2^32 (always true when dHi = 2^31, sometimes when
+          dHi > 2^31): KB-LB5 gives this directly.
+        - Under rhatc ≥ 2^32 (only when dHi > 2^31): need separate analysis.
+          In our setting rhatc < 2*dHi, and rhatUn1 truncates rhatc's high
+          bits via the Word << 32 — so the Phase 1b ult check operates on
+          (rhatc % 2^32) * 2^32 + div_un1. The comparison q1c * dLo > rhatUn1
+          may fire spuriously due to truncation.
 
-    This stub captures the missing piece. Closure requires either:
-    - A new KB-LB7 variant for the wide-u4 regime, OR
-    - A direct algorithm-level argument using the q1c = q1 - 1 correction.
-    Stubbed for now. -/
+    This stub is the genuine hard piece — requires new KB-LB lemmas for the
+    rhatc ≥ 2^32 regime or a direct algorithm-level argument. -/
 theorem algorithmQ1Prime_ge_q_true_1_under_narrow_u4
     (u4 u3 b3' : Word)
     (hb3'_ge : b3'.toNat ≥ 2^63)
