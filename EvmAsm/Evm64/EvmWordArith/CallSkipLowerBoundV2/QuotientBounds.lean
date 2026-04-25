@@ -113,6 +113,37 @@ theorem algorithmQ0Prime_ge_q_true_0
       u3
       hdHi_ge hdHi_lt hdLo_lt h_un21_lt_dHi_pow32 h_un21_lt_vTop
 
+/-- **Phase 2 tight, wrapped (un21 < 2^63 variant)**: parallel to
+    `algorithmQ0Prime_ge_q_true_0` but using KB-LB8 instead of KB-LB8'.
+    Holds when `un21 < 2^63` (a complementary range to `un21 < dHi*2^32`).
+
+    Used by `_wide_un21_narrow` sub-case where un21 ∈ [dHi*2^32, vTop) AND
+    un21 < 2^63 — the KB-LB8' lemma doesn't apply but KB-LB8 does. -/
+theorem algorithmQ0Prime_ge_q_true_0_of_un21_lt_pow63
+    (u4 u3 b3' : Word)
+    (hdHi_ge : (b3' >>> (32 : BitVec 6).toNat).toNat ≥ 2^31)
+    (hdHi_lt : (b3' >>> (32 : BitVec 6).toNat).toNat < 2^32)
+    (hdLo_lt :
+      ((b3' <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat).toNat < 2^32)
+    (h_un21_lt_pow63 : (algorithmUn21 u4 u3 b3').toNat < 2^63)
+    (h_un21_lt_vTop :
+      (algorithmUn21 u4 u3 b3').toNat <
+      (b3' >>> (32 : BitVec 6).toNat).toNat * 2^32 +
+      ((b3' <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat).toNat) :
+    ((algorithmUn21 u4 u3 b3').toNat * 2^32 +
+      ((u3 <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat).toNat) /
+      ((b3' >>> (32 : BitVec 6).toNat).toNat * 2^32 +
+      ((b3' <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat).toNat) ≤
+    (algorithmQ0Prime u4 u3 b3').toNat := by
+  rw [algorithmQ0Prime_unfold]
+  exact
+    div128Quot_q0_prime_ge_q_true_0_of_un21_lt_pow63
+      (algorithmUn21 u4 u3 b3')
+      (b3' >>> (32 : BitVec 6).toNat)
+      ((b3' <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat)
+      u3
+      hdHi_ge hdHi_lt hdLo_lt h_un21_lt_pow63 h_un21_lt_vTop
+
 /-- **Bridge sub-A (weak, `+2`)**: `algorithmQ1Prime.toNat ≤ q_true_1 + 2`
     stepping stone. Combines Phase 1b's q1' ≤ u4/dHi with Knuth-B trial_le
     giving u4/dHi ≤ q_true_1 + 2 (under normalization). -/
