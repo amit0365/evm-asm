@@ -436,13 +436,21 @@ theorem div128Quot_qHat_plus_one_times_b3_gt_u_of_q1_prime_overshoot
     Phase 2 tightness: `q0' ≥ q_true_0` where
     `q_true_0 = (r1_math * 2^32 + a0) / b3'`.
 
-    Wraps the existing `algorithmQ0Prime_ge_q_true_0` family with the un21
-    bounds derived from `un21 = r1_math` (since q1' = q_true_1). Closing
-    this requires:
-    - Wide-u4: combine `algorithmUn21_eq_r1_math_in_wide_u4_exact` with
-      Phase 2 tightness on un21 < vTop.
-    - Narrow-u4: use the existing `algorithmUn21_eq_r1_math_of_q1_prime_eq_q_true_1`
-      + Phase 2 tightness. -/
+    **Closure path** (4-way 2x2 case-split on u4 regime × un21 regime):
+    1. **Narrow-u4 + narrow-un21** (u4 < dHi*2^32 AND un21 < dHi*2^32):
+       Closes via `algorithmUn21_eq_r1_math_of_q1_prime_eq_q_true_1`
+       (existing) + `algorithmQ0Prime_ge_q_true_0` (existing, requires
+       un21 < dHi*2^32). FULLY PROVABLE WITH EXISTING HELPERS.
+    2. **Narrow-u4 + wide-un21** (u4 < dHi*2^32, un21 ∈ [dHi*2^32, vTop)):
+       un21 = r1_math holds (existing) but Phase 2 tightness in wide-un21
+       case requires `_of_un21_lt_pow63` and r1_math < 2^63 (NOT
+       guaranteed). Hard sub-case.
+    3. **Wide-u4 + any un21**: Requires the new
+       `algorithmUn21_eq_r1_math_in_wide_u4_exact` stub for un21 = r1_math.
+       Then same Phase 2 tightness analysis as cases 1/2.
+
+    The cleanest decomposition is by un21 regime (narrow vs wide) since the
+    Phase 2 tightness stratifies along that boundary. -/
 theorem algorithmQ0Prime_ge_q_true_0_of_q1_prime_eq_q_true_1
     (u4 u3 b3' : Word)
     (hb3'_ge : b3'.toNat ≥ 2^63)
