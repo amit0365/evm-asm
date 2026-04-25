@@ -22,9 +22,13 @@
       - `algorithmQ0Prime_compensates_phase1_deficit` (sorry) — Phase 2
         deficit compensation: q0' ≥ q_true_full - q1'*2^32. The Knuth-B-
         style algorithm-correctness content for Phase 2.
-      - `algorithmUn21_lt_vTop_of_q1_prime_not_overshoot` (sorry) —
-        algorithm invariant un21 < vTop under no-overshoot. Standard
-        Knuth-B Phase 2 input invariant.
+      - `algorithmUn21_lt_vTop_of_q1_prime_not_overshoot` (closed via
+        case-split): the algorithm invariant un21 < vTop under no-overshoot.
+          - `..._hu4_lt` (closed): u4 < dHi*2^32 case, via the
+            contrapositive bridge `algorithmQ1Prime_eq_q_true_1_plus_one_of_un21_ge_vTop`.
+          - `..._hu4_ge` (sorry): u4 ≥ dHi*2^32 case (Phase 1a corrects).
+            Needs separate analysis since the contrapositive bridge
+            requires `u4 < dHi*2^32`.
       - `algorithmQ0Prime_lt_pow32_of_q1_prime_not_overshoot` (closed) —
         q0' < 2^32 under no-overshoot, via the un21 invariant + existing
         `div128Quot_q0_prime_lt_pow32` algorithm-correctness bound.
@@ -453,18 +457,49 @@ theorem algorithmQ0Prime_compensates_phase1_deficit
   let _ := h_q1_le
   sorry
 
-/-- **A2.S2 un21 < vTop under no-overshoot** (TODO — algorithm invariant).
+/-- **A2.S2 un21 < vTop under no-overshoot, narrow-u4 case** — closed via
+    the existing contrapositive bridge `algorithmQ1Prime_eq_q_true_1_plus_one_of_un21_ge_vTop`. -/
+theorem algorithmUn21_lt_vTop_of_q1_prime_not_overshoot_hu4_lt
+    (u4 u3 b3' : Word)
+    (hb3'_ge : b3'.toNat ≥ 2^63)
+    (hu4_lt_b3' : u4.toNat < b3'.toNat)
+    (hu4_lt : u4.toNat < (b3' >>> (32 : BitVec 6).toNat).toNat * 2^32)
+    (h_q1_le : (algorithmQ1Prime u4 u3 b3').toNat ≤
+      (u4.toNat * 2^32 + (u3 >>> (32 : BitVec 6).toNat).toNat) / b3'.toNat) :
+    (algorithmUn21 u4 u3 b3').toNat < b3'.toNat := by
+  by_contra h_un21_ge
+  push Not at h_un21_ge
+  have h_q1_eq := algorithmQ1Prime_eq_q_true_1_plus_one_of_un21_ge_vTop u4 u3 b3'
+    hb3'_ge hu4_lt_b3' hu4_lt h_un21_ge
+  omega
+
+/-- **A2.S2 un21 < vTop under no-overshoot, wide-u4 case** (TODO).
+
+    Under `u4 ≥ dHi*2^32` (Phase 1a corrects), the contrapositive bridge
+    is unavailable (it requires `u4 < dHi*2^32`). Closing this requires a
+    separate analysis of the algorithm's wide-u4 Phase 1 branches. -/
+theorem algorithmUn21_lt_vTop_of_q1_prime_not_overshoot_hu4_ge
+    (u4 u3 b3' : Word)
+    (hb3'_ge : b3'.toNat ≥ 2^63)
+    (hu4_lt_b3' : u4.toNat < b3'.toNat)
+    (hu4_ge : u4.toNat ≥ (b3' >>> (32 : BitVec 6).toNat).toNat * 2^32)
+    (h_q1_le : (algorithmQ1Prime u4 u3 b3').toNat ≤
+      (u4.toNat * 2^32 + (u3 >>> (32 : BitVec 6).toNat).toNat) / b3'.toNat) :
+    (algorithmUn21 u4 u3 b3').toNat < b3'.toNat := by
+  let _ := hb3'_ge
+  let _ := hu4_lt_b3'
+  let _ := hu4_ge
+  let _ := h_q1_le
+  sorry
+
+/-- **A2.S2 un21 < vTop under no-overshoot** — closed via case-split.
 
     Under no-overshoot at Phase 1 (`q1' ≤ q_true_1`), the algorithm's un21
     satisfies `un21 < vTop = b3'.toNat`. This is the standard Knuth-B
-    invariant for Phase 2's input being well-formed (un21*2^32 + a0 < b3'
-    * 2^32, ensuring q0' < 2^32 by `Nat.div_lt_of_lt_mul`).
+    invariant for Phase 2's input being well-formed.
 
-    Sketch: `un21 = u_top - q1' * b3' (mod 2^64)`. If q1' = q_true_1, then
-    un21 = r1_math < b3'. If q1' < q_true_1, the algorithm's Phase 1b
-    correction logic is supposed to keep un21 below b3' (otherwise Phase 2
-    would overflow). The stubbed work is verifying this invariant carefully
-    over the algorithm's branches (Phase 1a/1b case-splits + Word truncation). -/
+    Composes the two case-specific helpers (narrow-u4 closed via the
+    contrapositive bridge, wide-u4 stubbed). -/
 theorem algorithmUn21_lt_vTop_of_q1_prime_not_overshoot
     (u4 u3 b3' : Word)
     (hb3'_ge : b3'.toNat ≥ 2^63)
@@ -472,11 +507,12 @@ theorem algorithmUn21_lt_vTop_of_q1_prime_not_overshoot
     (h_q1_le : (algorithmQ1Prime u4 u3 b3').toNat ≤
       (u4.toNat * 2^32 + (u3 >>> (32 : BitVec 6).toNat).toNat) / b3'.toNat) :
     (algorithmUn21 u4 u3 b3').toNat < b3'.toNat := by
-  -- Suppress unused-variable warnings for the placeholder.
-  let _ := hb3'_ge
-  let _ := hu4_lt_b3'
-  let _ := h_q1_le
-  sorry
+  by_cases hu4 : u4.toNat < (b3' >>> (32 : BitVec 6).toNat).toNat * 2^32
+  · exact algorithmUn21_lt_vTop_of_q1_prime_not_overshoot_hu4_lt u4 u3 b3'
+      hb3'_ge hu4_lt_b3' hu4 h_q1_le
+  · push Not at hu4
+    exact algorithmUn21_lt_vTop_of_q1_prime_not_overshoot_hu4_ge u4 u3 b3'
+      hb3'_ge hu4_lt_b3' hu4 h_q1_le
 
 /-- **A2.S2 q0' < 2^32 under no-overshoot** — closed via composition.
 

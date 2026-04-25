@@ -22,8 +22,10 @@
   - `algorithmQ0Prime_compensates_phase1_deficit` — Phase 2's q0' is at
     least q_true_full - q1' * 2^32 under no-overshoot at Phase 1.
     Knuth-B algorithm correctness for Phase 2.
-  - `algorithmUn21_lt_vTop_of_q1_prime_not_overshoot` — un21 < vTop under
-    no-overshoot. Standard Knuth-B Phase 2 input invariant.
+  - `algorithmUn21_lt_vTop_of_q1_prime_not_overshoot_hu4_ge` — un21 <
+    vTop under no-overshoot in the wide-u4 sub-case (`u4 ≥ dHi*2^32`).
+    The narrow-u4 case (`u4 < dHi*2^32`) is now closed via the existing
+    contrapositive bridge.
 
   Closure requires extending `KnuthTheoremB.lean` with a *global* qHat
   ≥ q_true_full lemma (handling the carry compensation between Phase 1
