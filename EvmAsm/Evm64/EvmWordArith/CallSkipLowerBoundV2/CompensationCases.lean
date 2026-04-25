@@ -340,17 +340,18 @@ theorem div128Quot_qHat_plus_one_times_b3_gt_u_narrow_u4
       u4 u3 b3' hb3'_ge hu4_lt_b3' hu4_ge (by omega)
 
 /-- **A2.S2 helper: q1' overshoot closes the goal**. Under standard hyps +
-    `q1' = q_true_1 + 1`, the (qHat+1)*b3' > u inequality holds via the
+    `q1' ≥ q_true_1 + 1`, the (qHat+1)*b3' > u inequality holds via the
     OR-shift trick (div128Quot.toNat ≥ q1'*2^32 > q_true_full).
 
-    Used by both `_wide_un21_wide` (always applicable since un21 ≥ V forces
-    Phase 1 false-alarm) and the off-by-one sub-case of `_wide_un21_narrow`. -/
+    Generalized to handle q1' ∈ {q_true_1 + 1, q_true_1 + 2, ...}. Used by:
+    - `_wide_un21_wide` (un21 ≥ V forces Phase 1 false-alarm = +1).
+    - `_wide_un21_narrow` (off-by-one sub-case).
+    - `_narrow_u4_*` (overshoot sub-cases via the +2 weak upper bound). -/
 theorem div128Quot_qHat_plus_one_times_b3_gt_u_of_q1_prime_overshoot
     (u4 u3 b3' : Word)
     (hb3'_ge : b3'.toNat ≥ 2^63)
     (hu4_lt_b3' : u4.toNat < b3'.toNat)
-    (hu4_lt : u4.toNat < (b3' >>> (32 : BitVec 6).toNat).toNat * 2^32)
-    (h_q1_eq : (algorithmQ1Prime u4 u3 b3').toNat =
+    (h_q1_ge : (algorithmQ1Prime u4 u3 b3').toNat ≥
       (u4.toNat * 2^32 + (u3 >>> (32 : BitVec 6).toNat).toNat) / b3'.toNat + 1) :
     ((div128Quot u4 u3 b3').toNat + 1) * b3'.toNat >
       u4.toNat * 2^64 + u3.toNat := by
@@ -390,8 +391,8 @@ theorem div128Quot_qHat_plus_one_times_b3_gt_u_of_q1_prime_overshoot
     div128Quot_vTop_decomp u3
   have h_u4_lt_vTop : u4.toNat <
       (b3' >>> (32 : BitVec 6).toNat).toNat * 2^32 +
-      ((b3' <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat).toNat :=
-    Nat.lt_of_lt_of_le hu4_lt (Nat.le_add_right _ _)
+      ((b3' <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat).toNat := by
+    rw [← h_v_eq]; exact hu4_lt_b3'
   -- algorithmQ1Prime.toNat < 2^32.
   have h_q1_lt : (algorithmQ1Prime u4 u3 b3').toNat < 2^32 := by
     rw [algorithmQ1Prime_unfold]
@@ -409,10 +410,14 @@ theorem div128Quot_qHat_plus_one_times_b3_gt_u_of_q1_prime_overshoot
   have h_div128_ge : (div128Quot u4 u3 b3').toNat ≥ (algorithmQ1Prime u4 u3 b3').toNat * 2^32 := by
     rw [h_div128_eq]
     exact div128Quot_or_shift_ge _ _ h_q1_lt
-  -- Substitute q1' = q_true_1 + 1.
+  -- Use q1' ≥ q_true_1 + 1 to get div128Quot.toNat ≥ (q_true_1 + 1) * 2^32.
   set q_true_1 := (u4.toNat * 2^32 + (u3 >>> (32 : BitVec 6).toNat).toNat) / b3'.toNat
     with hq_true_1_def
-  rw [h_q1_eq] at h_div128_ge
+  have h_div128_ge' :
+      (div128Quot u4 u3 b3').toNat ≥ (q_true_1 + 1) * 2^32 := by
+    have h_step : (algorithmQ1Prime u4 u3 b3').toNat * 2^32 ≥ (q_true_1 + 1) * 2^32 :=
+      Nat.mul_le_mul_right _ h_q1_ge
+    linarith [h_div128_ge, h_step]
   -- Now h_div128_ge: div128Quot.toNat ≥ (q_true_1 + 1) * 2^32.
   -- Apply two_step_div_identity (after rewriting u3 = a1*2^32 + a0).
   set a1 := (u3 >>> (32 : BitVec 6).toNat).toNat with ha1_def
@@ -454,7 +459,7 @@ theorem div128Quot_qHat_plus_one_times_b3_gt_u_of_q1_prime_overshoot
     nlinarith
   -- Combine: div128Quot.toNat ≥ (q_true_1 + 1) * 2^32 > q_true_full.
   have h_div128_gt : (div128Quot u4 u3 b3').toNat > (u4.toNat * 2^64 + u3.toNat) / b3'.toNat :=
-    Nat.lt_of_lt_of_le h_q_true_full_lt h_div128_ge
+    Nat.lt_of_lt_of_le h_q_true_full_lt h_div128_ge'
   -- (div128Quot.toNat + 1) * b3' ≥ (q_true_full + 2) * b3' > u.
   have h_div128_succ : (div128Quot u4 u3 b3').toNat + 1 ≥
       (u4.toNat * 2^64 + u3.toNat) / b3'.toNat + 2 := by omega
@@ -516,7 +521,7 @@ theorem div128Quot_qHat_plus_one_times_b3_gt_u_wide_un21_narrow
     sorry
   · -- Sub-case B: off-by-one q1' = q_true_1 + 1. Use the OR-shift helper.
     exact div128Quot_qHat_plus_one_times_b3_gt_u_of_q1_prime_overshoot u4 u3 b3'
-      hb3'_ge hu4_lt_b3' hu4_lt h_eq_plus_one
+      hb3'_ge hu4_lt_b3' (by omega)
 
 
 /-- **A2.S2.wide_un21_wide**: Phase 1 narrow-u4 AND un21 ≥ vTop. Closes via
@@ -529,11 +534,11 @@ theorem div128Quot_qHat_plus_one_times_b3_gt_u_wide_un21_wide
     (hu4_lt : u4.toNat < (b3' >>> (32 : BitVec 6).toNat).toNat * 2^32)
     (h_un21_ge_vTop : (algorithmUn21 u4 u3 b3').toNat ≥ b3'.toNat) :
     ((div128Quot u4 u3 b3').toNat + 1) * b3'.toNat >
-      u4.toNat * 2^64 + u3.toNat :=
-  div128Quot_qHat_plus_one_times_b3_gt_u_of_q1_prime_overshoot u4 u3 b3'
-    hb3'_ge hu4_lt_b3' hu4_lt
-    (algorithmQ1Prime_eq_q_true_1_plus_one_of_un21_ge_vTop u4 u3 b3'
-      hb3'_ge hu4_lt_b3' hu4_lt h_un21_ge_vTop)
+      u4.toNat * 2^64 + u3.toNat := by
+  have h_q1_eq := algorithmQ1Prime_eq_q_true_1_plus_one_of_un21_ge_vTop u4 u3 b3'
+    hb3'_ge hu4_lt_b3' hu4_lt h_un21_ge_vTop
+  exact div128Quot_qHat_plus_one_times_b3_gt_u_of_q1_prime_overshoot u4 u3 b3'
+    hb3'_ge hu4_lt_b3' (by omega)
 
 /-- **A2.S2.wide_un21**: compensation case when `u4 < dHi*2^32` but
     `un21 ≥ dHi*2^32`. Dispatches to narrow/wide sub-cases. -/
