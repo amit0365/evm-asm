@@ -26,9 +26,13 @@
         case-split): the algorithm invariant un21 < vTop under no-overshoot.
           - `..._hu4_lt` (closed): u4 < dHi*2^32 case, via the
             contrapositive bridge `algorithmQ1Prime_eq_q_true_1_plus_one_of_un21_ge_vTop`.
-          - `..._hu4_ge` (sorry): u4 ≥ dHi*2^32 case (Phase 1a corrects).
-            Needs separate analysis since the contrapositive bridge
-            requires `u4 < dHi*2^32`.
+          - `..._hu4_ge` (closed via composition): u4 ≥ dHi*2^32 case.
+            Composes:
+            - `algorithmQ1Prime_ge_q_true_1_in_wide_u4` (sorry — KEY
+              structural claim that wide-u4 Phase 1 doesn't undershoot)
+            - `algorithmUn21_eq_r1_math_in_wide_u4_exact` (sorry — wide-u4
+              variant of the un21 = r1_math equality from `Un21Bridge.lean`)
+            - omega + `Nat.mod_lt`.
       - `algorithmQ0Prime_lt_pow32_of_q1_prime_not_overshoot` (closed) —
         q0' < 2^32 under no-overshoot, via the un21 invariant + existing
         `div128Quot_q0_prime_lt_pow32` algorithm-correctness bound.
@@ -523,13 +527,26 @@ theorem algorithmQ1Prime_ge_q_true_1_in_wide_u4
       but this is **conjectured unreachable** (see
       `algorithmQ1Prime_ge_q_true_1_in_wide_u4` above).
 
-    **Path forward**: combine `algorithmQ1Prime_ge_q_true_1_in_wide_u4`
-    (q1' ≥ q_true_1) with the hypothesis (q1' ≤ q_true_1) to derive
-    q1' = q_true_1 (exact). Then a wide-u4 variant of
-    `algorithmUn21_eq_r1_math_of_q1_prime_eq_q_true_1` (currently only
-    proven under hu4_lt_dHi_pow32) closes un21 = r1_math < vTop.
+    Composes (a) `algorithmQ1Prime_ge_q_true_1_in_wide_u4` and (b) a
+    wide-u4 variant of `algorithmUn21_eq_r1_math_of_q1_prime_eq_q_true_1`
+    to derive un21 = r1_math < vTop. -/
+theorem algorithmUn21_eq_r1_math_in_wide_u4_exact
+    (u4 u3 b3' : Word)
+    (hb3'_ge : b3'.toNat ≥ 2^63)
+    (hu4_lt_b3' : u4.toNat < b3'.toNat)
+    (hu4_ge : u4.toNat ≥ (b3' >>> (32 : BitVec 6).toNat).toNat * 2^32)
+    (h_q1_eq : (algorithmQ1Prime u4 u3 b3').toNat =
+      (u4.toNat * 2^32 + (u3 >>> (32 : BitVec 6).toNat).toNat) / b3'.toNat) :
+    (algorithmUn21 u4 u3 b3').toNat =
+      (u4.toNat * 2^32 + (u3 >>> (32 : BitVec 6).toNat).toNat) % b3'.toNat := by
+  -- Wide-u4 variant of `algorithmUn21_eq_r1_math_of_q1_prime_eq_q_true_1`.
+  -- Stubbed pending the wide-u4 algorithm structural analysis.
+  let _ := hb3'_ge
+  let _ := hu4_lt_b3'
+  let _ := hu4_ge
+  let _ := h_q1_eq
+  sorry
 
-    Stubbed pending both sub-pieces. -/
 theorem algorithmUn21_lt_vTop_of_q1_prime_not_overshoot_hu4_ge
     (u4 u3 b3' : Word)
     (hb3'_ge : b3'.toNat ≥ 2^63)
@@ -538,11 +555,18 @@ theorem algorithmUn21_lt_vTop_of_q1_prime_not_overshoot_hu4_ge
     (h_q1_le : (algorithmQ1Prime u4 u3 b3').toNat ≤
       (u4.toNat * 2^32 + (u3 >>> (32 : BitVec 6).toNat).toNat) / b3'.toNat) :
     (algorithmUn21 u4 u3 b3').toNat < b3'.toNat := by
-  let _ := hb3'_ge
-  let _ := hu4_lt_b3'
-  let _ := hu4_ge
-  let _ := h_q1_le
-  sorry
+  -- No-undershoot in wide-u4 + no-overshoot hypothesis → q1' = q_true_1.
+  have h_q1_ge := algorithmQ1Prime_ge_q_true_1_in_wide_u4 u4 u3 b3'
+    hb3'_ge hu4_lt_b3' hu4_ge
+  have h_q1_eq : (algorithmQ1Prime u4 u3 b3').toNat =
+      (u4.toNat * 2^32 + (u3 >>> (32 : BitVec 6).toNat).toNat) / b3'.toNat := by
+    omega
+  -- un21 = r1_math < b3' (from exact-equality lemma + Nat.mod_lt).
+  have h_un21_eq := algorithmUn21_eq_r1_math_in_wide_u4_exact u4 u3 b3'
+    hb3'_ge hu4_lt_b3' hu4_ge h_q1_eq
+  rw [h_un21_eq]
+  have hb3'_pos : 0 < b3'.toNat := by have : b3'.toNat ≥ 2^63 := hb3'_ge; omega
+  exact Nat.mod_lt _ hb3'_pos
 
 /-- **A2.S2 un21 < vTop under no-overshoot** — closed via case-split.
 

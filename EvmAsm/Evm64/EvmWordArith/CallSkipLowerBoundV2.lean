@@ -22,15 +22,14 @@
   - `algorithmQ0Prime_compensates_phase1_deficit` — Phase 2's q0' is at
     least q_true_full - q1' * 2^32 under no-overshoot at Phase 1.
     Knuth-B algorithm correctness for Phase 2.
-  - `algorithmUn21_lt_vTop_of_q1_prime_not_overshoot_hu4_ge` — un21 <
-    vTop under no-overshoot in the wide-u4 sub-case (`u4 ≥ dHi*2^32`).
-    The narrow-u4 case (`u4 < dHi*2^32`) is now closed via the existing
-    contrapositive bridge.
   - `algorithmQ1Prime_ge_q_true_1_in_wide_u4` — KEY structural claim
-    that wide-u4 Phase 1 never undershoots q_true_1. If this holds, the
-    above un21 invariant follows from no-overshoot + no-undershoot →
-    q1' = q_true_1 (exact). Resolves the wide-u4 undershoot blocker
-    documented in `memory/project_un21_invariant_wide_u4_false.md`.
+    that wide-u4 Phase 1 never undershoots q_true_1. With this, the
+    wide-u4 un21 invariant CLOSES via no-overshoot + no-undershoot →
+    q1' = q_true_1 (exact).
+  - `algorithmUn21_eq_r1_math_in_wide_u4_exact` — wide-u4 variant of
+    the existing un21 = r1_math equality (currently only proven under
+    narrow-u4 `hu4_lt_dHi_pow32`). Used to derive un21 = r1_math < vTop
+    from q1' = q_true_1.
 
   Closure requires extending `KnuthTheoremB.lean` with a *global* qHat
   ≥ q_true_full lemma (handling the carry compensation between Phase 1
