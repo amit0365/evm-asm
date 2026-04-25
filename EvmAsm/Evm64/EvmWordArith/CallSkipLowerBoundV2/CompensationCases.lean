@@ -688,6 +688,35 @@ theorem algorithmQ0Prime_ge_q_true_0_of_q1_prime_eq_q_true_1_narrow_wide_lt_pow6
   rw [h_un21_eq] at h_ph2
   exact h_ph2
 
+/-- **Sub-lemma: rhat2c.toNat < 2^32 from un21%dHi + dHi < 2^32** (TODO).
+
+    The Word-level no-truncation precondition follows from the Nat-level
+    bound on `un21 mod dHi + dHi`. Algorithm fact: `rhat2 = un21 - q0 * dHi`
+    where `q0 = rv64_divu un21 dHi = un21 / dHi (Nat)`, so
+    `rhat2.toNat = un21 mod dHi`. Then case-split on `hi2 = 0`:
+    - `hi2 = 0`: `rhat2c = rhat2`, `rhat2.toNat = un21%dHi < dHi < 2^32`.
+    - `hi2 ≠ 0`: `rhat2c = rhat2 + dHi` (no Word wrap since
+      `un21%dHi + dHi < 2^32 ≤ 2^64`), so
+      `rhat2c.toNat = un21%dHi + dHi < 2^32`.
+
+    The Word-Nat bridge for `rhat2.toNat = un21 mod dHi` follows from
+    `rv64_divu_toNat` + `Nat.div_add_mod` + `BitVec.toNat_sub`. -/
+theorem div128Quot_rhat2c_lt_pow32_of_un21_mod_dHi_plus_dHi_lt_pow32
+    (un21 dHi : Word)
+    (hdHi_ne : dHi ≠ 0)
+    (hdHi_lt : dHi.toNat < 2^32)
+    (h : un21.toNat % dHi.toNat + dHi.toNat < 2^32) :
+    let q0 := rv64_divu un21 dHi
+    let rhat2 := un21 - q0 * dHi
+    let hi2 := q0 >>> (32 : BitVec 6).toNat
+    let rhat2c := if hi2 = 0 then rhat2 else rhat2 + dHi
+    rhat2c.toNat < 2^32 := by
+  intro q0 rhat2 hi2 rhat2c
+  let _ := hdHi_ne
+  let _ := hdHi_lt
+  let _ := h
+  sorry
+
 /-- **Un21-level Phase 2 tightness for rhat2c < 2^32** (TODO).
 
     Parallel to the existing `div128Quot_q0_prime_ge_q_true_0_of_un21_lt_pow63`
@@ -699,7 +728,8 @@ theorem algorithmQ0Prime_ge_q_true_0_of_q1_prime_eq_q_true_1_narrow_wide_lt_pow6
     Closure path: mirror `_of_un21_lt_pow63`'s body — case-split on
     `div128Quot_phase2b_q0'`'s guard, route the no-guard case through
     `div128Quot_q1_prime_ge_q_true_1_small_rhatc` directly (using our
-    rhat2c < 2^32 hypothesis), and the guard-fires case through KB-LB3. -/
+    rhat2c < 2^32 hypothesis derived via the sub-lemma above), and the
+    guard-fires case through KB-LB3. -/
 theorem div128Quot_q0_prime_ge_q_true_0_of_rhat2c_lt_pow32_un21_level
     (un21 dHi dLo uLo : Word)
     (hdHi_ge : dHi.toNat ≥ 2^31)
@@ -731,13 +761,16 @@ theorem div128Quot_q0_prime_ge_q_true_0_of_rhat2c_lt_pow32_un21_level
   unfold div128Quot_phase2b_q0'
   split
   · -- Guard doesn't fire: helper yields the no-guard check.
-    -- Apply `_small_rhatc` directly using our `rhat2c < 2^32` hypothesis.
-    -- TODO: convert h_rhat2c_lt (Nat form: un21 mod dHi + dHi < 2^32) to
-    -- the Word-level rhat2c.toNat < 2^32 expected by _small_rhatc. The
-    -- conversion uses Phase 2's rhat2 = un21 mod dHi (algorithm fact)
-    -- and rhat2c = rhat2 + dHi (when hi2 ≠ 0) or rhat2 (when hi2 = 0).
+    -- Apply `_small_rhatc` at Phase 2 (uHi := un21).
+    have hdHi_ne : dHi ≠ 0 := by
+      intro heq; rw [heq] at hdHi_ge; simp at hdHi_ge
+    have h_rhat2c_lt_word : rhat2c.toNat < 2^32 :=
+      div128Quot_rhat2c_lt_pow32_of_un21_mod_dHi_plus_dHi_lt_pow32
+        un21 dHi hdHi_ne hdHi_lt h_rhat2c_lt
     let _ := h_un21_ge_pow63
-    sorry
+    exact div128Quot_q1_prime_ge_q_true_1_small_rhatc un21 dHi dLo
+      (uLo <<< (32 : BitVec 6).toNat)
+      hdHi_ge hdHi_lt hdLo_lt h_un21_lt_vTop h_rhat2c_lt_word
   · -- Guard fires: helper = q0c. Use KB-LB3 at Phase 2 (uHi := un21).
     -- Same as `_of_un21_lt_pow63`'s guard-fires branch.
     have hdHi_ne : dHi ≠ 0 := by
