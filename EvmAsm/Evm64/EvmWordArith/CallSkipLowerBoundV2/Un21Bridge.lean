@@ -122,6 +122,22 @@ theorem algorithmUn21_L4_halfword_combine (rhat : Nat) :
       ((rhat / 2^32) * 2^32 + rhat % 2^32) * 2^32 from by ring]
   rw [h_decomp]
 
+/-- **L4 helper**: pure-Nat — under the standard preconditions, `q*dLo` is
+    bounded by `rhat*2^32 + div_un1`. This is the no-wrap precondition for
+    the `2^64 - q*dLo` subtraction in L4's LHS to be meaningful Nat-wise.
+
+    Direct from h_q_V_le + h_eucl. -/
+theorem algorithmUn21_L4_qdLo_le_rhat_div_un1
+    (u4 div_un1 dHi dLo q rhat : Nat)
+    (h_eucl : q * dHi + rhat = u4)
+    (h_q_V_le : q * (dHi * 2^32 + dLo) ≤ u4 * 2^32 + div_un1) :
+    q * dLo ≤ rhat * 2^32 + div_un1 := by
+  have h_u_mul : u4 * 2^32 = q * dHi * 2^32 + rhat * 2^32 := by
+    have h1 : (q * dHi + rhat) * 2^32 = u4 * 2^32 := by rw [h_eucl]
+    linarith [h1, Nat.add_mul (q * dHi) rhat (2^32)]
+  have h_qV_expand : q * (dHi * 2^32 + dLo) = q * dHi * 2^32 + q * dLo := by ring
+  linarith [h_q_V_le, h_qV_expand, h_u_mul]
+
 /-- **_of_tight sub-case "exact" L4** (pure-Nat modular identity): the core
     arithmetic claim used by L5. Given the standard preconditions
     (u = u4*2^32 + div_un1, V = dHi*2^32 + dLo, q*dHi + rhat = u4, etc.),
@@ -161,9 +177,10 @@ theorem algorithmUn21_L4_modular_identity
     (h_r_lt_V : (u4 * 2^32 + div_un1) - q * (dHi * 2^32 + dLo) < dHi * 2^32 + dLo) :
     (2^64 - q * dLo + (rhat % 2^32) * 2^32 + div_un1) % 2^64 =
       (u4 * 2^32 + div_un1) % (dHi * 2^32 + dLo) := by
-  -- Proof attempt encountered maxRecDepth on omega/linarith with large constants
-  -- (2^32, 2^64). Need to decompose into smaller helper lemmas with `set` aliases
-  -- for the powers to keep terms small. See PR #1289 commit history.
+  -- Proof attempt with `set` aliases hits "kernel deep recursion" — the proof
+  -- term blows up despite shorter omega calls. Need a different decomposition:
+  -- extract individual sub-claims (q*dLo bound, q-as-quotient, r value) into
+  -- separate small helpers so each is kernel-checked in isolation.
   sorry
 
 /-- **_of_tight sub-case "exact" L2.a**: Phase 1b Euclidean invariant at u4.
