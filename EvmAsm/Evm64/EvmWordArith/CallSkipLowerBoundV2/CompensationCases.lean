@@ -339,42 +339,6 @@ theorem div128Quot_qHat_plus_one_times_b3_gt_u_narrow_u4
   · exact div128Quot_qHat_plus_one_times_b3_gt_u_narrow_u4_wide_un21
       u4 u3 b3' hb3'_ge hu4_lt_b3' hu4_ge (by omega)
 
-/-- **A2.S2.wide_un21_narrow**: Phase 1 narrow-u4 (no Phase 1a correction) AND
-    un21 ∈ [dHi*2^32, vTop) (Phase 2 wide range, before Phase 1 false-alarm).
-
-    **Discovery**: the un21 < 2^63 sub-case is VACUOUSLY FALSE under our
-    standard preconditions (b3' ≥ 2^63 → dHi ≥ 2^31 → dHi*2^32 ≥ 2^63). So
-    `un21 ≥ dHi*2^32 ≥ 2^63` automatically — there's no un21 < 2^63 escape.
-
-    The proof reduces to the un21 ≥ 2^63 case, which IS the genuinely hard
-    Phase 2a-correction + Phase 2b-false-positive regime. -/
-theorem div128Quot_qHat_plus_one_times_b3_gt_u_wide_un21_narrow
-    (u4 u3 b3' : Word)
-    (hb3'_ge : b3'.toNat ≥ 2^63)
-    (hu4_lt_b3' : u4.toNat < b3'.toNat)
-    (hu4_lt : u4.toNat < (b3' >>> (32 : BitVec 6).toNat).toNat * 2^32)
-    (h_un21_ge_dHi_pow32 : (algorithmUn21 u4 u3 b3').toNat ≥
-      (b3' >>> (32 : BitVec 6).toNat).toNat * 2^32)
-    (h_un21_lt_vTop : (algorithmUn21 u4 u3 b3').toNat < b3'.toNat) :
-    ((div128Quot u4 u3 b3').toNat + 1) * b3'.toNat >
-      u4.toNat * 2^64 + u3.toNat := by
-  -- Under hb3'_ge, dHi ≥ 2^31. Combined with h_un21_ge_dHi_pow32 (un21 ≥ dHi*2^32),
-  -- un21 ≥ 2^31 * 2^32 = 2^63. So the un21 < 2^63 sub-case is vacuous.
-  have h_dHi_ge : (b3' >>> (32 : BitVec 6).toNat).toNat ≥ 2^31 := by
-    rw [BitVec.toNat_ushiftRight, AddrNorm.bv6_toNat_32, Nat.shiftRight_eq_div_pow]
-    have : b3'.toNat ≥ 2^63 := hb3'_ge
-    omega
-  have h_un21_ge_pow63 : (algorithmUn21 u4 u3 b3').toNat ≥ 2^63 := by
-    have h_lower : (b3' >>> (32 : BitVec 6).toNat).toNat * 2^32 ≥ 2^63 := by
-      have : 2^31 * 2^32 ≤ (b3' >>> (32 : BitVec 6).toNat).toNat * 2^32 :=
-        Nat.mul_le_mul_right _ h_dHi_ge
-      have h_eq : (2^31 : Nat) * 2^32 = 2^63 := by decide
-      omega
-    omega
-  -- The un21 ≥ 2^63 case: genuinely hard, Phase 2a correction + Phase 2b
-  -- false-positive analysis. Not yet attempted.
-  sorry
-
 /-- **A2.S2 helper: q1' overshoot closes the goal**. Under standard hyps +
     `q1' = q_true_1 + 1`, the (qHat+1)*b3' > u inequality holds via the
     OR-shift trick (div128Quot.toNat ≥ q1'*2^32 > q_true_full).
@@ -498,6 +462,62 @@ theorem div128Quot_qHat_plus_one_times_b3_gt_u_of_q1_prime_overshoot
       ((u4.toNat * 2^64 + u3.toNat) / b3'.toNat + 2) * b3'.toNat :=
     Nat.mul_le_mul_right _ h_div128_succ
   linarith [h_step1, h_qhat_plus_one]
+/-- **A2.S2.wide_un21_narrow**: Phase 1 narrow-u4 (no Phase 1a correction) AND
+    un21 ∈ [dHi*2^32, vTop) (Phase 2 wide range, before Phase 1 false-alarm).
+
+    **Decomposition via q1' case-split**:
+    - q1' = q_true_1 + 1 (off-by-one): closes via the `_of_q1_prime_overshoot`
+      helper (same OR-shift trick as `_wide_un21_wide`).
+    - q1' = q_true_1 (exact): un21 = r1_math, so r1_math ∈ [dHi*2^32, V).
+      This is the genuinely hard Phase 2 tight-bound regime under
+      un21 ≥ dHi*2^32 (Phase 2a corrects, Phase 2b may false-positive).
+      Stubbed for now. -/
+theorem div128Quot_qHat_plus_one_times_b3_gt_u_wide_un21_narrow
+    (u4 u3 b3' : Word)
+    (hb3'_ge : b3'.toNat ≥ 2^63)
+    (hu4_lt_b3' : u4.toNat < b3'.toNat)
+    (hu4_lt : u4.toNat < (b3' >>> (32 : BitVec 6).toNat).toNat * 2^32)
+    (h_un21_ge_dHi_pow32 : (algorithmUn21 u4 u3 b3').toNat ≥
+      (b3' >>> (32 : BitVec 6).toNat).toNat * 2^32)
+    (h_un21_lt_vTop : (algorithmUn21 u4 u3 b3').toNat < b3'.toNat) :
+    ((div128Quot u4 u3 b3').toNat + 1) * b3'.toNat >
+      u4.toNat * 2^64 + u3.toNat := by
+  -- Phase 1 q1' ∈ {q_true_1, q_true_1 + 1} (always, under standard hyps).
+  have h_q1_le := algorithmQ1Prime_le_q_true_1_plus_one u4 u3 b3'
+    hb3'_ge hu4_lt_b3' hu4_lt
+  have h_dHi_ge : (b3' >>> (32 : BitVec 6).toNat).toNat ≥ 2^31 := by
+    rw [BitVec.toNat_ushiftRight, AddrNorm.bv6_toNat_32, Nat.shiftRight_eq_div_pow]
+    have : b3'.toNat ≥ 2^63 := hb3'_ge; omega
+  have h_dHi_lt : (b3' >>> (32 : BitVec 6).toNat).toNat < 2^32 := by
+    rw [BitVec.toNat_ushiftRight, AddrNorm.bv6_toNat_32, Nat.shiftRight_eq_div_pow]
+    have : b3'.toNat < 2^64 := b3'.isLt
+    exact Nat.div_lt_of_lt_mul (by omega)
+  have h_dLo_lt :
+      ((b3' <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat).toNat < 2^32 := by
+    rw [BitVec.toNat_ushiftRight, AddrNorm.bv6_toNat_32, Nat.shiftRight_eq_div_pow]
+    have : (b3' <<< (32 : BitVec 6).toNat : Word).toNat < 2^64 :=
+      (b3' <<< (32 : BitVec 6).toNat : Word).isLt
+    exact Nat.div_lt_of_lt_mul (by omega)
+  have h_v_eq := div128Quot_vTop_decomp b3'
+  have h_u4_lt_vTop : u4.toNat <
+      (b3' >>> (32 : BitVec 6).toNat).toNat * 2^32 +
+      ((b3' <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat).toNat :=
+    Nat.lt_of_lt_of_le hu4_lt (Nat.le_add_right _ _)
+  have h_q1_ge : (u4.toNat * 2^32 + (u3 >>> (32 : BitVec 6).toNat).toNat) / b3'.toNat
+      ≤ (algorithmQ1Prime u4 u3 b3').toNat := by
+    have h := algorithmQ1Prime_ge_q_true_1 u4 u3 b3'
+      h_dHi_ge h_dHi_lt h_dLo_lt hu4_lt h_u4_lt_vTop
+    rw [← h_v_eq] at h; exact h
+  set q_true_1 := (u4.toNat * 2^32 + (u3 >>> (32 : BitVec 6).toNat).toNat) / b3'.toNat
+  have h_q1_or : (algorithmQ1Prime u4 u3 b3').toNat = q_true_1 ∨
+                 (algorithmQ1Prime u4 u3 b3').toNat = q_true_1 + 1 := by omega
+  rcases h_q1_or with h_eq | h_eq_plus_one
+  · -- Sub-case A: exact q1' = q_true_1. Hard Phase 2 regime; not yet attempted.
+    sorry
+  · -- Sub-case B: off-by-one q1' = q_true_1 + 1. Use the OR-shift helper.
+    exact div128Quot_qHat_plus_one_times_b3_gt_u_of_q1_prime_overshoot u4 u3 b3'
+      hb3'_ge hu4_lt_b3' hu4_lt h_eq_plus_one
+
 
 /-- **A2.S2.wide_un21_wide**: Phase 1 narrow-u4 AND un21 ≥ vTop. Closes via
     the contrapositive bridge (un21 ≥ V → q1' = q_true_1 + 1) +
