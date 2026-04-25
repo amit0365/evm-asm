@@ -138,6 +138,39 @@ theorem algorithmUn21_L4_qdLo_le_rhat_div_un1
   have h_qV_expand : q * (dHi * 2^32 + dLo) = q * dHi * 2^32 + q * dLo := by ring
   linarith [h_q_V_le, h_qV_expand, h_u_mul]
 
+/-- **L4 helper**: pure-Nat — under the standard preconditions,
+    `(u4*2^32 + div_un1) % V = rhat*2^32 + div_un1 - q*dLo`.
+
+    Established by showing `u = q*V + (rhat*2^32 + div_un1 - q*dLo)` (a
+    direct consequence of h_eucl + the q*dLo no-wrap of L4_qdLo_le helper),
+    plus the upper bound `r < V` (= h_r_lt_V hypothesis). -/
+theorem algorithmUn21_L4_quotient_remainder
+    (u4 div_un1 dHi dLo q rhat : Nat)
+    (h_eucl : q * dHi + rhat = u4)
+    (h_q_V_le : q * (dHi * 2^32 + dLo) ≤ u4 * 2^32 + div_un1)
+    (h_r_lt_V : (u4 * 2^32 + div_un1) - q * (dHi * 2^32 + dLo) < dHi * 2^32 + dLo) :
+    (u4 * 2^32 + div_un1) % (dHi * 2^32 + dLo) = rhat * 2^32 + div_un1 - q * dLo := by
+  have h_qdLo_le := algorithmUn21_L4_qdLo_le_rhat_div_un1 u4 div_un1 dHi dLo q rhat
+    h_eucl h_q_V_le
+  have h_u_mul : u4 * 2^32 = q * dHi * 2^32 + rhat * 2^32 := by
+    have h1 : (q * dHi + rhat) * 2^32 = u4 * 2^32 := by rw [h_eucl]
+    linarith [h1, Nat.add_mul (q * dHi) rhat (2^32)]
+  have h_qV : q * (dHi * 2^32 + dLo) = q * dHi * 2^32 + q * dLo := by ring
+  have h_cancel : q * dLo + (rhat * 2^32 + div_un1 - q * dLo) =
+      rhat * 2^32 + div_un1 := Nat.add_sub_cancel' h_qdLo_le
+  have h_u_decomp : u4 * 2^32 + div_un1 =
+      q * (dHi * 2^32 + dLo) + (rhat * 2^32 + div_un1 - q * dLo) := by
+    linarith [h_u_mul, h_qV, h_cancel]
+  have h_r_lt_V' : rhat * 2^32 + div_un1 - q * dLo < dHi * 2^32 + dLo := by
+    have h0 : (u4 * 2^32 + div_un1) - q * (dHi * 2^32 + dLo) < dHi * 2^32 + dLo := h_r_lt_V
+    rw [h_u_decomp, Nat.add_sub_cancel_left] at h0
+    exact h0
+  rw [h_u_decomp]
+  rw [show q * (dHi * 2^32 + dLo) + (rhat * 2^32 + div_un1 - q * dLo) =
+      (rhat * 2^32 + div_un1 - q * dLo) + (dHi * 2^32 + dLo) * q from by ring]
+  rw [Nat.add_mul_mod_self_left]
+  exact Nat.mod_eq_of_lt h_r_lt_V'
+
 /-- **_of_tight sub-case "exact" L4** (pure-Nat modular identity): the core
     arithmetic claim used by L5. Given the standard preconditions
     (u = u4*2^32 + div_un1, V = dHi*2^32 + dLo, q*dHi + rhat = u4, etc.),
