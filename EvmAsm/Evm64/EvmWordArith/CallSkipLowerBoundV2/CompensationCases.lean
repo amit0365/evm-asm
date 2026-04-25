@@ -10,9 +10,17 @@
 
   ## Contents
 
-  Down to ONE remaining sorry:
-  `algorithmQ0Prime_ge_q_true_0_of_un21_ge_pow63` (Phase 2 tightness for
-  un21 ∈ [max(dHi*2^32, 2^63), vTop) — see its docstring for math).
+  Down to TWO remaining sorries (decomposed from one):
+  - `..._of_un21_ge_pow63_rhat2c_lt_pow32` — no Word truncation; closable
+    via standard Knuth-B Phase 2 tightness with appropriate adjustments
+    for un21 ≥ 2^63.
+  - `..._of_un21_ge_pow63_rhat2c_ge_pow32` — Word truncation regime;
+    GENUINELY HARD, requires Knuth-B extension analogous to Phase 1b's
+    narrow-u4 + rhatc ≥ 2^32 issue.
+
+  Their umbrella `algorithmQ0Prime_ge_q_true_0_of_un21_ge_pow63` (closed
+  via dispatch) is the single shared blocker for `_narrow_wide_ge_pow63`.
+
   All wide-u4 sub-cases are vacuous via `hu4_lt_pow63 : u4 < 2^63`
   threaded from the top-level theorem.
 

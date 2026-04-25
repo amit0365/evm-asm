@@ -17,13 +17,18 @@
   **Top-level theorem `div128Quot_call_skip_ge_val256_div_v2` proven**
   via wrapper composition (assuming the single remaining sorry closes).
 
-  **1 sorry remains** — a single precisely-stated math sub-claim in
-  `CompensationCases.lean`:
+  **2 sorries remain** (decomposed from 1 to surface the truncation
+  boundary), both in `CompensationCases.lean`:
 
-  - `algorithmQ0Prime_ge_q_true_0_of_un21_ge_pow63` (sorry) — Phase 2
-    tightness extension to un21 ∈ [2^63, vTop) range (which neither
-    KB-LB8 nor KB-LB8' covers). Used in narrow-u4 + un21 ≥ 2^63 Phase 2
-    tightness sub-case. See `memory/project_un21_lt_vTop_plan.md`.
+  - `..._of_un21_ge_pow63_rhat2c_lt_pow32` — no Word truncation;
+    closable in a future iteration via standard Knuth-B Phase 2 tightness
+    with un21 ≥ 2^63 adjustments.
+  - `..._of_un21_ge_pow63_rhat2c_ge_pow32` — GENUINELY HARD; truncation
+    regime requiring Knuth-B extension. See
+    `memory/project_un21_lt_vTop_plan.md`.
+
+  The shared umbrella `algorithmQ0Prime_ge_q_true_0_of_un21_ge_pow63`
+  is closed via dispatch on `un21 mod dHi + dHi < 2^32` (= rhat2c bound).
 
   All wide-u4 sub-cases are now CLOSED VACUOUSLY via the `hu4_lt_pow63`
   hypothesis (u4 < 2^63), threaded through from the top-level theorem
