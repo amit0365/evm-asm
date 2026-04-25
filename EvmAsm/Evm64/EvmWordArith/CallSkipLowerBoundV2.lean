@@ -22,8 +22,8 @@
   - `algorithmQ0Prime_compensates_phase1_deficit` — Phase 2's q0' is at
     least q_true_full - q1' * 2^32 under no-overshoot at Phase 1.
     Knuth-B algorithm correctness for Phase 2.
-  - `algorithmQ0Prime_lt_pow32_of_q1_prime_not_overshoot` — q0' < 2^32
-    under no-overshoot. Required for the OR-shift halfword decomposition.
+  - `algorithmUn21_lt_vTop_of_q1_prime_not_overshoot` — un21 < vTop under
+    no-overshoot. Standard Knuth-B Phase 2 input invariant.
 
   Closure requires extending `KnuthTheoremB.lean` with a *global* qHat
   ≥ q_true_full lemma (handling the carry compensation between Phase 1

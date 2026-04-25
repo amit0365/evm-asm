@@ -22,12 +22,16 @@
       - `algorithmQ0Prime_compensates_phase1_deficit` (sorry) — Phase 2
         deficit compensation: q0' ≥ q_true_full - q1'*2^32. The Knuth-B-
         style algorithm-correctness content for Phase 2.
-      - `algorithmQ0Prime_lt_pow32_of_q1_prime_not_overshoot` (sorry) —
-        q0' < 2^32 under no-overshoot. Required for the OR-shift
-        halfword decomposition.
+      - `algorithmUn21_lt_vTop_of_q1_prime_not_overshoot` (sorry) —
+        algorithm invariant un21 < vTop under no-overshoot. Standard
+        Knuth-B Phase 2 input invariant.
+      - `algorithmQ0Prime_lt_pow32_of_q1_prime_not_overshoot` (closed) —
+        q0' < 2^32 under no-overshoot, via the un21 invariant + existing
+        `div128Quot_q0_prime_lt_pow32` algorithm-correctness bound.
       - `div128Quot_ge_q_true_full_of_q1_prime_not_overshoot` (closed) —
-        global compensation, composed from the two sub-lemmas above
-        plus `div128Quot_toNat_eq_algorithmQ1_Q0` and Nat algebra.
+        global compensation, composed from `_compensates_phase1_deficit`,
+        `_lt_pow32_of_q1_prime_not_overshoot`,
+        `div128Quot_toNat_eq_algorithmQ1_Q0`, and Nat algebra.
       - `_of_q1_prime_not_overshoot` (closed) — 3-line composition:
         the global lemma + `nat_succ_mul_gt_of_div_le`.
   - **A2.S2 sub-cases** (each delegating to the q1' helpers above):
@@ -449,14 +453,37 @@ theorem algorithmQ0Prime_compensates_phase1_deficit
   let _ := h_q1_le
   sorry
 
-/-- **A2.S2 q0' < 2^32 under no-overshoot** (TODO — algorithm-correctness).
+/-- **A2.S2 un21 < vTop under no-overshoot** (TODO — algorithm invariant).
 
-    The OR-shift halfword decomposition `div128Quot.toNat = q1' * 2^32 +
-    q0'` requires `q0' < 2^32` (so q0''s bits don't overlap with q1''s
-    shifted bits). In the no-overshoot regime, this should follow from
-    Phase 2's correction logic — but in the un21 ≥ vTop sub-case, q0'
-    can in principle exceed 2^32. Stubbed for the sub-lemma decomposition
-    of the global compensation argument. -/
+    Under no-overshoot at Phase 1 (`q1' ≤ q_true_1`), the algorithm's un21
+    satisfies `un21 < vTop = b3'.toNat`. This is the standard Knuth-B
+    invariant for Phase 2's input being well-formed (un21*2^32 + a0 < b3'
+    * 2^32, ensuring q0' < 2^32 by `Nat.div_lt_of_lt_mul`).
+
+    Sketch: `un21 = u_top - q1' * b3' (mod 2^64)`. If q1' = q_true_1, then
+    un21 = r1_math < b3'. If q1' < q_true_1, the algorithm's Phase 1b
+    correction logic is supposed to keep un21 below b3' (otherwise Phase 2
+    would overflow). The stubbed work is verifying this invariant carefully
+    over the algorithm's branches (Phase 1a/1b case-splits + Word truncation). -/
+theorem algorithmUn21_lt_vTop_of_q1_prime_not_overshoot
+    (u4 u3 b3' : Word)
+    (hb3'_ge : b3'.toNat ≥ 2^63)
+    (hu4_lt_b3' : u4.toNat < b3'.toNat)
+    (h_q1_le : (algorithmQ1Prime u4 u3 b3').toNat ≤
+      (u4.toNat * 2^32 + (u3 >>> (32 : BitVec 6).toNat).toNat) / b3'.toNat) :
+    (algorithmUn21 u4 u3 b3').toNat < b3'.toNat := by
+  -- Suppress unused-variable warnings for the placeholder.
+  let _ := hb3'_ge
+  let _ := hu4_lt_b3'
+  let _ := h_q1_le
+  sorry
+
+/-- **A2.S2 q0' < 2^32 under no-overshoot** — closed via composition.
+
+    Composes `algorithmUn21_lt_vTop_of_q1_prime_not_overshoot` (un21 < vTop)
+    with the existing `div128Quot_q0_prime_lt_pow32` algorithm-correctness
+    bound. The OR-shift halfword decomposition uses this to combine
+    `q1' * 2^32` and `q0'` cleanly. -/
 theorem algorithmQ0Prime_lt_pow32_of_q1_prime_not_overshoot
     (u4 u3 b3' : Word)
     (hb3'_ge : b3'.toNat ≥ 2^63)
@@ -464,11 +491,34 @@ theorem algorithmQ0Prime_lt_pow32_of_q1_prime_not_overshoot
     (h_q1_le : (algorithmQ1Prime u4 u3 b3').toNat ≤
       (u4.toNat * 2^32 + (u3 >>> (32 : BitVec 6).toNat).toNat) / b3'.toNat) :
     (algorithmQ0Prime u4 u3 b3').toNat < 2^32 := by
-  -- Suppress unused-variable warnings for the placeholder.
-  let _ := hb3'_ge
-  let _ := hu4_lt_b3'
-  let _ := h_q1_le
-  sorry
+  -- Standard derivations (b3' halves).
+  have h_dHi_ge : (b3' >>> (32 : BitVec 6).toNat).toNat ≥ 2^31 := by
+    rw [BitVec.toNat_ushiftRight, AddrNorm.bv6_toNat_32, Nat.shiftRight_eq_div_pow]
+    have : b3'.toNat ≥ 2^63 := hb3'_ge; omega
+  have h_dHi_lt : (b3' >>> (32 : BitVec 6).toNat).toNat < 2^32 := by
+    rw [BitVec.toNat_ushiftRight, AddrNorm.bv6_toNat_32, Nat.shiftRight_eq_div_pow]
+    have : b3'.toNat < 2^64 := b3'.isLt
+    exact Nat.div_lt_of_lt_mul (by omega)
+  have h_dLo_lt :
+      ((b3' <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat).toNat < 2^32 := by
+    rw [BitVec.toNat_ushiftRight, AddrNorm.bv6_toNat_32, Nat.shiftRight_eq_div_pow]
+    have : (b3' <<< (32 : BitVec 6).toNat : Word).toNat < 2^64 :=
+      (b3' <<< (32 : BitVec 6).toNat : Word).isLt
+    exact Nat.div_lt_of_lt_mul (by omega)
+  have h_v_eq : b3'.toNat =
+      (b3' >>> (32 : BitVec 6).toNat).toNat * 2^32 +
+      ((b3' <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat).toNat :=
+    div128Quot_vTop_decomp b3'
+  -- un21 < vTop (sub-lemma stub).
+  have h_un21_lt_vTop := algorithmUn21_lt_vTop_of_q1_prime_not_overshoot
+    u4 u3 b3' hb3'_ge hu4_lt_b3' h_q1_le
+  rw [h_v_eq] at h_un21_lt_vTop
+  -- Apply existing algorithm-correctness bound.
+  rw [algorithmQ0Prime_unfold]
+  exact div128Quot_q0_prime_lt_pow32 (algorithmUn21 u4 u3 b3')
+    (b3' >>> (32 : BitVec 6).toNat)
+    ((b3' <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat) u3
+    h_dHi_ge h_dHi_lt h_dLo_lt h_un21_lt_vTop
 
 /-- **A2.S2 global Phase 1+2 compensation lemma** — closed via composition.
 
