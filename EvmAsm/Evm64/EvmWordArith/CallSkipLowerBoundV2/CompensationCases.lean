@@ -662,10 +662,27 @@ theorem algorithmQ0Prime_ge_q_true_0_of_q1_prime_eq_q_true_1_narrow_wide_lt_pow6
 
     **Mathematical content**: Phase 2b's ult check on
     `(rhat2c << 32 | div_un0) < q0c * dLo` can suffer Word truncation
-    when rhat2c ≥ 2^32 (analogous to Phase 1b's narrow-u4 + rhatc ≥
-    2^32 issue documented in `project_a2s2_per_phase_tightness_fails.md`).
-    Closing requires extending Knuth Theorem B with the rhat2c ≥ 2^32
-    truncation handling — see `project_un21_lt_vTop_plan.md`.
+    when rhat2c ≥ 2^32. Specifically, since un21 ≥ dHi*2^32 (wide-un21):
+    - Phase 2a fires (hi2 ≠ 0): q0c = q0 - 1, rhat2c = un21 mod dHi + dHi.
+    - rhat2c ∈ [dHi, 2*dHi). With dHi ≥ 2^31, 2*dHi ≥ 2^32, so rhat2c
+      can exceed 2^32 (specifically when un21 mod dHi ≥ 2^32 - dHi).
+
+    **Decomposition path** for closure:
+    1. Sub-case rhat2c < 2^32 (un21 mod dHi < 2^32 - dHi): no truncation,
+       Phase 2b's ult check is honest. Standard Knuth-B Phase 2 tightness
+       reasoning closes this directly.
+    2. Sub-case rhat2c ≥ 2^32: truncated `(rhat2c << 32) = (rhat2c - 2^32)
+       * 2^32` (high bit shifted out). Phase 2b's truncated ult check may
+       differ from un-truncated. Need to verify Knuth-B's compensation
+       still produces q0' ≥ q_true_0.
+
+    Path 1 is closable with existing helpers (essentially KB-LB8 with
+    rhat2c < 2^32 ensuring no overflow). Path 2 is the genuinely-hard
+    boundary requiring rhat2c truncation analysis analogous to Phase 1b's
+    narrow-u4 + rhatc ≥ 2^32 issue documented in
+    `project_a2s2_per_phase_tightness_fails.md`. Closing requires
+    extending Knuth Theorem B with the rhat2c ≥ 2^32 truncation handling
+    — see `project_un21_lt_vTop_plan.md`.
 
     With this one sorry closed, PR #1289 (call-skip lower bound) is
     fully proven. -/
