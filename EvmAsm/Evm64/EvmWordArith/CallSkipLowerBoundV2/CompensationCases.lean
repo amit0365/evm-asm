@@ -159,6 +159,20 @@ theorem two_step_div_identity (A a1 a0 V : Nat) (hV_pos : 0 < V) :
   rw [h_full, Nat.add_mul_div_right _ _ hV_pos, Nat.div_eq_of_lt h_r0_lt,
       Nat.zero_add]
 
+/-- **q_true_1 < 2^32**: pure Nat helper. Under `u4 < b3'` and `a1 < 2^32`,
+    `(u4 * 2^32 + a1) / b3' < 2^32`. Used by the wide-u4 no-undershoot
+    sub-cases to bound q_true_1 against the algorithm's q1'. -/
+theorem q_true_1_lt_pow32 (u4 a1 b3' : Nat)
+    (hu4 : u4 < b3') (ha1 : a1 < 2^32) :
+    (u4 * 2^32 + a1) / b3' < 2^32 := by
+  apply Nat.div_lt_of_lt_mul
+  -- Need: u4 * 2^32 + a1 < b3' * 2^32.
+  have h_u4_mul : u4 * 2^32 + 2^32 ≤ b3' * 2^32 := by
+    have : u4 + 1 ≤ b3' := hu4
+    calc u4 * 2^32 + 2^32 = (u4 + 1) * 2^32 := by ring
+      _ ≤ b3' * 2^32 := Nat.mul_le_mul_right _ this
+  omega
+
 /-- **A2.S1.body** (pure Nat + abstract phase hypotheses): if the algorithm's
     qHat decomposes as `q1'*2^32 + q0'` (halfword combine output) AND the
     phase-wise tight bounds `q_true_1 ≤ q1'` and `q_true_0 ≤ q0'` hold AND
