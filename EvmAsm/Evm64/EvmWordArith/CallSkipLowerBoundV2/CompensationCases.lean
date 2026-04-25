@@ -566,16 +566,24 @@ theorem algorithmQ1Prime_ge_q_true_1_in_wide_u4_q1_eq_pow32_loose
     **DISCOVERY (2026-04-25)**: this sub-case's claim is GENUINELY FALSE
     in a specific Word-truncation sub-regime.
 
-    **Concrete failing example**: dHi = 2^32 - 1, dLo = 2^32 - 1,
-    r = 1 (so u4 = (2^32-1)*2^32 + 1, b3' = (2^32-1)*2^32 + (2^32-1),
-    a1 = 0). Then:
-    - q_true_1 = 2^32 - 1 (boundary).
-    - q1 = u4/dHi = 2^32. q1c = q1 - 1 = 2^32 - 1 = q_true_1.
-    - rhatc = r + dHi = 1 + (2^32 - 1) = 2^32. Truncation case.
-    - Truncated `(rhatc << 32 | div_un1).toNat` = 0 + 0 = 0.
-    - q1c * dLo = (2^32 - 1)^2. Truncated check `0 < (2^32-1)^2` FIRES.
-    - Phase 1b corrects: q1' = q1c - 1 = 2^32 - 2 = q_true_1 - 1.
-    - **Undershoot**.
+    **Concrete failing example** (full algorithm trace, not just Phase 1):
+    u4 = 2^64 - 2^32 + 1, b3' = 2^64 - 1, u3 = 0. Then q_true_1 = 2^32 - 1
+    (boundary), q_true_full = 2^64 - 2^32 + 1.
+
+    Tracing through the algorithm:
+    - q1 = 2^32, q1c = 2^32 - 1, rhat = 1, rhatc = 2^32 (truncation!).
+    - (rhatc << 32) wraps to 0. Phase 1b ult `0 < (2^32-1)^2` FIRES.
+      q1' = 2^32 - 2 (= q_true_1 - 1, undershoot).
+    - rhat' = rhatc + dHi = 2^33 - 1. un21 (Word) = ((rhat'<<32)|0) -
+      q1'*dLo = (2^64 - 2^32) - (2^64 - 3*2^32 + 2) = 2^33 - 2.
+    - Phase 2: q0 = 2, q0c = 2, rhat2 = 0, q0c*dLo = 2*(2^32-1).
+      ult `0 < 2*(2^32-1)` FIRES. q0' = 1.
+    - div128Quot.toNat = (2^32-2)*2^32 + 1 = 2^64 - 2^33 + 1.
+    - q_true_full - div128Quot.toNat = 2^32. **The full algorithm
+      undershoots by 2^32!**
+
+    See `memory/project_wide_u4_no_undershoot_false_in_b2.md` for the
+    full trace and architectural implications.
 
     **Path 1 (rhatc < 2^32) is impossible** in general: r ≤ dLo and
     rhatc = r + dHi can exceed 2^32 when dHi + dLo > 2^32 (which is the
