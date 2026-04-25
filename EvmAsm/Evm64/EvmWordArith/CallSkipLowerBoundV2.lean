@@ -17,20 +17,21 @@
   **Top-level theorem `div128Quot_call_skip_ge_val256_div_v2` proven**
   via wrapper composition (assuming the single remaining sorry closes).
 
-  **3 sorries remain** — all precisely-stated algorithm-correctness
-  sub-claims in `CompensationCases.lean`. All higher-level wrappers
-  (deficit lemma, un21 invariants, q0' < 2^32, global compensation,
-  not-overshoot helper) are CLOSED via composition.
+  **4 sorries remain** — all precisely-stated focused sub-claims in
+  `CompensationCases.lean`. All higher-level wrappers are CLOSED via
+  composition. The Phase 2 tightness umbrella now dispatches via 2x2
+  case-split on (u4 regime × un21 regime).
 
-  - `algorithmQ0Prime_ge_q_true_0_of_q1_prime_eq_q_true_1` — Phase 2
-    tightness under exact Phase 1 (q1' = q_true_1 → q0' ≥ q_true_0).
-    Wraps existing `algorithmQ0Prime_ge_q_true_0` with un21 bounds.
+  - `algorithmQ0Prime_ge_q_true_0_of_q1_prime_eq_q_true_1_narrow_wide` —
+    Phase 2 tightness in narrow-u4 + un21 ∈ [dHi*2^32, vTop) sub-case.
+    Needs `_of_un21_lt_pow63` and r1_math < 2^63 (not always given).
+  - `algorithmQ0Prime_ge_q_true_0_of_q1_prime_eq_q_true_1_wide_u4` —
+    Phase 2 tightness in wide-u4 (depends on the new wide-u4 un21 =
+    r1_math equality).
   - `algorithmQ1Prime_ge_q_true_1_in_wide_u4` — KEY structural claim
-    that wide-u4 Phase 1 never undershoots q_true_1. With no-overshoot,
-    forces q1' = q_true_1 (exact).
+    that wide-u4 Phase 1 never undershoots q_true_1.
   - `algorithmUn21_eq_r1_math_in_wide_u4_exact` — wide-u4 variant of
-    the existing un21 = r1_math equality (currently only proven under
-    narrow-u4). Used to derive un21 = r1_math < vTop from q1' = q_true_1.
+    the existing un21 = r1_math equality.
 
   Closure requires extending `KnuthTheoremB.lean` with a *global* qHat
   ≥ q_true_full lemma (handling the carry compensation between Phase 1
