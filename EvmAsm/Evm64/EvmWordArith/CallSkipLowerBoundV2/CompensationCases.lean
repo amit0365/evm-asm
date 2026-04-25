@@ -631,8 +631,27 @@ theorem algorithmQ0Prime_ge_q_true_0_of_q1_prime_eq_q_true_1_narrow_wide_lt_pow6
 
     The genuinely-hard regime un21 ∈ [max(dHi*2^32, 2^63), vTop) — neither
     `_of_un21_lt_pow63` (KB-LB8) nor `_of_un21_lt_dHi_mul_pow32` (KB-LB8')
-    applies here. Documented as a blocker in
-    `memory/project_un21_lt_vTop_plan.md`.
+    applies here.
+
+    **Why both existing variants miss this range**:
+    - KB-LB8' (`_of_un21_lt_dHi_mul_pow32`) requires un21 < dHi*2^32, but
+      our regime has un21 ≥ dHi*2^32 (wide-un21).
+    - KB-LB8 (`_of_un21_lt_pow63`) requires un21 < 2^63. With dHi ≥ 2^31,
+      we have dHi*2^32 ≥ 2^63, so un21 ≥ dHi*2^32 may equal or exceed 2^63
+      (typical when dHi > 2^31).
+
+    The remaining range un21 ∈ [max(dHi*2^32, 2^63), vTop) is where Phase
+    2b's ult check on `(rhat2c << 32 | div_un0) < q0c * dLo` may suffer
+    Word truncation when rhat2c ≥ 2^32 — analogous to Phase 1b's spurious
+    correction in narrow-u4 + rhatc ≥ 2^32 (the issue documented in
+    `project_a2s2_per_phase_tightness_fails.md`).
+
+    **Path to closure** (per `project_un21_lt_vTop_plan.md`):
+    extend Knuth Theorem B (TAOCP §4.3.1) to handle the rhat2c ≥ 2^32
+    truncation regime via an analogous compensation argument. The
+    untruncated Phase 2 tightness holds; the work is showing the
+    truncated Word ult-check still produces a q0' that satisfies the
+    lower bound (or tracking the exact compensation shift if not).
 
     Stated in terms of un21 directly (parallel to the existing Phase 2
     tightness wrappers in QuotientBounds.lean). Used by both the
