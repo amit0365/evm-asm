@@ -210,11 +210,38 @@ theorem algorithmUn21_L4_modular_identity
     (h_r_lt_V : (u4 * 2^32 + div_un1) - q * (dHi * 2^32 + dLo) < dHi * 2^32 + dLo) :
     (2^64 - q * dLo + (rhat % 2^32) * 2^32 + div_un1) % 2^64 =
       (u4 * 2^32 + div_un1) % (dHi * 2^32 + dLo) := by
-  -- Proof attempt with `set` aliases hits "kernel deep recursion" — the proof
-  -- term blows up despite shorter omega calls. Need a different decomposition:
-  -- extract individual sub-claims (q*dLo bound, q-as-quotient, r value) into
-  -- separate small helpers so each is kernel-checked in isolation.
-  sorry
+  -- Compose three closed L4 helpers to keep the kernel-checked proof small.
+  have h_qdLo_le := algorithmUn21_L4_qdLo_le_rhat_div_un1 u4 div_un1 dHi dLo q rhat
+    h_eucl h_q_V_le
+  have h_r_eq := algorithmUn21_L4_quotient_remainder u4 div_un1 dHi dLo q rhat
+    h_eucl h_q_V_le h_r_lt_V
+  have h_combine := algorithmUn21_L4_halfword_combine rhat
+  -- Define r explicitly.
+  rw [h_r_eq]
+  -- r < V < 2^64.
+  have h_r_lt_V_actual : rhat * 2^32 + div_un1 - q * dLo < dHi * 2^32 + dLo := by
+    rw [← h_r_eq]; exact Nat.mod_lt _ (by linarith [hV_lt])
+  have h_r_lt_pow : rhat * 2^32 + div_un1 - q * dLo < 2^64 := by linarith
+  -- LHS_pre + (rhat/2^32)*2^64 = 2^64 + r.
+  have h_lhs_plus_h64 :
+      2^64 - q * dLo + rhat % 2^32 * 2^32 + div_un1 + (rhat / 2^32) * 2^64 =
+      2^64 + (rhat * 2^32 + div_un1 - q * dLo) := by
+    have h_reorder :
+        2^64 - q * dLo + rhat % 2^32 * 2^32 + div_un1 + (rhat / 2^32) * 2^64 =
+        2^64 - q * dLo + (rhat % 2^32 * 2^32 + (rhat / 2^32) * 2^64) + div_un1 := by linarith
+    rw [h_reorder, h_combine]
+    have hq_le_64 : q * dLo ≤ 2^64 := le_of_lt h_q_dLo_no_wrap
+    omega
+  -- (LHS_pre + (rhat/2^32)*2^64) % 2^64 = LHS_pre % 2^64.
+  have h_mod_eq :
+      (2^64 - q * dLo + rhat % 2^32 * 2^32 + div_un1) % 2^64 =
+      (2^64 - q * dLo + rhat % 2^32 * 2^32 + div_un1 + (rhat / 2^32) * 2^64) % 2^64 :=
+    (Nat.add_mul_mod_self_right _ _ _).symm
+  rw [h_mod_eq, h_lhs_plus_h64]
+  rw [show 2^64 + (rhat * 2^32 + div_un1 - q * dLo) =
+      (rhat * 2^32 + div_un1 - q * dLo) + 2^64 from by ring]
+  rw [Nat.add_mod_right]
+  exact Nat.mod_eq_of_lt h_r_lt_pow
 
 /-- **_of_tight sub-case "exact" L2.a**: Phase 1b Euclidean invariant at u4.
     Wraps `div128Quot_phase1b_post`. After Phase 1b, the corrected pair
