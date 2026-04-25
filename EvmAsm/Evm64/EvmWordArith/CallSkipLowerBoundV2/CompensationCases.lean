@@ -650,7 +650,22 @@ theorem algorithmQ1Prime_ge_q_true_1_in_wide_u4_q1_eq_pow32
   · exact algorithmQ1Prime_ge_q_true_1_in_wide_u4_q1_eq_pow32_loose u4 u3 b3'
       hb3'_ge hu4_ge (by omega)
 
-/-- **A2.S2 wide-u4 no-undershoot claim** (TODO — KEY STRUCTURAL CLAIM).
+/-- **A2.S2 wide-u4 no-undershoot claim** (TODO — VACUOUS under
+    top-level normalization, see RESOLUTION below).
+
+    **RESOLUTION (2026-04-25)**: this claim and ALL its sub-cases (A, B.1,
+    B.2) are VACUOUSLY TRUE in the actual call chain. The top-level
+    theorem `div128Quot_call_skip_ge_val256_div_v2` enforces
+    `u4 = a3 >> antiShift` with antiShift ≥ 1, giving `u4 < 2^63`.
+
+    Combined with wide-u4 (u4 ≥ dHi*2^32) and hb3'_ge (dHi ≥ 2^31):
+    - u4 ≥ dHi*2^32 ≥ 2^63 ∧ u4 < 2^63 → contradiction.
+
+    To close: thread `u4 < 2^63` through `div128Quot_ge_q_true_normalized`
+    and into this lemma's hypotheses. Then `exfalso` + omega closes.
+
+    See `memory/project_wide_u4_no_undershoot_false_in_b2.md` for the
+    full analysis.
 
     In wide-u4 (`u4 ≥ dHi*2^32`), Phase 1's q1' is never less than q_true_1.
     I.e., the algorithm's Phase 1b spurious-fire (under Word truncation when
