@@ -197,6 +197,27 @@ theorem q_true_1_lt_pow32 (u4 a1 b3' : Nat)
       _ ≤ b3' * 2^32 := Nat.mul_le_mul_right _ this
   omega
 
+/-- **q0_le_pow32_plus_one**: pure Nat helper. Under `un21 < dHi*2^32 + dLo`
+    with `dHi ≥ 2^31`, `dLo < 2^32`, the Phase 2 trial quotient `q0 = un21/dHi`
+    is at most `2^32 + 1`. Used by `_rhat2c_lt_pow32` (the closable Phase 2
+    tightness sub-case) to bound q0c. -/
+theorem q0_le_pow32_plus_one (un21 dHi dLo : Nat)
+    (hdHi_ge : dHi ≥ 2^31)
+    (hdLo_lt : dLo < 2^32)
+    (h_un21_lt_vTop : un21 < dHi * 2^32 + dLo) :
+    un21 / dHi ≤ 2^32 + 1 := by
+  -- Proof: dLo < 2^32 ≤ 2*dHi (since dHi ≥ 2^31). Hence
+  -- un21 < dHi*2^32 + dLo < dHi*2^32 + 2*dHi = dHi*(2^32 + 2).
+  -- So un21/dHi < 2^32 + 2, i.e. ≤ 2^32 + 1.
+  have h_dHi_pos : 0 < dHi := by omega
+  have h_2dHi : 2 * dHi ≥ 2^32 := by have : dHi ≥ 2^31 := hdHi_ge; omega
+  have h_un21_lt_mul : un21 < dHi * (2^32 + 2) := by
+    have h1 : dHi * (2^32 + 2) = dHi * 2^32 + 2 * dHi := by ring
+    rw [h1]; omega
+  have h_div_lt : un21 / dHi < 2^32 + 2 :=
+    (Nat.div_lt_iff_lt_mul h_dHi_pos).mpr (by linarith [h_un21_lt_mul])
+  omega
+
 /-- **A2.S1.body** (pure Nat + abstract phase hypotheses): if the algorithm's
     qHat decomposes as `q1'*2^32 + q0'` (halfword combine output) AND the
     phase-wise tight bounds `q_true_1 ≤ q1'` and `q_true_0 ≤ q0'` hold AND
