@@ -305,6 +305,34 @@ theorem algorithmUn21_L1c_un21_toNat_case_simple (u4 u3 b3' : Word) :
   rw [algorithmUn21_unfold]
   exact BitVec.toNat_sub _ _
 
+/-- **_of_tight sub-case "exact" L2.a-wrapped**: rewrites L2.a using the
+    irreducible `algorithmQ1Prime` wrapper so the lemma can compose with
+    `h_q1_prime_eq : (algorithmQ1Prime u4 u3 b3').toNat = q_true_1`. -/
+theorem algorithmUn21_L2a_wrapped
+    (u4 u3 b3' : Word)
+    (hb3'_ge : b3'.toNat ≥ 2^63) :
+    let dHi := b3' >>> (32 : BitVec 6).toNat
+    let dLo := (b3' <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat
+    let div_un1 := u3 >>> (32 : BitVec 6).toNat
+    let q1 := rv64_divu u4 dHi
+    let rhat := u4 - q1 * dHi
+    let hi1 := q1 >>> (32 : BitVec 6).toNat
+    let q1c := if hi1 = 0 then q1 else q1 + signExtend12 4095
+    let rhatc := if hi1 = 0 then rhat else rhat + dHi
+    let qDlo := q1c * dLo
+    let rhatUn1 := (rhatc <<< (32 : BitVec 6).toNat) ||| div_un1
+    let rhat' := if BitVec.ult rhatUn1 qDlo then rhatc + dHi else rhatc
+    (algorithmQ1Prime u4 u3 b3').toNat * dHi.toNat + rhat'.toNat = u4.toNat := by
+  intro dHi dLo div_un1 q1 rhat hi1 q1c rhatc qDlo rhatUn1 rhat'
+  have h_unfold := algorithmQ1Prime_unfold u4 u3 b3'
+  have h_l2a := algorithmUn21_L2a_phase1b_euclidean_at_u4 u4 u3 b3' hb3'_ge
+  simp only [] at h_l2a
+  -- The unfolded q1' Word IS the let-bound q1' in h_l2a.
+  show (algorithmQ1Prime u4 u3 b3').toNat * dHi.toNat + rhat'.toNat = u4.toNat
+  rw [h_unfold]
+  simp only []
+  exact h_l2a
+
 /-- **_of_tight sub-case "exact" L2.b**: under narrow-u4, the post-Phase-1b
     rhat' is bounded by 2^33. Composes step4 (rhatc < 2^32) with the Phase 1b
     correction structure (rhat' ∈ {rhatc, rhatc + dHi}). -/
@@ -376,11 +404,20 @@ theorem algorithmUn21_eq_r1_math_of_q1_prime_eq_q_true_1
       (b3' >>> (32 : BitVec 6).toNat).toNat * 2^32 +
       ((b3' <<< (32 : BitVec 6).toNat) >>> (32 : BitVec 6).toNat).toNat :=
     h_v_eq ▸ hu4_lt_b3'
-  -- Apply KB-3m (un21 additive identity) with rhatUn1 as the actual one.
-  -- We need: un21 + (rhat'/2^32) * 2^64 + q1' * vTop = u4*2^32 + div_un1
-  -- under no-wrap B ≤ A.
-  -- Strategy: show no-wrap via contradiction (if wrap, Word bound violated).
-  -- This requires considerable Word analysis; deferred.
+  -- L5 composition path:
+  -- 1. L1.c: algorithmUn21.toNat = (2^64 - cu_q1_dlo + cu_rhat_un1) % 2^64.
+  -- 2. L1.a: cu_rhat_un1.toNat = (rhat'.toNat % 2^32) * 2^32 + div_un1.
+  -- 3. L1.b: cu_q1_dlo.toNat = q1'.toNat * dLo (no-wrap).
+  -- 4. h_q1_prime_eq: q1'.toNat = q_true_1 := (u4*2^32 + div_un1) / b3'.
+  -- 5. L2.a: q1'.toNat * dHi + rhat'.toNat = u4.toNat.
+  -- 6. L2.b: rhat'.toNat < 2^33 (under narrow-u4).
+  -- 7. L4: combines 1-6 + Nat.div_add_mod into the modular identity.
+  -- BLOCKED: L4 application requires unifying h_l2a's q1' Word (let-bound
+  -- inside the algorithm's full chain) with q := (u4*2^32+div_un1)/b3' (Nat).
+  -- The substitution involves rewriting q1'.toNat → q in the let-chain, but
+  -- the let-bound q1' is wrapped in if-then-else over BitVec.ult that doesn't
+  -- naturally accept the rewrite. Need a small `algorithmUn21_L5_q_substitution`
+  -- helper that rewrites L2.a in terms of the wrapper-style q1' = algorithmQ1Prime.
   sorry
 
 /-- **_of_tight sub-case "off-by-one"**: when `q1' = q_true_1 + 1` (Phase 1b
