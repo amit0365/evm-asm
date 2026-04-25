@@ -146,12 +146,14 @@ theorem algorithmQ0Prime_ge_q_true_0_of_un21_lt_pow63
 
 /-- **Bridge sub-A (weak, `+2`)**: `algorithmQ1Prime.toNat ≤ q_true_1 + 2`
     stepping stone. Combines Phase 1b's q1' ≤ u4/dHi with Knuth-B trial_le
-    giving u4/dHi ≤ q_true_1 + 2 (under normalization). -/
+    giving u4/dHi ≤ q_true_1 + 2 (under normalization).
+
+    Holds under just hb3'_ge + hu4_lt_b3' — does NOT require
+    `u4 < dHi*2^32` (the weak bound applies even in narrow_u4 regime). -/
 theorem algorithmQ1Prime_le_q_true_1_plus_two
     (u4 u3 b3' : Word)
     (hb3'_ge : b3'.toNat ≥ 2^63)
-    (hu4_lt_b3' : u4.toNat < b3'.toNat)
-    (hu4_lt_dHi_pow32 : u4.toNat < (b3' >>> (32 : BitVec 6).toNat).toNat * 2^32) :
+    (hu4_lt_b3' : u4.toNat < b3'.toNat) :
     (algorithmQ1Prime u4 u3 b3').toNat ≤
       (u4.toNat * 2^32 + (u3 >>> (32 : BitVec 6).toNat).toNat) / b3'.toNat + 2 := by
   set dHi := b3' >>> (32 : BitVec 6).toNat with hdHi_def
