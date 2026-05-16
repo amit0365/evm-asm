@@ -1,0 +1,311 @@
+From 2f546e031bd4a92c529de660428270a6b3e4085c Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Fri, 15 May 2026 20:33:39 +0000
+Subject: [PATCH 01/12] Add HAWK-512 and HAWK-1024 m4 scheme scaffolds
+
+Drop-in skeletons for crypto_sign/hawk{512,1024}/m4/ with the canonical
+pqm4 layout: api.h with NIST PQC entry points and HAWK Round-2 sizes,
+params.h, and keygen/sign/verify C stubs. All entry points currently
+return -1; the per-file headers track the work plan (Plantard NTT port
+from UIC-ESLAS/ImprovedPlantardArithmetic, NTRUgen-based keygen with
+M4 inline assembly in the recursive base case, isochronous CDT sampler,
+reuse of pqm4 SHAKE-256 assembly).
+---
+ crypto_sign/hawk1024/m4/api.h    | 14 ++++++++++++++
+ crypto_sign/hawk1024/m4/keygen.c | 20 ++++++++++++++++++++
+ crypto_sign/hawk1024/m4/params.h | 15 +++++++++++++++
+ crypto_sign/hawk1024/m4/sign.c   | 27 +++++++++++++++++++++++++++
+ crypto_sign/hawk1024/m4/verify.c | 27 +++++++++++++++++++++++++++
+ crypto_sign/hawk512/m4/api.h     | 14 ++++++++++++++
+ crypto_sign/hawk512/m4/keygen.c  | 20 ++++++++++++++++++++
+ crypto_sign/hawk512/m4/params.h  | 22 ++++++++++++++++++++++
+ crypto_sign/hawk512/m4/sign.c    | 27 +++++++++++++++++++++++++++
+ crypto_sign/hawk512/m4/verify.c  | 27 +++++++++++++++++++++++++++
+ 10 files changed, 213 insertions(+)
+ create mode 100644 crypto_sign/hawk1024/m4/api.h
+ create mode 100644 crypto_sign/hawk1024/m4/keygen.c
+ create mode 100644 crypto_sign/hawk1024/m4/params.h
+ create mode 100644 crypto_sign/hawk1024/m4/sign.c
+ create mode 100644 crypto_sign/hawk1024/m4/verify.c
+ create mode 100644 crypto_sign/hawk512/m4/api.h
+ create mode 100644 crypto_sign/hawk512/m4/keygen.c
+ create mode 100644 crypto_sign/hawk512/m4/params.h
+ create mode 100644 crypto_sign/hawk512/m4/sign.c
+ create mode 100644 crypto_sign/hawk512/m4/verify.c
+
+diff --git a/crypto_sign/hawk1024/m4/api.h b/crypto_sign/hawk1024/m4/api.h
+new file mode 100644
+index 0000000..fd7cc46
+--- /dev/null
++++ b/crypto_sign/hawk1024/m4/api.h
+@@ -0,0 +1,14 @@
++#include <stddef.h>
++
++#define CRYPTO_SECRETKEYBYTES   360
++#define CRYPTO_PUBLICKEYBYTES   2440
++#define CRYPTO_BYTES            1221
++#define CRYPTO_ALGNAME          "HAWK-1024"
++
++int crypto_sign_keypair(unsigned char *pk, unsigned char *sk);
++int crypto_sign(unsigned char *sm, size_t *smlen,
++	const unsigned char *m, size_t mlen,
++	const unsigned char *sk);
++int crypto_sign_open(unsigned char *m, size_t *mlen,
++	const unsigned char *sm, size_t smlen,
++	const unsigned char *pk);
+diff --git a/crypto_sign/hawk1024/m4/keygen.c b/crypto_sign/hawk1024/m4/keygen.c
+new file mode 100644
+index 0000000..9eefeb1
+--- /dev/null
++++ b/crypto_sign/hawk1024/m4/keygen.c
+@@ -0,0 +1,20 @@
++/*
++ * keygen.c — HAWK-1024 key generation (pqm4 m4 implementation).
++ *
++ * Strategy:
++ *   1. Sample (f, g) using NTRUgen (Pornin, eprint 2025/1239); the portable
++ *      C is reused unchanged, with M4 inline assembly grafted into the
++ *      recursive base case.
++ *   2. NTRU-solve to get (F, G).
++ *   3. Compute the HAWK public key (q00, q01) in Plantard-NTT domain.
++ *   4. Encode pk = (q00, q01); sk = compressed (f, g, F, G).
++ */
++
++#include "api.h"
++#include "params.h"
++
++int crypto_sign_keypair(unsigned char *pk, unsigned char *sk) {
++    (void)pk;
++    (void)sk;
++    return -1;
++}
+diff --git a/crypto_sign/hawk1024/m4/params.h b/crypto_sign/hawk1024/m4/params.h
+new file mode 100644
+index 0000000..ba93738
+--- /dev/null
++++ b/crypto_sign/hawk1024/m4/params.h
+@@ -0,0 +1,15 @@
++/*
++ * params.h — HAWK-1024 parameters (Round-2 spec, May 2025).
++ */
++
++#ifndef HAWK1024_M4_PARAMS_H
++#define HAWK1024_M4_PARAMS_H
++
++#define HAWK_LOGN    10
++#define HAWK_N      (1 << HAWK_LOGN)   /* 1024 */
++
++#define HAWK_Q       18433
++#define HAWK_QINV    /* TODO */
++#define HAWK_R2MOD   /* TODO */
++
++#endif /* HAWK1024_M4_PARAMS_H */
+diff --git a/crypto_sign/hawk1024/m4/sign.c b/crypto_sign/hawk1024/m4/sign.c
+new file mode 100644
+index 0000000..0a32ee7
+--- /dev/null
++++ b/crypto_sign/hawk1024/m4/sign.c
+@@ -0,0 +1,27 @@
++/*
++ * sign.c — HAWK-1024 signature generation (pqm4 m4 implementation).
++ *
++ * Hot path: isochronous discrete-Gaussian sampler -> Plantard NTT -> packing.
++ * Performance target: <1.1 M cycles on STM32L4R5ZI.
++ */
++
++#include "api.h"
++#include "params.h"
++
++int crypto_sign(unsigned char *sm, size_t *smlen,
++	const unsigned char *m, size_t mlen,
++	const unsigned char *sk) {
++    (void)sm;
++    (void)smlen;
++    (void)m;
++    (void)mlen;
++    (void)sk;
++    /* TODO:
++     *   1. SHAKE256(salt || m) -> challenge hash h
++     *   2. solve B * x = h with sampled (x0, x1) ~ D_sigma
++     *      (isochronous CDT sampler from precomputed table)
++     *   3. compress signature (Golomb-Rice on s1)
++     *   4. emit sm = (salt || sig); *smlen = mlen + CRYPTO_BYTES
++     */
++    return -1;
++}
+diff --git a/crypto_sign/hawk1024/m4/verify.c b/crypto_sign/hawk1024/m4/verify.c
+new file mode 100644
+index 0000000..2650bec
+--- /dev/null
++++ b/crypto_sign/hawk1024/m4/verify.c
+@@ -0,0 +1,27 @@
++/*
++ * verify.c — HAWK-1024 signature verification (pqm4 m4 implementation).
++ *
++ * Hot path: decompress signature -> Plantard NTT of (s0, s1) -> verify
++ * ||(s0, s1)||^2 <= bound and B*s == h mod 2.
++ * Performance target: <650 k cycles on STM32L4R5ZI.
++ */
++
++#include "api.h"
++#include "params.h"
++
++int crypto_sign_open(unsigned char *m, size_t *mlen,
++	const unsigned char *sm, size_t smlen,
++	const unsigned char *pk) {
++    (void)m;
++    (void)mlen;
++    (void)sm;
++    (void)smlen;
++    (void)pk;
++    /* TODO:
++     *   1. parse sm = (salt || sig); decompress sig -> s1
++     *   2. SHAKE256(salt || m) -> h
++     *   3. reconstruct s0 from (h, s1, q00, q01) via NTT
++     *   4. test ||(s0, s1)||^2 against verification bound
++     */
++    return -1;
++}
+diff --git a/crypto_sign/hawk512/m4/api.h b/crypto_sign/hawk512/m4/api.h
+new file mode 100644
+index 0000000..5228e67
+--- /dev/null
++++ b/crypto_sign/hawk512/m4/api.h
+@@ -0,0 +1,14 @@
++#include <stddef.h>
++
++#define CRYPTO_SECRETKEYBYTES   184
++#define CRYPTO_PUBLICKEYBYTES   1024
++#define CRYPTO_BYTES            555
++#define CRYPTO_ALGNAME          "HAWK-512"
++
++int crypto_sign_keypair(unsigned char *pk, unsigned char *sk);
++int crypto_sign(unsigned char *sm, size_t *smlen,
++	const unsigned char *m, size_t mlen,
++	const unsigned char *sk);
++int crypto_sign_open(unsigned char *m, size_t *mlen,
++	const unsigned char *sm, size_t smlen,
++	const unsigned char *pk);
+diff --git a/crypto_sign/hawk512/m4/keygen.c b/crypto_sign/hawk512/m4/keygen.c
+new file mode 100644
+index 0000000..b4fe289
+--- /dev/null
++++ b/crypto_sign/hawk512/m4/keygen.c
+@@ -0,0 +1,20 @@
++/*
++ * keygen.c — HAWK-512 key generation (pqm4 m4 implementation).
++ *
++ * Strategy:
++ *   1. Sample (f, g) using NTRUgen (Pornin, eprint 2025/1239); the portable
++ *      C is reused unchanged, with M4 inline assembly grafted into the
++ *      recursive base case.
++ *   2. NTRU-solve to get (F, G).
++ *   3. Compute the HAWK public key (q00, q01) in Plantard-NTT domain.
++ *   4. Encode pk = (q00, q01); sk = compressed (f, g, F, G).
++ */
++
++#include "api.h"
++#include "params.h"
++
++int crypto_sign_keypair(unsigned char *pk, unsigned char *sk) {
++    (void)pk;
++    (void)sk;
++    return -1;
++}
+diff --git a/crypto_sign/hawk512/m4/params.h b/crypto_sign/hawk512/m4/params.h
+new file mode 100644
+index 0000000..80b70b0
+--- /dev/null
++++ b/crypto_sign/hawk512/m4/params.h
+@@ -0,0 +1,22 @@
++/*
++ * params.h — HAWK-512 parameters (Round-2 spec, May 2025).
++ *
++ * The HAWK modulus q is fixed at 12289 for compatibility with Falcon-style
++ * NTTs, but HAWK works in Z[x]/(x^n + 1) with secret-key entries in a
++ * small range so the dominant arithmetic is over a smaller modulus. The
++ * exact moduli used by the Plantard NTT and FFT are recorded here.
++ */
++
++#ifndef HAWK512_M4_PARAMS_H
++#define HAWK512_M4_PARAMS_H
++
++#define HAWK_LOGN     9
++#define HAWK_N      (1 << HAWK_LOGN)   /* 512 */
++
++/* Plantard arithmetic modulus (Q = 18433 = 2^14 + 2^11 + 1 candidate;
++ * final value set once the NTT layer is implemented). */
++#define HAWK_Q       18433
++#define HAWK_QINV    /* TODO */
++#define HAWK_R2MOD   /* TODO */
++
++#endif /* HAWK512_M4_PARAMS_H */
+diff --git a/crypto_sign/hawk512/m4/sign.c b/crypto_sign/hawk512/m4/sign.c
+new file mode 100644
+index 0000000..b42d517
+--- /dev/null
++++ b/crypto_sign/hawk512/m4/sign.c
+@@ -0,0 +1,27 @@
++/*
++ * sign.c — HAWK-512 signature generation (pqm4 m4 implementation).
++ *
++ * Hot path: isochronous discrete-Gaussian sampler -> Plantard NTT -> packing.
++ * Performance target: <500 k cycles on STM32L4R5ZI.
++ */
++
++#include "api.h"
++#include "params.h"
++
++int crypto_sign(unsigned char *sm, size_t *smlen,
++	const unsigned char *m, size_t mlen,
++	const unsigned char *sk) {
++    (void)sm;
++    (void)smlen;
++    (void)m;
++    (void)mlen;
++    (void)sk;
++    /* TODO:
++     *   1. SHAKE256(salt || m) -> challenge hash h
++     *   2. solve B * x = h with sampled (x0, x1) ~ D_sigma
++     *      (isochronous CDT sampler from precomputed table)
++     *   3. compress signature (Golomb-Rice on s1)
++     *   4. emit sm = (salt || sig); *smlen = mlen + CRYPTO_BYTES
++     */
++    return -1;
++}
+diff --git a/crypto_sign/hawk512/m4/verify.c b/crypto_sign/hawk512/m4/verify.c
+new file mode 100644
+index 0000000..3ff4914
+--- /dev/null
++++ b/crypto_sign/hawk512/m4/verify.c
+@@ -0,0 +1,27 @@
++/*
++ * verify.c — HAWK-512 signature verification (pqm4 m4 implementation).
++ *
++ * Hot path: decompress signature -> Plantard NTT of (s0, s1) -> verify
++ * ||(s0, s1)||^2 <= bound and B*s == h mod 2.
++ * Performance target: <300 k cycles on STM32L4R5ZI.
++ */
++
++#include "api.h"
++#include "params.h"
++
++int crypto_sign_open(unsigned char *m, size_t *mlen,
++	const unsigned char *sm, size_t smlen,
++	const unsigned char *pk) {
++    (void)m;
++    (void)mlen;
++    (void)sm;
++    (void)smlen;
++    (void)pk;
++    /* TODO:
++     *   1. parse sm = (salt || sig); decompress sig -> s1
++     *   2. SHAKE256(salt || m) -> h
++     *   3. reconstruct s0 from (h, s1, q00, q01) via NTT
++     *   4. test ||(s0, s1)||^2 against verification bound
++     */
++    return -1;
++}
+-- 
+2.43.0
+

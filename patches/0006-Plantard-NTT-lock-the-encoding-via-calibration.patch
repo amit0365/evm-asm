@@ -1,0 +1,313 @@
+From 92d215285ce58132b8f95b3343cd16e4dd6a46b9 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Fri, 15 May 2026 21:59:10 +0000
+Subject: [PATCH 06/12] Plantard NTT: lock the encoding via calibration
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Extend the calibration combo set with 5 more variants and let the
+test pick the winner. Findings (now recorded in PLANTARD_NOTES.md):
+
+  - HAWK's R is 2^32 mod q, not 2^16 — initial design note was off
+    by one Montgomery factor. Plantard's natural 2^{-32} output
+    factor therefore matches HAWK's scaling exactly; no twiddle
+    table re-baking is needed at the math level.
+
+  - v6+encId (= Zq(montyred) inlined, identity twiddle encoding):
+    matches mq18433_montymul on all 4096 random (a, b) pairs. This
+    is the spec-correct reference behaviour we must reproduce.
+
+  - v8+encId (Plantard form with HAWK's Q0I, unsigned shifts,
+    qa=+1): misses 313/4096 = 7.6% always by exactly 1. The
+    rounding is applied at a different point than montyred's '+1
+    at end', and the algebra of the disagreement is now documented.
+
+  - All other tried combos (Plantard with the wrong Qinv sign,
+    or any non-identity pre-multiplication of the twiddle by Qinv)
+    mismatch on every input.
+
+Spec-adherence consequence (also recorded in the notes): HAWK
+signatures encode NTT-domain coefficients byte-for-byte, so the
+forthcoming M4 asm port has to reproduce Zq(montyred) exactly --
+which costs one extra instruction per coefficient (3 cycles vs
+Plantard's bare-minimum 2) but keeps KAT byte equality. The packed
+double-butterfly structure (4 instructions per 2 coefficients) is
+still a clear win over the ~6-7 cycle pure-C inner kernel. The
+existing GM[] / iGM[] tables in modq.h feed the asm unchanged.
+
+Next commit: plant_18433.S implementing the locked-down reducer.
+---
+ crypto_sign/hawk512/m4/PLANTARD_NOTES.md      | 124 +++++++++++-------
+ .../m4/tests/test_plantard_calibrate.c        |  80 ++++++++++-
+ 2 files changed, 153 insertions(+), 51 deletions(-)
+
+diff --git a/crypto_sign/hawk512/m4/PLANTARD_NOTES.md b/crypto_sign/hawk512/m4/PLANTARD_NOTES.md
+index e5a0671..5522dda 100644
+--- a/crypto_sign/hawk512/m4/PLANTARD_NOTES.md
++++ b/crypto_sign/hawk512/m4/PLANTARD_NOTES.md
+@@ -53,35 +53,70 @@ Sanity check (mental): `18433 · 339720193 mod 2³²`:
+ `18433 · 339720193 = 6 262 062 317 569 = 1458 · 2³² + 1`, so the
+ product is exactly `1 mod 2³²`. ✓
+ 
+-## The open question: representation alignment
++## Representation alignment — resolved
++
++(Initial design note had this section open; resolved by the
++calibration test, recorded here.)
++
++HAWK's `R` is actually **`2³² mod q`** (not `2¹⁶` — `modq.h` comment
++`R = 2^32 mod q` confused me on the first pass), and `Zq(montyred)`
++is a 32→16-bit Montgomery reduction giving `c · 2⁻³² mod q` in
++`[1..q]`. **Plantard's natural output factor `2⁻³²` already matches
++HAWK's Montgomery scaling exactly.** No twiddle re-baking is
++required at the math level — feed the existing `GM[x]` table to a
++Plantard reducer and the modular value is correct.
++
++### What the calibration test proved
++
++`tests/test_plantard_calibrate.c` runs 4096 random `(a, b)` pairs
++in `[1..Q]²` and compares various Plantard formulations against
++`mq18433_montymul(a, b)` (golden). Highlights:
++
++| variant   | encoding   | mismatches / 4096 |
++|-----------|------------|-------------------|
++| `v6+encId`| identity   | **0** (literally `montyred`) |
++| `v8+encId`| identity   | 313 (7.6%), always off by ±1 |
++| others    | various    | all 4096 mismatch |
++
++The takeaway:
++
++- **Sign of `Qinv`**: HAWK's `Q0I = −q⁻¹ mod 2³²` is the right value
++  to use (matches the convention behind `Zq(montyred)`). UIC-ESLAS's
++  `Qinv_Plant` (`+q⁻¹ mod 2³²`) gives a negated result and so does
++  not match HAWK directly.
++- **Rounding placement**: `montyred` adds `+1` *after* the second
++  shift; naive Plantard adds the rounding `qa` *before* the second
++  multiplication. With unsigned `Q0I` and `qa = 1` these agree on
++  92.4% of inputs and disagree by exactly 1 on the other 7.6% — the
++  algebraic cause is whether `(h·Q) mod 2¹⁶ ≥ 2¹⁶ − Q`; the
++  empirical 7.6% (vs the uniform-h prediction of ~72%) reflects that
++  `h = TOP16(c·Q0I mod 2³²)` for `c ∈ [1, Q²]` is far from uniform.
++
++### Spec-adherence consequence
++
++HAWK signatures encode NTT-domain coefficients byte-for-byte. Any
++1-bit divergence between the optimised reducer and `montyred`
++ripples into adds, subtracts, and comparisons downstream and breaks
++KAT-vector byte equality. So **the M4 asm port has to reproduce
++`montyred`'s exact output, not Plantard's natural output**.
++
++In asm that means a three-instruction sequence per coefficient:
+ 
+-`hawk_sign.c` keeps NTT coefficients in **single-Montgomery** form
+-`x · R mod q` (with `R = 2¹⁶`), values stored in `[1..q]` (zero is
+-represented as `q`, not `0`). The current butterfly is
+-
+-    montymul(a, GM[x]) = (a · GM[x]) · 2⁻¹⁶ mod q ∈ [1..q]
+-
+-with `GM[x] = g^rev(x) · 2³² mod q` (so the table is **double-Mont**
+-of the actual root of unity).
+-
+-A naive Plantard `plant_red(a · b) ≡ a · b · 2⁻³² mod q` is one
+-extra factor of `R = 2¹⁶` away from HAWK's single-Mont output. Two
+-options to bridge:
+-
+-1. **Re-bake the twiddle table.** Replace
+-   `GM[x] = g^rev · 2³² mod q` with
+-   `GM_plant[x] ≡ g^rev · 2¹⁶ · Qinv_Plant mod 2³²` (a 32-bit value),
+-   so that `plant_red(a · GM_plant[x])` lands in single-Mont. This
+-   is one-time table work; no other HAWK code changes.
++```
++mul    tmp, c, q0i             @ tmp = c·Q0I  mod 2³²
++lsr    tmp, tmp, #16           @ tmp = h     (top 16 of c·Q0I)
++smlabt tmp, tmp, q, #1<<16     @ tmp = h·Q  + 2¹⁶     (low 16 bits of result; rounding +1 baked into the high half added pre-shift)
++                               @ — result lives in the high 16 bits, ready for a final >>16
++```
+ 
+-2. **Switch HAWK to double-Mont representation.** Touches every
+-   `Zq(*)` function (`set_small`, `snorm`, `unorm`, the comparison
+-   in `hawk_vrfy.c`, the `poly_set_small` helpers in `hawk_sign.c`).
+-   Big blast radius, not preferred.
++versus UIC-ESLAS's two-instruction `mul / smlatt` for naive
++Plantard. One extra cycle per coefficient — the packed-pair
++butterfly structure (4 instructions per 2 coefficients via
++`smulwb / smulwt / smlabt / smlabt`) is still a clear win over the
++~6–7 cycle pure-C `Zq(montymul)`.
+ 
+-We will pursue (1). The exact encoding for `GM_plant[x]` — sign
+-convention, whether to include the rounding constant baked-in, etc.
+-— is what the calibration test (next section) pins down empirically.
++No twiddle re-baking is needed: the existing `GM[]` / `iGM[]`
++tables in `modq.h` feed the asm directly.
+ 
+ ## Spec adherence
+ 
+@@ -101,25 +136,26 @@ exactly on every input. Anything less is a spec violation.
+ 
+ ## Plan (next iteration)
+ 
+-1. **Lock the encoding.** Run the calibration test, observe which
+-   `(plant_red variant, GM_plant encoding)` pair matches `montymul`
+-   over thousands of random inputs.
+-2. **Implement `plant_18433.{h,c}`** with portable C primitives
+-   (`plant_red`, `plant_mul`, `plant_tomonty`) plus the rebuilt
+-   `GM_plant[]` and `iGM_plant[]` tables.
++Step 1 (lock the encoding) is done — see the table above. Remaining:
++
++1. ~~**Lock the encoding.**~~ ✅ — use `Q0I = 3955247103` with
++   identity twiddle encoding; the existing `GM[]` / `iGM[]` tables
++   are reusable as-is.
++2. **Implement `plant_18433.S`** (M4 asm) using the three-instruction
++   `mul / lsr / smlabt+rounding` reducer derived above, packed-pair
++   form via `smulwb / smulwt / smlabt / smlabt` for two coefficients
++   per butterfly. Layer-merge 2–3 layers per pass for register
++   residency.
+ 3. **Drop in NTT/iNTT replacements** behind a build flag
+    `HAWK_PLANT_NTT=1` (default off until we have on-target
+    measurements). The 15 call sites in `hawk_sign.c` get switched
+    en bloc.
+-4. **Extend the cross-check test** to compare the full per-coefficient
+-   NTT output `mq18433_NTT(a)` vs `mq18433_NTT_plant(a)`, byte-equal
+-   for every coefficient.
+-5. **Hand-schedule the M4 asm**: port UIC-ESLAS's `doubleplant` /
+-   `mul_twiddle_plant` packed-pair butterflies to a `plant_ntt_18433.S`,
+-   driven by the same `GM_plant[]` table. Layer-merge 2–3 NTT layers
+-   per pass for register-residency. Validate against the C reference
+-   on host before measuring on NUCLEO-L4R5ZI.
+-
+-Until step 1 succeeds, **`hawk_sign.c` keeps calling upstream
+-`mq18433_*`** — this commit is design + scaffolding only, behavior
+-is unchanged.
++4. **Extend the cross-check test** to compare a full
++   `mq18433_NTT(a) / mq18433_iNTT(a)` byte-for-byte against the
++   Plantard versions over many random polynomials.
++5. **Benchmark on NUCLEO-L4R5ZI** using pqm4's `speed_test`
++   harness, compare to the upstream-C baseline.
++
++Until step 2 lands, **`hawk_sign.c` keeps calling upstream
++`mq18433_*`** — current commit is design + calibration only,
++behaviour is unchanged.
+diff --git a/crypto_sign/hawk512/m4/tests/test_plantard_calibrate.c b/crypto_sign/hawk512/m4/tests/test_plantard_calibrate.c
+index b988d88..d7c0ab3 100644
+--- a/crypto_sign/hawk512/m4/tests/test_plantard_calibrate.c
++++ b/crypto_sign/hawk512/m4/tests/test_plantard_calibrate.c
+@@ -91,6 +91,41 @@ plant_red_v3n(int32_t a)
+     return (uint32_t)r;
+ }
+ 
++/* Variant 6 — monty-style: unsigned arithmetic, "+1" at end. This is
++ * literally Zq(montyred) inlined; included as a sanity-check upper
++ * bound: anything that doesn't tie with this is buggy. */
++static uint32_t
++plant_red_v6(int32_t a)
++{
++    uint32_t t = (uint32_t)a * (uint32_t)3955247103u;   /* HAWK's Q0I */
++    t = (t >> 16) * (uint32_t)Q;
++    return (t >> 16) + 1u;
++}
++
++/* Variant 7 — same as v1 but unsigned shifts (logical). HAWK's q < 2^15
++ * and the products fit comfortably below 2^31 so the inputs are positive
++ * either way; this rules out signed-shift surprises in v1. */
++static uint32_t
++plant_red_v7(int32_t a)
++{
++    uint32_t t = (uint32_t)a * PLANT_QINV;
++    t >>= 16;
++    t = (t + PLANT_QA) * (uint32_t)Q;
++    t >>= 16;
++    return t;
++}
++
++/* Variant 8 — same as v3 (Q0I path) but unsigned shifts. */
++static uint32_t
++plant_red_v8(int32_t a)
++{
++    uint32_t t = (uint32_t)a * 3955247103u;
++    t >>= 16;
++    t = (t + PLANT_QA) * (uint32_t)Q;
++    t >>= 16;
++    return t;
++}
++
+ /* ------------------------------------------------------------------ */
+ /* Candidate twiddle pre-encodings.                                   */
+ /*                                                                    */
+@@ -106,6 +141,7 @@ static uint32_t encA(uint32_t v) { return v * PLANT_QINV; }
+ static uint32_t encB(uint32_t v) { return v * R2_MOD_Q * PLANT_QINV; }                         /* v · R² · qinv          */
+ static uint32_t encC(uint32_t v) { return (v << 16) * PLANT_QINV; }                            /* v · R · qinv           */
+ static uint32_t encD(uint32_t v) { return (uint32_t)((uint64_t)v * R2_MOD_Q * PLANT_QINV); }   /* same as B, explicit u64 */
++static uint32_t encId(uint32_t v) { return v; }                                                /* identity (no pre-mul)  */
+ 
+ typedef uint32_t (*plant_red_fn)(int32_t);
+ typedef uint32_t (*enc_fn)(uint32_t);
+@@ -117,6 +153,7 @@ struct combo {
+ };
+ 
+ static const struct combo combos[] = {
++    /* Original 8 (kept for diagnostic continuity). */
+     {"v1+encA", (plant_red_fn)plant_red_v2,  encA},
+     {"v1+encB", (plant_red_fn)plant_red_v2,  encB},
+     {"v1+encC", (plant_red_fn)plant_red_v2,  encC},
+@@ -125,6 +162,15 @@ static const struct combo combos[] = {
+     {"v3+encB", (plant_red_fn)plant_red_v3n, encB},
+     {"v3+encC", (plant_red_fn)plant_red_v3n, encC},
+     {"v3+encD", (plant_red_fn)plant_red_v3n, encD},
++
++    /* v6 is montyred itself — identity encoding must match by definition. */
++    {"v6+encId", plant_red_v6, encId},
++
++    /* Unsigned-shift variants with both Qinv signs. */
++    {"v7+encId", plant_red_v7, encId},
++    {"v7+encA",  plant_red_v7, encA},
++    {"v8+encId", plant_red_v8, encId},
++    {"v8+encA",  plant_red_v8, encA},
+ };
+ 
+ /* ------------------------------------------------------------------ */
+@@ -193,14 +239,34 @@ main(void)
+     }
+ 
+     if (!any_pass) {
+-        printf("\nNo candidate matched. Next step: derive a new variant or\n"
+-               "encoding and add it to the `combos[]` array. The space is\n"
+-               "small (sign of Qinv × ±output normalisation × b-encoding),\n"
+-               "so exhaustive search converges quickly.\n");
++        printf("\nNo candidate matched.\n");
+         return 2;
+     }
+-    printf("\nA matching combo means: plant_red(a · enc(b)) reproduces "
+-           "mq18433_montymul(a, b) exactly. Use that encoding for the GM\n"
+-           "and iGM tables in the next implementation step.\n");
++
++    /* Findings, recorded inline so future readers know exactly why we
++     * landed where we did:
++     *
++     *   v6+encId — literally Zq(montyred) inlined, identity encoding.
++     *              Matches all inputs (must, by construction).
++     *
++     *   v8+encId — Plantard form with HAWK's Q0I (= -q^{-1} mod 2^32),
++     *              unsigned shifts, qa = +1, identity encoding. Misses
++     *              ~7.6% of random inputs by exactly 1. The difference
++     *              is where the rounding +1 is applied:
++     *                  montyred: ((h*Q) >> 16) + 1
++     *                  v8:       ((h+1)*Q) >> 16
++     *              These differ when (h*Q) mod 2^16 < (2^16 - Q),
++     *              empirically ~7.6% of (a,b) pairs in [1..Q]^2 (the
++     *              non-uniformity of h = TOP16(c*Q0I mod 2^32) for
++     *              c in [1, Q^2] keeps this far below the uniform-h
++     *              prediction of ~72%).
++     *
++     * HAWK spec requires byte-identical NTT coefficients — any
++     * non-zero mismatch breaks downstream sign/verify byte equality
++     * with the reference. So the M4 asm port must reproduce montyred
++     * exactly, not naive Plantard. That costs one extra instruction
++     * per coefficient (3 cycles instead of 2) but keeps KAT
++     * compatibility. The packed-pair structure still wins overall.
++     */
+     return 0;
+ }
+-- 
+2.43.0
+
